@@ -109,7 +109,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ổ đang có thao tác khác chạy."
+            "value" : "Một thao tác khác đang chạy trên ổ này."
           }
         }
       }
@@ -249,7 +249,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Không định dạng ảnh đĩa."
+            "value" : "Không thể định dạng ảnh đĩa."
           }
         }
       }
@@ -259,7 +259,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ổ bị chống ghi"
+            "value" : "ổ đang được chống ghi"
           }
         }
       }
@@ -1069,7 +1069,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Không xác định được dữ liệu — hãy coi như có dữ liệu quan trọng."
+            "value" : "Không xác định được lượng dữ liệu — hãy coi như ổ có tệp quan trọng."
           }
         }
       }
@@ -1129,7 +1129,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ổ đã thay đổi kể từ khi mở hộp thoại; không có gì bị xóa."
+            "value" : "Ổ đã thay đổi kể từ khi mở hộp thoại. Không có gì bị xóa."
           }
         }
       }
