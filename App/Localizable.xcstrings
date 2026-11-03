@@ -129,7 +129,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Huỷ"
+            "value" : "Hủy"
           }
         }
       }
@@ -229,7 +229,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tạo hệ thống file NTFS thất bại. Phân vùng có thể chưa dùng được; hãy định dạng lại."
+            "value" : "Tạo hệ thống tệp NTFS thất bại. Phân vùng có thể chưa dùng được; hãy định dạng lại."
           }
         }
       }
@@ -1439,7 +1439,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ổ này chưa được đẩy ra an toàn, hoặc Windows chưa tắt đúng cách. Để ghi được, NTFS for Mac sẽ xoá nhật ký NTFS, và những thay đổi Windows chưa kịp lưu có thể bị mất.\n\nNếu ổ thuộc một máy Windows đang ngủ đông hoặc bật Fast Startup, hãy tắt hẳn máy đó thay vì làm cách này."
+            "value" : "Ổ này chưa được đẩy ra an toàn, hoặc Windows chưa tắt đúng cách. Để ghi được, NTFS for Mac sẽ xóa nhật ký NTFS, và những thay đổi Windows chưa kịp lưu có thể bị mất.\n\nNếu ổ thuộc một máy Windows đang ngủ đông hoặc bật Fast Startup, hãy tắt hẳn máy đó thay vì làm cách này."
           }
         }
       }

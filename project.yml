@@ -75,5 +75,7 @@ schemes:
         NTFSForMac: all
         NTFSExtension: all
     test:
+      language: en
+      region: US
       targets:
         - NTFSForMacTests
