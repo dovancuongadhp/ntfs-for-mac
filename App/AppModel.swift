@@ -82,6 +82,7 @@ final class AppModel {
     }
 
     func eject(_ disk: NTFSDisk) {
+        if let physical = inventory.partition(named: disk.bsdName)?.disk, isProtected(physical) { return }
         perform(on: disk.bsdName, name: disk.name) { [mounter] in
             try await mounter.eject(bsdName: disk.bsdName)
         }
@@ -111,6 +112,7 @@ final class AppModel {
     }
 
     func unmount(_ partition: Partition) {
+        guard let disk = inventory.partition(named: partition.bsdName)?.disk, !isProtected(disk) else { return }
         handled.insert(partition.bsdName)
         perform(on: partition.bsdName, name: partition.name) { [mounter] in
             try await mounter.unmount(bsdName: partition.bsdName)
@@ -118,6 +120,7 @@ final class AppModel {
     }
 
     func eject(_ disk: PhysicalDisk) {
+        guard !isProtected(disk) else { return }
         perform(on: disk.bsdName, name: disk.name) { [mounter] in
             try await mounter.eject(bsdName: disk.bsdName)
         }
@@ -169,14 +172,24 @@ final class AppModel {
         progress: @escaping @MainActor (FormatStage) -> Void
     ) async throws {
         let diskName = preparation.disk.bsdName
-        if let reason = FormatSafety.blockReason(for: preparation.target, on: preparation.disk, context: formatContext) {
+        if let block = preparation.block {
+            throw FormatError.blocked(block.message)
+        }
+        guard preparation.fileSystems.contains(options.fileSystem) else {
+            throw FormatError.blocked(String(localized: "This format isn't available for this drive."))
+        }
+        guard let current = inventory.physicalDisk(named: diskName) else { throw FormatError.diskChanged }
+        if let reason = FormatSafety.blockReason(for: preparation.target, on: current, context: formatContext) {
             throw FormatError.blocked(reason.message)
         }
         let job = FormatPlanner.job(for: preparation, options: options)
         formatting.insert(diskName)
+        let activity = ProcessInfo.processInfo.beginActivity(
+            options: [.userInitiated, .idleSystemSleepDisabled], reason: "Formatting a drive")
         defer {
+            ProcessInfo.processInfo.endActivity(activity)
             formatting.remove(diskName)
-            finishFormat(on: diskName)
+            finishFormat(preparation)
         }
         appLog.notice("Formatting \(String(describing: preparation.fingerprint), privacy: .public) as \(options.fileSystem.rawValue, privacy: .public): \(String(describing: job.steps), privacy: .public)")
         do {
@@ -188,14 +201,21 @@ final class AppModel {
         }
     }
 
-    /// Lets the usual mount logic pick up the freshly formatted partitions.
-    private func finishFormat(on diskName: String) {
-        for name in inventory.childNames(ofWhole: diskName) + [diskName] {
+    /// Lets the usual mount logic pick up the freshly formatted partitions,
+    /// leaving the rest of the disk as the user left it.
+    private func finishFormat(_ preparation: FormatPreparation) {
+        let device = preparation.device.bsdName
+        var names = Set([device] + preparation.affected.map(\.bsdName))
+        if preparation.device.isWhole {
+            names.formUnion(inventory.childNames(ofWhole: device))
+        }
+        for name in names {
             handled.remove(name)
             reasons[name] = nil
             inventory.refresh(bsdName: name)
         }
-        for partition in inventory.physicalDisk(named: diskName)?.partitions ?? [] {
+        for partition in inventory.physicalDisk(named: preparation.disk.bsdName)?.partitions ?? []
+        where names.contains(partition.bsdName) {
             if let disk = partition.ntfsDisk {
                 diskChanged(disk)
             }
@@ -211,7 +231,7 @@ final class AppModel {
     // MARK: Internals
 
     private func perform(on bsdName: String, name: String, _ operation: @escaping @MainActor () async throws -> Void) {
-        guard !busy.contains(bsdName) else { return }
+        guard !busy.contains(bsdName), !isBeingFormatted(bsdName) else { return }
         busy.insert(bsdName)
         lastError = nil
         Task {

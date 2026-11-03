@@ -8,8 +8,12 @@ final class FakeFormatEnvironment: FormatEnvironment {
     var infos: [String: DiskInfo] = [:]
     var children: [String: [String]] = [:]
     var log: [String] = []
+    var pauses: [Duration] = []
     var unmountError: (any Error)?
+    /// How many of the next unmounts fail as busy.
+    var failingUnmounts = 0
     var ntfsError: (any Error)?
+    var afterUnmount: (() -> Void)?
     var afterDiskutil: (() -> Void)?
 
     init(_ list: [DiskInfo]) {
@@ -27,6 +31,11 @@ final class FakeFormatEnvironment: FormatEnvironment {
     func unmount(_ bsdName: String, whole: Bool) async throws {
         log.append("unmount \(bsdName)" + (whole ? " whole" : ""))
         if let unmountError { throw unmountError }
+        if failingUnmounts > 0 {
+            failingUnmounts -= 1
+            throw DiskOperationError(message: "in use")
+        }
+        afterUnmount?()
     }
 
     func runDiskutil(_ arguments: [String]) async throws {
@@ -39,7 +48,9 @@ final class FakeFormatEnvironment: FormatEnvironment {
         if let ntfsError { throw ntfsError }
     }
 
-    func pause() async {}
+    func pause(_ duration: Duration) async {
+        pauses.append(duration)
+    }
 }
 
 @MainActor
@@ -132,18 +143,72 @@ struct FormatRunnerTests {
     @Test func reportsWhenTheNTFSStepFailsAfterErasing() async {
         let environment = FakeFormatEnvironment(Fixture.usbGPT)
         environment.afterDiskutil = { [unowned environment] in self.eraseDisk(environment) }
-        environment.ntfsError = FormatError.cancelled
-        await #expect(throws: FormatError.ntfsFailedAfterErase(FormatError.cancelled.localizedDescription)) {
+        environment.ntfsError = FormatError.tool(.mkntfsFailed)
+        await #expect(throws: FormatError.ntfsFailedAfterErase("creating the NTFS file system failed")) {
             try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
         }
+    }
+
+    @Test func cancelAfterErasingSaysTheDriveWasErased() async {
+        let environment = FakeFormatEnvironment(Fixture.usbGPT)
+        environment.afterDiskutil = { [unowned environment] in self.eraseDisk(environment) }
+        environment.ntfsError = FormatError.cancelled
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the administrator prompt was cancelled")) {
+            try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
+        }
+    }
+
+    @Test func busyNewPartitionIsRetriedThenReportedAsErased() async {
+        let environment = FakeFormatEnvironment(Fixture.usbGPT)
+        environment.afterDiskutil = { [unowned environment] in
+            self.eraseDisk(environment)
+            environment.unmountError = DiskOperationError(message: "in use")
+        }
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive is in use")) {
+            try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
+        }
+        #expect(environment.log.filter { $0 == "unmount disk6s2" }.count == 5)
+        #expect(environment.pauses == Array(repeating: .seconds(1), count: 4))
+        #expect(!environment.log.contains("ntfs-format disk6s2"))
+    }
+
+    @Test func newPartitionUnmountSucceedsOnRetry() async throws {
+        let environment = FakeFormatEnvironment(Fixture.usbGPT)
+        environment.afterDiskutil = { [unowned environment] in
+            self.eraseDisk(environment)
+            environment.failingUnmounts = 2
+        }
+        try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
+        #expect(environment.log.filter { $0 == "unmount disk6s2" }.count == 3)
+        #expect(environment.pauses == [.seconds(1), .seconds(1)])
+        #expect(environment.log.last == "ntfs-format disk6s2")
     }
 
     @Test func reportsAMissingNewPartition() async {
         let environment = FakeFormatEnvironment(Fixture.usbGPT)
         environment.afterDiskutil = { [unowned environment] in environment.children["disk6"] = ["disk6s1"] }
-        await #expect(throws: FormatError.unexpectedLayout) {
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the new partition wasn't found")) {
             try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
         }
+    }
+
+    @Test func stopsWhenTheDriveChangesBeforeErasing() async {
+        let environment = FakeFormatEnvironment(Fixture.usbGPT)
+        environment.afterUnmount = { [unowned environment] in environment.infos["disk6s3"]?.size += 512 }
+        await #expect(throws: FormatError.diskChanged) {
+            try await FormatRunner(environment: environment).run(
+                job([.unmount("disk6s3", whole: false), .ntfsFormat(ntfsRequest)], device: s3)) { _ in }
+        }
+        #expect(environment.log == ["unmount disk6s3"])
+    }
+
+    @Test func stopsWhenTheDiskChangesBeforeDiskutil() async {
+        let environment = FakeFormatEnvironment(Fixture.usbGPT)
+        environment.afterUnmount = { [unowned environment] in environment.children["disk6"] = ["disk6s1", "disk6s2"] }
+        await #expect(throws: FormatError.diskChanged) {
+            try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
+        }
+        #expect(environment.log == ["unmount disk6 whole"])
     }
 }
 
@@ -152,5 +217,7 @@ struct PrivilegedOutputTests {
         #expect(PrivilegedOutput.error(fromOsascript: "0:102: execution error: User canceled. (-128)\n") == .cancelled)
         #expect(PrivilegedOutput.error(fromOsascript: "0:102: execution error: ntfs-format: mounted (70)\n") == .tool(.mounted))
         #expect(PrivilegedOutput.error(fromOsascript: "something odd") == .failed("something odd"))
+        #expect(PrivilegedOutput.error(fromOsascript: "0:102: execution error: sh: ntfs-format: not found (127)\n")
+            == .failed("0:102: execution error: sh: ntfs-format: not found (127)"))
     }
 }

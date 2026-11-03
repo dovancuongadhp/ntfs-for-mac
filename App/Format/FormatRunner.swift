@@ -9,8 +9,8 @@ protocol FormatEnvironment {
     func unmount(_ bsdName: String, whole: Bool) async throws
     func runDiskutil(_ arguments: [String]) async throws
     func runNTFSFormat(_ request: FormatRequest) async throws
-    /// Waits briefly for DiskArbitration to catch up.
-    func pause() async
+    /// Waits for DiskArbitration to catch up, even if the task is cancelled.
+    func pause(_ duration: Duration) async
 }
 
 /// Executes a format job, re-checking the drive before anything is erased.
@@ -24,38 +24,58 @@ final class FormatRunner {
 
     func run(_ job: FormatJob, progress: @MainActor (FormatStage) -> Void) async throws {
         progress(.checking)
-        guard let info = environment.freshInfo(job.fingerprint.bsdName),
-              DiskFingerprint(info: info, children: info.isWhole ? environment.childNames(ofWhole: info.bsdName) : [])
-                == job.fingerprint
-        else { throw FormatError.diskChanged }
+        try checkFingerprint(job.fingerprint)
 
         var erased = false
         for step in job.steps {
-            switch step {
-            case .unmount(let name, let whole):
-                progress(.unmounting)
-                try await unmount(name, whole: whole)
-            case .diskutil(let arguments):
-                progress(.formatting)
-                try await environment.runDiskutil(arguments)
+            do {
+                try await run(step, job: job, erased: erased, progress: progress)
+            } catch {
+                guard erased else { throw error }
+                throw FormatError.ntfsFailedAfterErase(Self.detail(of: error))
+            }
+            if case .diskutil = step {
                 erased = true
-            case .ntfsFormat(let request):
-                progress(.formatting)
-                try await formatNTFS(request, afterErase: erased)
-            case .ntfsFormatNewPartition(let whole, let label, let clusterSize, let quick):
-                progress(.formatting)
-                let partition = try await newDataPartition(onWhole: whole)
-                if partition.mount != nil {
-                    try await unmount(partition.bsdName, whole: false)
-                }
-                guard let offset = partition.offset else { throw FormatError.unexpectedLayout }
-                try await formatNTFS(
-                    FormatRequest(device: partition.bsdName, size: partition.size, offset: offset,
-                                  label: label, clusterSize: clusterSize, quick: quick),
-                    afterErase: true)
             }
         }
         progress(.finishing)
+    }
+
+    private func run(
+        _ step: FormatStep, job: FormatJob, erased: Bool, progress: @MainActor (FormatStage) -> Void
+    ) async throws {
+        switch step {
+        case .unmount(let name, let whole):
+            progress(.unmounting)
+            try await unmount(name, whole: whole)
+        case .diskutil(let arguments):
+            progress(.formatting)
+            if !erased {
+                try checkFingerprint(job.fingerprint)
+            }
+            try await environment.runDiskutil(arguments)
+        case .ntfsFormat(let request):
+            progress(.formatting)
+            if !erased {
+                try checkFingerprint(job.fingerprint)
+            }
+            try await environment.runNTFSFormat(request)
+        case .ntfsFormatNewPartition(let whole, let label, let clusterSize, let quick):
+            progress(.formatting)
+            let partition = try await newDataPartition(onWhole: whole)
+            try await unmountNewPartition(partition.bsdName)
+            guard let offset = partition.offset else { throw FormatError.unexpectedLayout }
+            try await environment.runNTFSFormat(
+                FormatRequest(device: partition.bsdName, size: partition.size, offset: offset,
+                              label: label, clusterSize: clusterSize, quick: quick))
+        }
+    }
+
+    private func checkFingerprint(_ fingerprint: DiskFingerprint) throws {
+        guard let info = environment.freshInfo(fingerprint.bsdName),
+              DiskFingerprint(info: info, children: info.isWhole ? environment.childNames(ofWhole: info.bsdName) : [])
+                == fingerprint
+        else { throw FormatError.diskChanged }
     }
 
     private func unmount(_ name: String, whole: Bool) async throws {
@@ -68,14 +88,17 @@ final class FormatRunner {
         }
     }
 
-    private func formatNTFS(_ request: FormatRequest, afterErase: Bool) async throws {
-        do {
-            try await environment.runNTFSFormat(request)
-        } catch {
-            if afterErase {
-                throw FormatError.ntfsFailedAfterErase(error.localizedDescription)
+    /// macOS mounts the new partition and Spotlight or Finder may hold it for a moment.
+    private func unmountNewPartition(_ name: String) async throws {
+        var attempt = 1
+        while true {
+            do {
+                try await unmount(name, whole: false)
+                return
+            } catch where attempt < 5 {
+                attempt += 1
+                await environment.pause(.seconds(1))
             }
-            throw error
         }
     }
 
@@ -87,8 +110,16 @@ final class FormatRunner {
             if data.count == 1 {
                 return data[0]
             }
-            await environment.pause()
+            await environment.pause(.milliseconds(500))
         }
         throw FormatError.unexpectedLayout
+    }
+
+    private static func detail(of error: any Error) -> String {
+        switch error {
+        case let error as FormatError: error.shortDetail
+        case let error as FormatToolError: error.shortMessage
+        default: error.localizedDescription
+        }
     }
 }

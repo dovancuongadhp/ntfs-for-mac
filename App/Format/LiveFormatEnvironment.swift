@@ -29,15 +29,20 @@ struct LiveFormatEnvironment: FormatEnvironment {
     func runNTFSFormat(_ request: FormatRequest) async throws {
         let helper = Bundle.main.bundleURL.appending(path: "Contents/Helpers/ntfs-format").path
         let command = ([helper] + request.arguments).map(MountController.shellQuoted).joined(separator: " ") + " 2>&1"
-        let script = "do shell script \(MountController.appleScriptQuoted(command)) with administrator privileges"
+        let prompt = String(localized: "NTFS for Mac needs administrator rights to format “\(request.label)” as NTFS.")
+        let script = "do shell script \(MountController.appleScriptQuoted(command))"
+            + " with prompt \(MountController.appleScriptQuoted(prompt)) with administrator privileges"
         // osascript, not NSAppleScript: a full format can take hours and must not block the main thread.
         let result = try await CommandLineTool.run("/usr/bin/osascript", ["-e", script])
         appLog.notice("ntfs-format \(request.device, privacy: .public): \(result.status) \(result.output, privacy: .public)")
         guard result.status == 0 else { throw PrivilegedOutput.error(fromOsascript: result.output) }
     }
 
-    func pause() async {
-        try? await Task.sleep(for: .milliseconds(500))
+    func pause(_ duration: Duration) async {
+        // Detached, so cancelling the format task can't turn the wait into a busy loop.
+        await Task.detached {
+            try? await Task.sleep(for: duration)
+        }.value
     }
 }
 

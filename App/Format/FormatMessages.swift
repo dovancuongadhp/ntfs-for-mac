@@ -20,6 +20,40 @@ extension FormatToolError {
         case .mkntfsFailed: String(localized: "Creating the NTFS file system failed. The partition may not be usable; format it again.")
         }
     }
+
+    /// The reason alone, for messages that say themselves what was erased.
+    var shortMessage: String {
+        switch self {
+        case .usage: String(localized: "invalid format request")
+        case .notFound: String(localized: "the partition is no longer connected")
+        case .notAPartition: String(localized: "not a partition")
+        case .internalDisk: String(localized: "internal drives are protected")
+        case .systemDisk: String(localized: "the drive holds macOS")
+        case .readOnly: String(localized: "the drive is write-protected")
+        case .mounted: String(localized: "the drive is in use")
+        case .changed: String(localized: "the drive changed")
+        case .invalidLabel: String(localized: "the name isn't valid for NTFS")
+        case .invalidCluster: String(localized: "the cluster size isn't valid for this drive")
+        case .unsupportedPartition: String(localized: "this kind of partition can't be formatted as NTFS")
+        case .badPartitionTable: String(localized: "the partition table looks different than expected")
+        case .ioError: String(localized: "the drive couldn't be read or written")
+        case .mkntfsFailed: String(localized: "creating the NTFS file system failed")
+        }
+    }
+}
+
+extension FormatError {
+    /// The reason alone, without "Nothing was erased."
+    var shortDetail: String {
+        switch self {
+        case .diskChanged: String(localized: "the drive changed")
+        case .busy: String(localized: "the drive is in use")
+        case .cancelled: String(localized: "the administrator prompt was cancelled")
+        case .unexpectedLayout: String(localized: "the new partition wasn't found")
+        case .tool(let error): error.shortMessage
+        case .failed(let detail), .ntfsFailedAfterErase(let detail), .blocked(let detail): detail
+        }
+    }
 }
 
 extension FormatBlock {

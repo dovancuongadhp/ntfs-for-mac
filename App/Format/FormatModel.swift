@@ -104,7 +104,7 @@ enum FormatError: LocalizedError, Equatable {
         case .failed(let detail):
             String(localized: "Formatting failed: \(detail)")
         case .ntfsFailedAfterErase(let detail):
-            String(localized: "The drive was erased and formatted as exFAT, but formatting it as NTFS failed: \(detail)")
+            String(localized: "The drive was erased and formatted as exFAT, but NTFS formatting didn't finish (\(detail)). Format it again as NTFS.")
         case .blocked(let reason):
             reason
         }
