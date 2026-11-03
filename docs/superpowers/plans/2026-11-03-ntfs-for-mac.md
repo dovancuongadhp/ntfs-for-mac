@@ -123,5 +123,5 @@ The plan lists exact files, interfaces, and verification commands per task. Full
 - Create: `scripts/integration-test.sh` (hdiutil + mount + checksum compare; needs signed build)
 - Create: `README.md` (vi + en), `LICENSE` (GPL-2.0 text), `.gitignore`
 
-- [ ] `scripts/make-dmg.sh` on an unsigned Release build produces `build/NTFS-for-Mac.dmg` containing the app and an `Applications` alias.
-- [ ] Commit.
+- [x] `scripts/make-dmg.sh` on an unsigned Release build produces `build/NTFS-for-Mac.dmg` containing the app and an `Applications` alias.
+- [x] Commit.

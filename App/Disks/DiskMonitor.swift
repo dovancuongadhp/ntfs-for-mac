@@ -29,6 +29,11 @@ final class DiskMonitor {
         }, context)
     }
 
+    isolated deinit {
+        // Callbacks hold an unretained pointer to self.
+        DASessionSetDispatchQueue(session, nil)
+    }
+
     private static func instance(_ context: UnsafeMutableRawPointer?) -> DiskMonitor {
         Unmanaged<DiskMonitor>.fromOpaque(context!).takeUnretainedValue()
     }
