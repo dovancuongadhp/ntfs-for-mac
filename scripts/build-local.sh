@@ -28,7 +28,10 @@ xcodebuild -project NTFSForMac.xcodeproj -scheme NTFSForMac -configuration Relea
 cp Extension/NTFSExtension.entitlements "$ENTITLEMENTS"
 /usr/libexec/PlistBuddy -c "Delete :com.apple.developer.fskit.fsmodule" "$ENTITLEMENTS"
 
-# Inside out: the extension first, then the app that seals it.
+# Inside out: helpers and the extension first, then the app that seals them.
+for tool in "$APP/Contents/Helpers/"*; do
+    codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp=none "$tool"
+done
 codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp=none \
     --entitlements "$ENTITLEMENTS" "$APP/Contents/Extensions/NTFSExtension.appex"
 codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp=none \

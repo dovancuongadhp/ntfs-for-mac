@@ -62,6 +62,13 @@ EOF
 xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportPath "$EXPORT" \
     -exportOptionsPlist build/ExportOptions.plist -allowProvisioningUpdates -quiet
 
+# The build phase signs the helpers without a secure timestamp, which notarization requires.
+for tool in "$APP/Contents/Helpers/"*; do
+    codesign --force --sign "$IDENTITY" --options runtime --timestamp "$tool"
+done
+codesign --force --sign "$IDENTITY" --options runtime --timestamp \
+    --preserve-metadata=entitlements,requirements,flags "$APP"
+
 codesign --verify --deep --strict "$APP"
 if ! codesign -d --entitlements - "$APP/Contents/Extensions/NTFSExtension.appex" 2>/dev/null \
         | grep -q "com.apple.developer.fskit.fsmodule"; then
