@@ -5,13 +5,8 @@ struct NTFSForMacApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra {
-            MenuContentView(model: appDelegate.model, windows: appDelegate.windows)
-        } label: {
-            Image(systemName: "externaldrive.fill")
-                .accessibilityLabel("NTFS for Mac")
-        }
-        .menuBarExtraStyle(.window)
+        // The menu bar icon comes from `StatusItemController`; the app has no scenes of its own.
+        Settings { EmptyView() }
     }
 }
 
@@ -19,10 +14,14 @@ struct NTFSForMacApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel()
     lazy var windows = WindowPresenter(model: model)
+    private var statusItem: StatusItemController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             return
+        }
+        statusItem = StatusItemController { [model, windows] in
+            MenuContentView(model: model, windows: windows)
         }
         model.start()
         if !UserDefaults.standard.bool(forKey: WindowPresenter.welcomeSeenKey) {

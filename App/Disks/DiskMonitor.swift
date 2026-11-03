@@ -49,6 +49,17 @@ final class DiskMonitor {
         }
     }
 
+    /// Re-reads free space, which Disk Arbitration does not report changes to.
+    func refreshUsage() {
+        for index in disks.indices {
+            guard let mount = disks[index].mount,
+                  let current = Self.mountInfo(mount.path),
+                  current != mount
+            else { continue }
+            disks[index].mount = current
+        }
+    }
+
     private func refresh(_ disk: DADisk) {
         guard let description = DADiskCopyDescription(disk) as? [String: Any],
               let bsdName = description[kDADiskDescriptionMediaBSDNameKey as String] as? String

@@ -27,6 +27,7 @@
 		81E8DD3BB10DDA0C46DECBBE /* StatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F1337D82B88081886B0D90 /* StatusText.swift */; };
 		83A6BC4C5267BA4785468290 /* NTFSShared in Frameworks */ = {isa = PBXBuildFile; productRef = 9091DDCAC0085BCCFDA9BBB5 /* NTFSShared */; };
 		877FE0433EC5F2BB784DAACD /* NTFSFileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15071AB9EFF277E01AC8899C /* NTFSFileSystem.swift */; };
+		8782B188F481EFBC24731274 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7960144BF1EE5310C679D219 /* StatusItemController.swift */; };
 		8FD2503D008C45F79C1469D9 /* MountPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C5720C2030DBA3BEB6B901 /* MountPolicyTests.swift */; };
 		936BC37485E6DF5BC9F4117B /* FSKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EA07CD8B87B5F9A8E83FDCD1 /* FSKit.framework */; };
 		98042B7BA8B0C2F551ED66B3 /* VolumePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F4E02B60904B675A22BE39 /* VolumePreferences.swift */; };
@@ -91,6 +92,7 @@
 		661B0D9B14D475ABA2FB1AF8 /* NTFSForMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NTFSForMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6850571F3F0A04BD8C9F9929 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6A4BF346B8916DEA7F567FAB /* MountController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MountController.swift; sourceTree = "<group>"; };
+		7960144BF1EE5310C679D219 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 		7EFB185B4C07D3468995DAE1 /* DiskRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskRowView.swift; sourceTree = "<group>"; };
 		896015FE89BFF05D526362A0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8D5653F5FF45E02C6E1A9C7F /* ErrnoMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrnoMapping.swift; sourceTree = "<group>"; };
@@ -263,6 +265,7 @@
 				7EFB185B4C07D3468995DAE1 /* DiskRowView.swift */,
 				D013B22C5C1D8E347B9B1A5C /* MenuContentView.swift */,
 				B4553E4B4FCAE427951A7B71 /* SettingsView.swift */,
+				7960144BF1EE5310C679D219 /* StatusItemController.swift */,
 				B56072589CD9D5143608846D /* WelcomeView.swift */,
 				FDFD749A4B9B1A12C2E7E3D7 /* WindowPresenter.swift */,
 			);
@@ -406,6 +409,7 @@
 				740634C20E060C4E74581D3E /* NTFSForMacApp.swift in Sources */,
 				336F584844A3A7F92B7409ED /* Notifier.swift in Sources */,
 				13E226E2539DD40C14F6AEE2 /* SettingsView.swift in Sources */,
+				8782B188F481EFBC24731274 /* StatusItemController.swift in Sources */,
 				81E8DD3BB10DDA0C46DECBBE /* StatusText.swift in Sources */,
 				98042B7BA8B0C2F551ED66B3 /* VolumePreferences.swift in Sources */,
 				2FD75A2114F310F87AD54AC7 /* WelcomeView.swift in Sources */,
