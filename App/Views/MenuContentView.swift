@@ -47,6 +47,13 @@ struct MenuContentView: View {
 
             Divider()
 
+            Button {
+                windows.showMain()
+            } label: {
+                Label("Open NTFS for Mac…", systemImage: "macwindow")
+            }
+            .buttonStyle(.borderless)
+
             HStack {
                 Button("Settings…") { windows.showSettings() }
                 Button("Setup Guide") { windows.showWelcome() }
@@ -58,12 +65,6 @@ struct MenuContentView: View {
         .padding(14)
         .frame(width: 340)
         .onAppear { model.extensionStatus.refresh() }
-        .task {
-            while !Task.isCancelled {
-                model.inventory.refreshUsage()
-                try? await Task.sleep(for: .seconds(2))
-            }
-        }
     }
 }
 

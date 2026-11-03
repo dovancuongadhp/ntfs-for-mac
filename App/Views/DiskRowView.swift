@@ -30,24 +30,6 @@ struct DiskRowView: View {
                 }
             }
 
-            if let mount = disk.mount, mount.totalBytes > 0 {
-                let used = mount.totalBytes - min(mount.freeBytes, mount.totalBytes)
-                ProgressView(value: Double(used), total: Double(mount.totalBytes))
-                Text("\(used.formatted(.byteCount(style: .file))) of \(mount.totalBytes.formatted(.byteCount(style: .file))) used")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-
-            if disk.isRecognized {
-                Toggle("Allow writing", isOn: Binding(
-                    get: { model.isWriteEnabled(disk) },
-                    set: { model.setWriteEnabled($0, for: disk) }
-                ))
-                .toggleStyle(.switch)
-                .controlSize(.small)
-                .disabled(isBusy || !disk.isWritableMedia)
-            }
-
             if state == .readOnly(.uncleanJournal), model.isWriteEnabled(disk), !isBusy {
                 Button("Allow Writing Anyway…") { AllowWritingConfirmation.run(model: model, disk: disk) }
                     .controlSize(.small)
