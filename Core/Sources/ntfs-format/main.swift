@@ -9,13 +9,20 @@ func formatPartition() throws {
     let request = try FormatRequest.parse(Array(CommandLine.arguments.dropFirst()))
     let facts = try DeviceInspector.facts(for: request.device)
     try FormatGuard.check(request, facts: facts)
+    try MountBlocker.blocking(facts.wholeDevice) {
+        try format(request, facts: facts)
+    }
+}
 
+func format(_ request: FormatRequest, facts: DeviceFacts) throws {
     var table: (original: [UInt8], typeField: Int)?
     if facts.scheme == FormatGuard.mbrScheme, let index = facts.partitionID {
         let block = try RawDisk.readFirstBlock(of: facts.wholeDevice, blockSize: Int(facts.blockSize))
         let typeField = try MBR.typeFieldOffset(
             in: block, index: index, start: request.offset, size: request.size, blockSize: facts.blockSize)
         if block[typeField] != MBR.ntfsType {
+            // Refuse a busy disk now, while nothing has been erased.
+            try RawDisk.checkWritable(facts.wholeDevice)
             table = (block, typeField)
         }
     }
