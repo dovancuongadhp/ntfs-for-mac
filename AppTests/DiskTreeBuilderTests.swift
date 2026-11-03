@@ -59,6 +59,8 @@ struct DiskTreeBuilderTests {
         let disk = try #require(DiskTreeBuilder.build(Fixture.internalMac).first)
         #expect(disk.isInternal)
         #expect(disk.sidebarPartitions.map(\.name) == ["Macintosh HD", "Data"])
+        let system = try #require(disk.partitions.first { $0.bsdName == "disk3s1" })
+        #expect(system.mount?.path.path == "/")
         let store = try #require(disk.partitions.first { $0.bsdName == "disk0s2" })
         #expect(store.isHidden)
         let preboot = try #require(disk.partitions.first { $0.bsdName == "disk3s2" })

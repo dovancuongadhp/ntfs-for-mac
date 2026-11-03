@@ -3,7 +3,15 @@ import Foundation
 /// Turns flat DiskArbitration records into physical disks with their partitions.
 enum DiskTreeBuilder {
     static func build(_ infos: [DiskInfo]) -> [PhysicalDisk] {
-        let infos = infos.filter { !isSnapshot($0.bsdName) }
+        let snapshots = infos.filter { isSnapshot($0.bsdName) }
+        let infos = infos.filter { !isSnapshot($0.bsdName) }.map { info in
+            guard info.mount == nil,
+                  let snapshot = snapshots.first(where: { $0.mount != nil && snapshotParent($0.bsdName) == info.bsdName })
+            else { return info }
+            var info = info
+            info.mount = snapshot.mount
+            return info
+        }
         let containers = infos.filter { $0.isWhole && $0.content == DiskContent.apfsContainer }
         let wholes = infos.filter { $0.isWhole && $0.content != DiskContent.apfsContainer }
         let wholeNames = Set(wholes.map(\.bsdName))
@@ -111,6 +119,12 @@ enum DiskTreeBuilder {
     /// APFS snapshot devices (`disk3s1s1`), such as the sealed system snapshot macOS boots from.
     private static func isSnapshot(_ bsdName: String) -> Bool {
         bsdName.range(of: "^disk[0-9]+s[0-9]+s[0-9]+$", options: .regularExpression) != nil
+    }
+
+    /// The volume a snapshot device belongs to: `disk3s1` for `disk3s1s1`.
+    private static func snapshotParent(_ bsdName: String) -> String? {
+        guard let suffix = bsdName.range(of: "s[0-9]+$", options: .regularExpression) else { return nil }
+        return String(bsdName[..<suffix.lowerBound])
     }
 
     private static func diskOrder(_ a: DiskInfo, _ b: DiskInfo) -> Bool {
