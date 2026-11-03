@@ -34,10 +34,12 @@ Applications. Gỡ bỏ: kéo app vào Thùng rác.
 - [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
 - [Cài đặt](#cài-đặt)
 - [Cách sử dụng](#cách-sử-dụng)
+- [Quản lý ổ và định dạng](#quản-lý-ổ-và-định-dạng)
 - [Khi ổ chỉ mở ở chế độ chỉ đọc](#khi-ổ-chỉ-mở-ở-chế-độ-chỉ-đọc)
 - [Giới hạn](#giới-hạn)
 - [Gỡ bỏ](#gỡ-bỏ)
 - [Câu hỏi thường gặp](#câu-hỏi-thường-gặp)
+- [Phiên bản](#phiên-bản)
 - [Báo lỗi](#báo-lỗi)
 - [Cách hoạt động](#cách-hoạt-động)
 - [Tự build từ mã nguồn](#tự-build-từ-mã-nguồn)
@@ -51,6 +53,8 @@ Applications. Gỡ bỏ: kéo app vào Thùng rác.
   sao chép, di chuyển, đổi tên, xoá, tạo thư mục.
 - **Biểu tượng trên thanh menu** — xem mọi ổ NTFS đang cắm cùng trạng thái và dung lượng đã dùng; gắn, đẩy ra
   hoặc mở ổ trong Finder; tắt ghi cho ổ nào bạn muốn giữ ở chế độ chỉ đọc.
+- **Quản lý ổ** — cửa sổ theo phong cách Disk Utility hiển thị mọi ổ đang cắm cùng các phân vùng, và định dạng một
+  phân vùng hoặc cả ổ ngoài thành NTFS, exFAT, FAT32 hay APFS. Ổ trong máy và ổ chứa macOS được bảo vệ.
 - **Bảo vệ dữ liệu** — khi ghi có thể gây hỏng dữ liệu (Windows đang ngủ đông, ổ chưa được đẩy ra an toàn,
   Windows yêu cầu kiểm tra ổ, hoặc có lỗi ghi), ổ sẽ được mở ở chế độ chỉ đọc kèm lý do và cách khắc phục.
 - **Không sinh tệp `._` rác** — thuộc tính mở rộng của macOS (thẻ Finder, nguồn tải về, Finder info…) được lưu
@@ -79,7 +83,8 @@ Applications. Gỡ bỏ: kéo app vào Thùng rác.
    ```sh
    xattr -dr com.apple.quarantine "/Applications/NTFS for Mac.app"
    ```
-4. **Bật tiện ích mở rộng hệ thống tệp.** Cửa sổ chào mừng có nút **Mở Cài đặt hệ thống**, đưa bạn tới
+4. **Bật tiện ích mở rộng hệ thống tệp.** Lần mở đầu tiên, ứng dụng hiện trang **Cài đặt**, có nút
+   **Mở Cài đặt hệ thống** đưa bạn tới
    **Cài đặt chung → Mục đăng nhập & tiện ích mở rộng → Tiện ích mở rộng hệ thống tệp**. Bật **NTFS for Mac**.
 5. **Cắm ổ NTFS.** Ổ hiện trong Finder và ghi được ngay. Nếu ổ đã cắm từ trước, bấm **Gắn** cạnh tên ổ trên
    thanh menu.
@@ -102,7 +107,8 @@ NTFS for Mac nằm trên thanh menu (không hiện trên Dock). Bấm vào biể
 | **Gắn** | Gắn ổ đang cắm nhưng chưa được gắn |
 | Nút đẩy ra | Đẩy ổ ra an toàn |
 
-Trong menu còn có **Cài đặt…**, nơi bạn có thể:
+Trong menu còn có **Mở NTFS for Mac…** để mở [cửa sổ chính](#quản-lý-ổ-và-định-dạng). **Cài đặt…** mở cửa sổ
+ở trang **Cài đặt** (cũng nằm cuối thanh bên), nơi bạn có thể:
 
 - bật **Mở NTFS for Mac khi đăng nhập**,
 - chọn **Ngôn ngữ** (Theo hệ thống, English, Tiếng Việt),
@@ -110,6 +116,35 @@ Trong menu còn có **Cài đặt…**, nơi bạn có thể:
 
 > [!IMPORTANT]
 > Luôn **đẩy ổ ra** (trong Finder hoặc trên thanh menu) trước khi rút, để mọi thay đổi được ghi hết vào ổ.
+
+## Quản lý ổ và định dạng
+
+Chọn **Mở NTFS for Mac…** trên thanh menu để mở cửa sổ chính. Thanh bên liệt kê mọi ổ đang cắm, chia thành
+**Ổ ngoài** và **Trong máy**, kèm các phân vùng bên dưới. Chọn một phân vùng để xem định dạng, dung lượng đã dùng
+và trạng thái NTFS; chọn một ổ để xem model, kiểu kết nối, bảng phân vùng và bản đồ phân vùng. Thanh công cụ có
+**Gắn**/**Tháo**, **Đẩy ra**, **Hiện trong Finder** và **Định dạng…**, dùng được cho mọi ổ, không chỉ ổ NTFS.
+
+**Định dạng…** xoá phân vùng đang chọn, hoặc xoá toàn bộ ổ khi bạn chọn chính ổ đó:
+
+| Tùy chọn | Lựa chọn |
+| --- | --- |
+| Định dạng | NTFS, exFAT, FAT32, APFS |
+| Bảng phân vùng (chỉ khi xoá cả ổ) | GUID (GPT) hoặc Master Boot Record (MBR) |
+| Tùy chọn NTFS | Kích thước cluster; **Định dạng nhanh** (tắt đi để ghi số 0 lên toàn bộ phân vùng, mất nhiều thời gian hơn) |
+
+Việc định dạng được thiết kế để không bao giờ xoá nhầm:
+
+- Hộp thoại liệt kê chính xác phần nào sẽ bị xoá và phần nào không, và bạn phải gõ tên ổ để xác nhận.
+- Ổ được kiểm tra lại ngay trước mỗi bước. Nếu ổ bị rút ra, bị thay bằng ổ khác hoặc đã thay đổi, việc định dạng
+  dừng lại và không có gì bị xoá.
+- **Ổ trong máy, ổ chứa macOS đang chạy và ổ chứa NTFS for Mac được bảo vệ.** Các ổ này vẫn hiển thị nhưng không
+  thể tháo, đẩy ra hay định dạng. Ảnh đĩa cũng không thể định dạng.
+- Định dạng NTFS chạy một công cụ nhỏ với quyền quản trị viên, bạn cấp trong hộp thoại mật khẩu chuẩn của macOS.
+  NTFS for Mac không bao giờ thấy mật khẩu của bạn.
+- Xoá **toàn bộ ổ** thành NTFS gồm hai bước: macOS xoá ổ thành exFAT trước, rồi hỏi mật khẩu để chuyển phân vùng
+  sang NTFS. Nếu bạn hủy hộp thoại đó, ổ vẫn là exFAT.
+- Khi định dạng một phân vùng Mac (APFS hoặc Mac OS Extended) thành NTFS, loại phân vùng cũng được đổi để Windows
+  nhận ra.
 
 ## Khi ổ chỉ mở ở chế độ chỉ đọc
 
@@ -128,9 +163,9 @@ NTFS for Mac không bao giờ ép ghi vào ổ đang ở trạng thái có thể
 
 ## Giới hạn
 
-Phiên bản 1 **chưa hỗ trợ**:
+NTFS for Mac **chưa hỗ trợ**:
 
-- định dạng ổ sang NTFS,
+- đổi kích thước, thêm hoặc xoá phân vùng (chỉ định dạng phân vùng có sẵn hoặc xoá toàn bộ ổ),
 - sửa lỗi ổ (hãy dùng `chkdsk` trên Windows),
 - chỉnh sửa phân quyền NTFS (ACL),
 - ổ mã hoá BitLocker và tệp mã hoá EFS.
@@ -174,7 +209,7 @@ Không. FSKit trên các bản macOS cũ hơn chưa có đủ API để đọc g
 <details>
 <summary><b>Ổ không hiện ra, hoặc hiện "Không hỗ trợ".</b></summary>
 
-Ứng dụng chỉ liệt kê ổ NTFS, nên trước hết hãy kiểm tra định dạng của ổ trong Disk Utility. Ổ hiện
+Thanh menu chỉ liệt kê ổ NTFS, nên trước hết hãy kiểm tra định dạng của ổ trong cửa sổ chính. Ổ hiện
 **Không hỗ trợ — ổ mã hóa BitLocker hoặc bị hỏng** là ổ đang mã hoá BitLocker (tắt BitLocker trên Windows) hoặc
 bị lỗi (chạy `chkdsk /f` cho ổ trên Windows).
 </details>
@@ -185,6 +220,19 @@ bị lỗi (chạy `chkdsk /f` cho ổ trên Windows).
 Có. NTFS for Mac là phần mềm tự do theo giấy phép GNU GPL v2 trở lên: không giới hạn thời gian dùng thử, không
 quảng cáo, không thu thập dữ liệu.
 </details>
+
+## Phiên bản
+
+Phiên bản được đánh số `chính.phụ.sửa-lỗi`. Giống macOS, mỗi phiên bản chính có thêm một tên riêng, ở đây là tên
+một loài hoa bằng tiếng Anh và không bao giờ dùng lại. Các bản cập nhật phụ (thêm tính năng) và sửa lỗi giữ tên của
+phiên bản chính.
+
+| Phiên bản | Tên | Điểm nổi bật |
+| --- | --- | --- |
+| 2.x | **Lotus** (hoa sen) | Quản lý ổ và định dạng ổ, kể cả NTFS |
+| 1.0.x | — | Bản đầu tiên: đọc và ghi ổ NTFS trong Finder |
+
+Xem [nhật ký thay đổi](CHANGELOG.md) để biết mọi thay đổi.
 
 ## Báo lỗi
 
@@ -203,7 +251,8 @@ log show --last 10m --predicate 'subsystem BEGINSWITH "com.docuong.ntfsformac"'
 
 ```
 NTFS for Mac.app
-├── Contents/MacOS/NTFS for Mac                ← ứng dụng thanh menu (SwiftUI)
+├── Contents/MacOS/NTFS for Mac                ← ứng dụng thanh menu và quản lý ổ (SwiftUI)
+├── Contents/Helpers/ntfs-format, ntfs-mkfs    ← công cụ định dạng NTFS, chạy với quyền quản trị viên
 └── Contents/Extensions/NTFSExtension.appex    ← tiện ích hệ thống tệp FSKit
         └── NTFSCore → libntfs-3g              ← lõi đọc ghi NTFS
 ```
@@ -212,6 +261,8 @@ NTFS for Mac.app
   an toàn để gắn đọc-ghi hay không, rồi yêu cầu FSKit gắn ổ bằng tiện ích mở rộng.
 - **Tiện ích FSKit** (`ntfsrw`) chạy ở chế độ người dùng, chuyển các thao tác của Finder thành lời gọi tới
   libntfs-3g để đọc ghi trực tiếp cấu trúc NTFS trên thiết bị.
+- **Định dạng** dùng `diskutil` cho exFAT, FAT32, APFS và bảng phân vùng. Với NTFS, công cụ `ntfs-format` kiểm tra
+  lại phân vùng, chặn không cho phân vùng bị gắn trong lúc làm việc rồi chạy `mkntfs` của ntfs-3g.
 
 ## Tự build từ mã nguồn
 
@@ -245,6 +296,7 @@ Thay app bằng một bản ký khác sẽ huỷ đăng ký tiện ích cho tớ
 | `xcodebuild -scheme NTFSForMac CODE_SIGNING_ALLOWED=NO test` | Unit test của ứng dụng |
 | `scripts/build-local.sh` | Build Release và DMG cho máy của bạn: ký bằng chứng chỉ "Apple Development" miễn phí nếu có, nếu không thì ký ad hoc |
 | `scripts/integration-test.sh` | Gắn một ảnh NTFS thử qua tiện ích đã cài và kiểm tra dữ liệu còn nguyên sau khi gắn lại |
+| `scripts/format-integration-test.sh` | Chỉ định dạng ảnh đĩa tạm (không bao giờ đụng tới ổ thật) bằng công cụ đã build và `diskutil`, rồi kiểm tra kết quả |
 | `scripts/make-dmg.sh [app] [dmg]` | Đóng gói app thành DMG kéo-thả để cài (mặc định dùng bản Release chưa ký) |
 | `scripts/release.sh` | Archive, ký Developer ID, công chứng, staple và tạo DMG cuối cùng |
 | `swift scripts/make-icon.swift` | Tạo lại biểu tượng ứng dụng |
@@ -253,9 +305,9 @@ Thay app bằng một bản ký khác sẽ huỷ đăng ký tiện ích cho tớ
 
 | Đường dẫn | Nội dung |
 | --- | --- |
-| `App/` | Ứng dụng thanh menu: theo dõi ổ (DiskArbitration), gắn ổ, cài đặt từng ổ, cửa sổ chào mừng và cài đặt |
+| `App/` | Ứng dụng thanh menu và quản lý ổ: danh sách ổ (DiskArbitration), gắn ổ, định dạng, cài đặt từng ổ, cửa sổ chính và trang cài đặt |
 | `Extension/` | Tiện ích hệ thống tệp FSKit (`ntfsrw`) |
-| `Core/` | Swift package: ntfs-3g (`CNTFS`), API Swift bọc ngoài (`NTFSCore`), nhận diện boot sector (`NTFSProbe`) và các định danh dùng chung giữa app và tiện ích (`NTFSShared`) |
+| `Core/` | Swift package: ntfs-3g (`CNTFS`), API Swift bọc ngoài (`NTFSCore`), nhận diện boot sector (`NTFSProbe`), công cụ định dạng NTFS (`NTFSFormat`, `ntfs-format`) và các định danh dùng chung giữa app và tiện ích (`NTFSShared`) |
 | `AppTests/` | Unit test của ứng dụng |
 | `scripts/` | Script build, đóng gói, phát hành và kiểm thử tích hợp |
 | `docs/` | Tài liệu thiết kế và kế hoạch triển khai |

@@ -13,15 +13,15 @@ struct MenuContentView: View {
                 ExtensionDisabledBanner(model: model)
             }
 
-            if model.monitor.disks.isEmpty {
+            if model.inventory.disks.isEmpty {
                 Text("Connect a Windows (NTFS) drive and it will appear here.")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, 8)
             } else {
-                ForEach(model.monitor.disks) { disk in
+                ForEach(model.inventory.disks) { disk in
                     DiskRowView(model: model, disk: disk)
-                    if disk.id != model.monitor.disks.last?.id {
+                    if disk.id != model.inventory.disks.last?.id {
                         Divider()
                     }
                 }
@@ -47,9 +47,15 @@ struct MenuContentView: View {
 
             Divider()
 
+            Button {
+                windows.showMain()
+            } label: {
+                Label("Open NTFS for Mac…", systemImage: "macwindow")
+            }
+            .buttonStyle(.borderless)
+
             HStack {
                 Button("Settings…") { windows.showSettings() }
-                Button("Setup Guide") { windows.showWelcome() }
                 Spacer()
                 Button("Quit") { NSApp.terminate(nil) }
             }
@@ -60,28 +66,9 @@ struct MenuContentView: View {
         .onAppear { model.extensionStatus.refresh() }
         .task {
             while !Task.isCancelled {
-                model.monitor.refreshUsage()
+                model.inventory.refreshUsage()
                 try? await Task.sleep(for: .seconds(2))
             }
         }
-    }
-}
-
-private struct ExtensionDisabledBanner: View {
-    let model: AppModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label("The file system extension is turned off", systemImage: "exclamationmark.circle.fill")
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(.orange)
-            Text("Drives stay read-only until you turn on NTFS for Mac in System Settings.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button("Open System Settings") { model.extensionStatus.openSystemSettings() }
-        }
-        .padding(10)
-        .background(.orange.opacity(0.1), in: .rect(cornerRadius: 8))
     }
 }

@@ -9,6 +9,34 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section {
+                HStack(spacing: 14) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .frame(width: 56, height: 56)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("NTFS for Mac").font(.title3.weight(.semibold))
+                        Text("Read and write Windows drives right in Finder.").foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            Section {
+                LabeledContent("Status") { extensionBadge }
+                if model.extensionStatus.isEnabled != true {
+                    Text("Open System Settings → General → Login Items & Extensions → File System Extensions, then switch on NTFS for Mac.")
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("Open System Settings") { model.extensionStatus.openSystemSettings() }
+                }
+            } header: {
+                Text("File system extension")
+            } footer: {
+                Text("Use Eject in Finder or in the menu bar so all changes are written to the drive.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 Toggle("Open NTFS for Mac at login", isOn: Binding(
                     get: { model.launchAtLogin.isEnabled },
                     set: { model.launchAtLogin.setEnabled($0) }
@@ -29,28 +57,42 @@ struct SettingsView: View {
                 }
             }
 
-            Section("File system extension") {
-                LabeledContent("Status") {
-                    switch model.extensionStatus.isEnabled {
-                    case true?: Text("Turned on")
-                    case false?: Text("Turned off")
-                    case nil where model.extensionStatus.hasChecked: Text("Not detected yet")
-                    case nil: ProgressView().controlSize(.small)
-                    }
-                }
-                Button("Open System Settings") { model.extensionStatus.openSystemSettings() }
-            }
-
             Section("About") {
                 LabeledContent("Version", value: Bundle.main.versionString)
+                LabeledContent("Author", value: "Đỗ Văn Cường")
+                LabeledContent("Source code") {
+                    Link("github.com/dovancuongadhp/ntfs-for-mac",
+                         destination: URL(string: "https://github.com/dovancuongadhp/ntfs-for-mac")!)
+                }
+                LabeledContent("Found a bug?") {
+                    Link("Report an issue",
+                         destination: URL(string: "https://github.com/dovancuongadhp/ntfs-for-mac/issues/new")!)
+                }
                 Text("Free and open source under the GNU General Public License v2 or later. NTFS support is provided by ntfs-3g.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("To uninstall, quit the app and move it to the Trash.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 440)
-        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: 620)
+        .frame(maxWidth: .infinity)
+        .onAppear { model.extensionStatus.refresh() }
+    }
+
+    @ViewBuilder private var extensionBadge: some View {
+        switch model.extensionStatus.isEnabled {
+        case true?:
+            Label("Turned on", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+        case false?:
+            Label("Not turned on yet", systemImage: "circle.dashed").foregroundStyle(.orange)
+        case nil where model.extensionStatus.hasChecked:
+            Text("Not detected yet")
+        case nil:
+            ProgressView().controlSize(.small)
+        }
     }
 }
 
@@ -89,7 +131,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 private extension Bundle {
     var versionString: String {
         let version = infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-        let build = infoDictionary?["CFBundleVersion"] as? String ?? "?"
-        return "\(version) (\(build))"
+        guard let codename = infoDictionary?["NTFSCodename"] as? String, !codename.isEmpty else { return version }
+        return "\(version) \(codename)"
     }
 }

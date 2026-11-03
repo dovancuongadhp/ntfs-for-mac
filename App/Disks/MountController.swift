@@ -58,6 +58,19 @@ final class MountController {
         }
     }
 
+    /// Mounts with whichever driver macOS picks, e.g. for exFAT or APFS.
+    func mountDefault(bsdName: String) async throws {
+        try await mount(try diskObject(bsdName), arguments: [])
+    }
+
+    /// Unmounts without forcing, so it fails while an app has files open.
+    func unmount(bsdName: String, whole: Bool = false) async throws {
+        let disk = try diskObject(bsdName)
+        let target = whole ? (DADiskCopyWholeDisk(disk) ?? disk) : disk
+        let options = whole ? kDADiskUnmountOptionWhole : kDADiskUnmountOptionDefault
+        try await unmount(target, options: DADiskUnmountOptions(options))
+    }
+
     private func diskObject(_ bsdName: String) throws -> DADisk {
         guard let disk = DADiskCreateFromBSDName(kCFAllocatorDefault, session, bsdName) else {
             throw DiskOperationError(message: String(localized: "The disk is no longer connected."))

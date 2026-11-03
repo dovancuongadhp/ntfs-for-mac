@@ -7,3 +7,4 @@ DerivedData/
 *.xcworkspace/xcuserdata/
 .swiftpm/
 Config/Local.xcconfig
+.superpowers/

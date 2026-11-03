@@ -10,7 +10,9 @@ cd "$(dirname "$0")/.."
 
 FS_TYPE="ntfsrw"
 # Resolved, because mount(8) reports /tmp as /private/tmp.
-WORK="$(cd "$(mktemp -d /tmp/ntfs-itest.XXXXXX)" && pwd -P)"
+WORK="$(mktemp -d /tmp/ntfs-itest.XXXXXX)"
+WORK="$(cd "$WORK" && pwd -P)"
+[[ "$WORK" == /private/tmp/ntfs-itest.* ]] || { echo "bad work dir: $WORK" >&2; exit 1; }
 IMAGE="$WORK/volume.img"
 MNT="$WORK/mnt"
 DEVICE=""
@@ -26,13 +28,36 @@ cleanup() {
     if $APP_WAS_RUNNING; then
         open -g -a "NTFS for Mac" || true
     fi
+    local keep=false
     if mount | grep -q " on $MNT "; then
-        umount "$MNT" 2>/dev/null || diskutil unmount force "$MNT" >/dev/null 2>&1 || true
+        for _ in 1 2 3 4 5; do
+            umount "$MNT" 2>/dev/null && break
+            sleep 1
+        done
+    fi
+    if mount | grep -q " on $MNT "; then
+        echo "WARNING: could not unmount $MNT; unmount it with: umount $MNT" >&2
+        keep=true
     fi
     if [[ -n "$DEVICE" ]]; then
-        hdiutil detach "$DEVICE" -force -quiet || true
+        local detached=false
+        for _ in 1 2 3 4 5; do
+            if hdiutil detach "$DEVICE" -quiet; then
+                detached=true
+                break
+            fi
+            sleep 1
+        done
+        if ! $detached; then
+            echo "WARNING: could not detach $DEVICE; detach it with: hdiutil detach $DEVICE" >&2
+            keep=true
+        fi
     fi
-    rm -rf "$WORK"
+    if $keep; then
+        echo "WARNING: left $WORK in place" >&2
+    elif [[ "$WORK" == /private/tmp/ntfs-itest.* ]]; then
+        rm -rf "$WORK"
+    fi
 }
 trap cleanup EXIT
 

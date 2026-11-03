@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct DiskRowView: View {
@@ -6,14 +5,14 @@ struct DiskRowView: View {
     let disk: NTFSDisk
 
     private var state: DiskState { model.state(of: disk) }
-    private var isBusy: Bool { model.busy.contains(disk.bsdName) }
+    private var isBusy: Bool { model.busy.contains(disk.bsdName) || model.isBeingFormatted(disk.bsdName) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
                 Image(systemName: "externaldrive.fill")
                     .font(.title2)
-                    .foregroundStyle(stateColor)
+                    .foregroundStyle(state.color)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(disk.name)
                         .font(.body.weight(.medium))
@@ -34,38 +33,16 @@ struct DiskRowView: View {
             if let mount = disk.mount, mount.totalBytes > 0 {
                 let used = mount.totalBytes - min(mount.freeBytes, mount.totalBytes)
                 ProgressView(value: Double(used), total: Double(mount.totalBytes))
+                    .tint(state.color)
                 Text("\(used.formatted(.byteCount(style: .file))) of \(mount.totalBytes.formatted(.byteCount(style: .file))) used")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
 
-            if disk.isRecognized {
-                Toggle("Allow writing", isOn: Binding(
-                    get: { model.isWriteEnabled(disk) },
-                    set: { model.setWriteEnabled($0, for: disk) }
-                ))
-                .toggleStyle(.switch)
-                .controlSize(.small)
-                .disabled(isBusy || !disk.isWritableMedia)
-            }
-
             if state == .readOnly(.uncleanJournal), model.isWriteEnabled(disk), !isBusy {
-                Button("Allow Writing Anyway…") { confirmAllowWriting() }
+                Button("Allow Writing Anyway…") { AllowWritingConfirmation.run(model: model, disk: disk) }
                     .controlSize(.small)
             }
-        }
-    }
-
-    private func confirmAllowWriting() {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = String(localized: "Allow writing to “\(disk.name)”?")
-        alert.informativeText = String(localized: "This drive wasn't ejected safely, or Windows didn't shut down cleanly. To write to it, NTFS for Mac clears the NTFS journal, and changes Windows hadn't finished saving may be lost.\n\nIf the drive belongs to a Windows PC that is hibernating or uses Fast Startup, shut that PC down fully instead.")
-        alert.addButton(withTitle: String(localized: "Allow Writing"))
-        alert.addButton(withTitle: String(localized: "Cancel"))
-        NSApp.activate()
-        if alert.runModal() == .alertFirstButtonReturn {
-            model.allowWritingAnyway(disk)
         }
     }
 
@@ -82,19 +59,27 @@ struct DiskRowView: View {
             } else if disk.isRecognized {
                 Button("Mount") { model.mount(disk) }
             }
-            Button {
-                model.eject(disk)
-            } label: {
-                Image(systemName: "eject.fill")
+            if !isOnProtectedDisk {
+                Button {
+                    model.eject(disk)
+                } label: {
+                    Image(systemName: "eject.fill")
+                }
+                .help("Eject")
+                .accessibilityLabel("Eject")
             }
-            .help("Eject")
-            .accessibilityLabel("Eject")
         }
         .buttonStyle(.borderless)
     }
 
-    private var stateColor: Color {
-        switch state {
+    private var isOnProtectedDisk: Bool {
+        model.inventory.partition(named: disk.bsdName).map { model.isProtected($0.disk) } ?? true
+    }
+}
+
+extension DiskState {
+    var color: Color {
+        switch self {
         case .readWrite: .green
         case .readOnly, .systemReadOnly: .orange
         case .notMounted: .secondary

@@ -23,8 +23,15 @@ targets:
         codeSign: true
       - package: NTFSCore
         product: NTFSShared
+      - package: NTFSCore
+        product: NTFSFormat
+    postBuildScripts:
+      - name: Embed format helpers
+        script: '"$SRCROOT/scripts/embed-helpers.sh"'
+        basedOnDependencyAnalysis: false
     settings:
       base:
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
         PRODUCT_NAME: NTFS for Mac
         PRODUCT_BUNDLE_IDENTIFIER: com.docuong.ntfsformac
         INFOPLIST_FILE: App/Info.plist
@@ -68,5 +75,7 @@ schemes:
         NTFSForMac: all
         NTFSExtension: all
     test:
+      language: en
+      region: US
       targets:
         - NTFSForMacTests

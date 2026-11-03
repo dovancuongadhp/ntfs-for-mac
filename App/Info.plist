@@ -33,6 +33,8 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NTFSCodename</key>
+	<string>$(APP_CODENAME)</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Free software under GPL-2.0-or-later. NTFS support by ntfs-3g.</string>
 </dict>
