@@ -39,3 +39,4 @@ codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp=none \
 codesign --verify --deep --strict "$APP"
 
 scripts/make-dmg.sh "$APP"
+scripts/unregister-build-copies.sh

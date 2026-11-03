@@ -299,6 +299,7 @@ Thay app bằng một bản ký khác sẽ huỷ đăng ký tiện ích cho tớ
 | `scripts/format-integration-test.sh` | Chỉ định dạng ảnh đĩa tạm (không bao giờ đụng tới ổ thật) bằng công cụ đã build và `diskutil`, rồi kiểm tra kết quả |
 | `scripts/make-dmg.sh [app] [dmg]` | Đóng gói app thành DMG kéo-thả để cài (mặc định dùng bản Release chưa ký) |
 | `scripts/release.sh` | Archive, ký Developer ID, công chứng, staple và tạo DMG cuối cùng |
+| `scripts/unregister-build-copies.sh` | Gỡ các bản trong `build/` khỏi danh sách tiện ích của Cài đặt hệ thống (mỗi lần build lại thêm một bản). Hai script trên tự chạy nó; sau khi build hoặc chạy test bằng Xcode thì chạy tay |
 | `swift scripts/make-icon.swift` | Tạo lại biểu tượng ứng dụng |
 
 ### Cấu trúc dự án

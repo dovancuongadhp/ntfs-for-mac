@@ -91,6 +91,7 @@ echo "==> Notarizing the DMG"
 notarize "$DMG"
 xcrun stapler staple "$DMG"
 spctl --assess --type open --context context:primary-signature --verbose "$DMG"
+scripts/unregister-build-copies.sh
 
 echo "==> Done: $DMG"
 shasum -a 256 "$DMG"
