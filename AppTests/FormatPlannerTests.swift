@@ -67,6 +67,7 @@ struct FormatPlannerTests {
         #expect(job.steps == [
             .unmount("disk9s1", whole: false),
             .unmount("disk9s2", whole: false),
+            .diskutil(["apfs", "deleteContainer", "disk8s1", "NFMTEMP"]),
             .diskutil(["eraseVolume", "ExFAT", "NTFS", "disk8s1"]),
             .unmountErased("disk8s1"),
             .ntfsFormat(FormatRequest(device: "disk8s1", size: store.size, offset: store.offset!,
@@ -102,6 +103,7 @@ struct FormatPlannerTests {
         #expect(job.steps == [
             .unmount("disk9s1", whole: false),
             .unmount("disk9s2", whole: false),
+            .diskutil(["apfs", "deleteContainer", "disk8s1", "NFMTEMP"]),
             .diskutil(["eraseVolume", "ExFAT", "Backup", "disk8s1"]),
         ])
     }

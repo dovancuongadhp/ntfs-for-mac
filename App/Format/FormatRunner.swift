@@ -53,14 +53,12 @@ final class FormatRunner {
             try await unmountNewPartition(name)
         case .diskutil(let arguments):
             progress(.formatting)
-            if !erased {
-                try checkFingerprint(job.fingerprint)
-            }
+            try checkFingerprint(job.fingerprint, erased: erased)
             try await environment.runDiskutil(arguments)
         case .ntfsFormat(let request):
             progress(.formatting)
             // Also after diskutil re-typed the partition: it must still be the confirmed one.
-            try checkFingerprint(job.fingerprint)
+            try checkFingerprint(job.fingerprint, erased: erased)
             try await environment.runNTFSFormat(request)
         case .ntfsFormatNewPartition(let whole, let label, let clusterSize, let quick):
             progress(.formatting)
@@ -73,13 +71,15 @@ final class FormatRunner {
         }
     }
 
-    private func checkFingerprint(_ fingerprint: DiskFingerprint) throws {
+    private func checkFingerprint(_ fingerprint: DiskFingerprint, erased: Bool = false) throws {
         let environment = environment
         let current = DiskFingerprint.read(
             fingerprint.bsdName,
             freshInfo: { environment.freshInfo($0) },
             childNames: { environment.childNames(ofWhole: $0) })
-        guard current == fingerprint else { throw FormatError.diskChanged }
+        guard let current else { throw FormatError.diskChanged }
+        let matches = erased ? fingerprint.matchesErased(current) : current == fingerprint
+        guard matches else { throw FormatError.diskChanged }
     }
 
     private func unmount(_ name: String, whole: Bool) async throws {

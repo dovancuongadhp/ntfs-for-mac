@@ -33,6 +33,11 @@ enum FormatPlanner {
             steps.append(.diskutil(["eraseDisk", "APFS", options.name, "GPT", device.bsdName]))
         case .partition:
             steps += preparation.affected.filter { $0.mount != nil }.map { .unmount($0.bsdName, whole: false) }
+            if device.content?.uppercased() == DiskContent.apfsStore {
+                // diskutil won't erase an APFS physical store. Deleting its container
+                // with a new name keeps the partition, as an HFS+ placeholder.
+                steps.append(.diskutil(["apfs", "deleteContainer", device.bsdName, "NFMTEMP"]))
+            }
             if let diskutilName = options.fileSystem.diskutilName {
                 steps.append(.diskutil(["eraseVolume", diskutilName, options.name, device.bsdName]))
             } else {

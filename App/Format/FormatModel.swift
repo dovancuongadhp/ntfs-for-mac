@@ -58,6 +58,8 @@ struct FormatOptions: Equatable, Sendable {
 /// write to a known device, including ntfs-format after diskutil re-typed the
 /// partition, and formatting stops if any of it differs. Mount state and
 /// partition content are left out: unmounting and re-typing must not change it.
+/// Erasing can give a partition a new GUID, so after diskutil erased it only
+/// `matchesErased` holds.
 struct DiskFingerprint: Equatable, Sendable {
     struct Child: Equatable, Sendable {
         var bsdName: String
@@ -108,6 +110,14 @@ struct DiskFingerprint: Equatable, Sendable {
             }
         }
         return DiskFingerprint(info: info, whole: whole, children: children)
+    }
+
+    /// The same drive, and the same partition name, offset and size on it,
+    /// whatever GUID erasing gave the partition.
+    func matchesErased(_ current: DiskFingerprint) -> Bool {
+        var current = current
+        current.mediaUUID = mediaUUID
+        return current == self
     }
 }
 

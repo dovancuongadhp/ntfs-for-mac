@@ -304,27 +304,54 @@ struct FormatRunnerTests {
         let infos = Fixture.usbAPFS
         let store = infos[1]
         let environment = FakeFormatEnvironment(infos)
-        // The container goes away and the store becomes an exFAT partition.
+        // The container goes away and the store becomes an exFAT partition with
+        // a new GUID, as diskutil does on a real drive.
         environment.afterDiskutil = { [unowned environment] in
             for name in ["disk9", "disk9s1", "disk9s2"] { environment.infos[name] = nil }
             self.retype(environment, "disk8s1")
+            environment.infos["disk8s1"]?.mediaUUID = "BCFB3AAC-703A-42B4-9A8A-D9C7573F8B7C"
         }
-        let request = FormatRequest(
-            device: "disk8s1", size: store.size, offset: store.offset!, label: "Data", clusterSize: nil, quick: true)
-        try await FormatRunner(environment: environment).run(job([
-            .unmount("disk9s1", whole: false),
-            .unmount("disk9s2", whole: false),
-            .diskutil(["eraseVolume", "ExFAT", "NTFS", "disk8s1"]),
-            .unmountErased("disk8s1"),
-            .ntfsFormat(request),
-        ], device: store, in: infos)) { _ in }
+        try await FormatRunner(environment: environment).run(apfsStoreJob(store, in: infos)) { _ in }
         #expect(environment.log == [
             "unmount disk9s1",
             "unmount disk9s2",
+            "diskutil apfs deleteContainer disk8s1 NFMTEMP",
             "diskutil eraseVolume ExFAT NTFS disk8s1",
             "unmount disk8s1",
             "ntfs-format disk8s1",
         ])
+    }
+
+    @Test func partitionMovedWhileErasedIsNotFormattedAsNTFS() async {
+        let infos = Fixture.usbAPFS
+        let store = infos[1]
+        let environment = FakeFormatEnvironment(infos)
+        environment.afterDiskutil = { [unowned environment] in
+            for name in ["disk9", "disk9s1", "disk9s2"] { environment.infos[name] = nil }
+            self.retype(environment, "disk8s1")
+            environment.infos["disk8s1"]?.offset = store.offset! + 4096
+        }
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive changed", partition: true)) {
+            try await FormatRunner(environment: environment).run(self.apfsStoreJob(store, in: infos)) { _ in }
+        }
+        #expect(environment.log == [
+            "unmount disk9s1",
+            "unmount disk9s2",
+            "diskutil apfs deleteContainer disk8s1 NFMTEMP",
+        ])
+    }
+
+    private func apfsStoreJob(_ store: DiskInfo, in infos: [DiskInfo]) -> FormatJob {
+        let request = FormatRequest(
+            device: "disk8s1", size: store.size, offset: store.offset!, label: "Data", clusterSize: nil, quick: true)
+        return job([
+            .unmount("disk9s1", whole: false),
+            .unmount("disk9s2", whole: false),
+            .diskutil(["apfs", "deleteContainer", "disk8s1", "NFMTEMP"]),
+            .diskutil(["eraseVolume", "ExFAT", "NTFS", "disk8s1"]),
+            .unmountErased("disk8s1"),
+            .ntfsFormat(request),
+        ], device: store, in: infos)
     }
 
     @Test func stopsWhenTheDriveChangesBeforeErasing() async {

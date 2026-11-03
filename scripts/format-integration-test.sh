@@ -22,9 +22,9 @@ if [[ $EUID -ne 0 ]]; then
         osascript -e 'quit app "NTFS for Mac"'
     fi
     status=0
-    osascript - "$BIN" "$PWD/scripts/format-integration-test.sh" "$LOG" >/dev/null <<'APPLESCRIPT' || status=$?
+    osascript - "$BIN" "$PWD/scripts/format-integration-test.sh" "$LOG" "$(id -u)" >/dev/null <<'APPLESCRIPT' || status=$?
 on run argv
-    set command to "BIN=" & quoted form of item 1 of argv & " " & quoted form of item 2 of argv
+    set command to "BIN=" & quoted form of item 1 of argv & " USER_UID=" & quoted form of item 4 of argv & " " & quoted form of item 2 of argv
     do shell script command & " > " & quoted form of item 3 of argv & " 2>&1" with administrator privileges
 end run
 APPLESCRIPT
@@ -37,6 +37,7 @@ APPLESCRIPT
 fi
 
 : "${BIN:?run this script without sudo}"
+: "${USER_UID:?run this script without sudo}"
 FORMAT="$BIN/ntfs-format"
 WORK="$(mktemp -d /tmp/ntfs-ftest.XXXXXX)"
 WORK="$(cd "$WORK" && pwd -P)"
@@ -50,9 +51,13 @@ KEEP_WORK=false
 
 mounted_at() { grep -q " on $1 " <<<"$(mount)"; }
 
+# FSKit runs the extension for the logged-in user, not for root.
+as_user() { launchctl asuser "$USER_UID" sudo -u "#$USER_UID" "$@"; }
+
 cleanup() {
+    local dev
     if mounted_at "$MNT"; then
-        umount "$MNT" 2>/dev/null || true
+        as_user umount "$MNT" 2>/dev/null || umount "$MNT" 2>/dev/null || true
     fi
     for dev in "${IMAGES[@]+"${IMAGES[@]}"}"; do
         # The name may now belong to another disk if the image went away.
@@ -129,9 +134,9 @@ new_image() { # name size layout fs
 ours() {
     [[ "$1" =~ ^disk[0-9]+(s[0-9]+)?$ ]] || fail "refusing to touch $1: not a disk name"
     local whole="${1%%s[0-9]*}"
-    local known=false
-    for dev in "${IMAGES[@]+"${IMAGES[@]}"}"; do
-        [[ "$dev" == "$whole" ]] && known=true
+    local known=false image
+    for image in "${IMAGES[@]+"${IMAGES[@]}"}"; do
+        [[ "$image" == "$whole" ]] && known=true
     done
     $known || fail "refusing to touch $1: not a scratch image"
     attached_from_work "$whole" || fail "refusing to touch $1: /dev/$whole is no longer attached from $WORK"
@@ -166,16 +171,21 @@ check_ntfs() { # partition
         diskutil unmount "/dev/$1" >/dev/null || fail "could not unmount the auto-mounted $1"
     fi
     ours "$1"
+    # The user mounts it, so give them this scratch partition and the mount point.
+    chown "$USER_UID" "/dev/$1" "/dev/r$1"
+    chmod 755 "$WORK"
     mkdir -p "$MNT"
-    mount -F -t ntfsrw "/dev/$1" "$MNT" || fail "$1 did not mount as NTFS"
+    chown "$USER_UID" "$MNT"
+    as_user mount -F -t ntfsrw "/dev/$1" "$MNT" || fail "$1 did not mount as NTFS"
     grep " on $MNT " <<<"$(mount)" | grep -q "(ntfsrw" || fail "$1 is not mounted by ntfsrw"
     head -c $((3 * 1024 * 1024 + 5)) /dev/urandom > "$WORK/data.bin"
-    cp "$WORK/data.bin" "$MNT/data.bin"
-    umount "$MNT"
+    chmod 644 "$WORK/data.bin"
+    as_user cp "$WORK/data.bin" "$MNT/data.bin" || fail "could not write to $1"
+    as_user umount "$MNT" || fail "could not unmount $1"
     ours "$1"
-    mount -F -t ntfsrw -o rdonly "/dev/$1" "$MNT" || fail "$1 did not remount"
-    cmp -s "$WORK/data.bin" "$MNT/data.bin" || fail "data on $1 changed after remount"
-    umount "$MNT"
+    as_user mount -F -t ntfsrw -o rdonly "/dev/$1" "$MNT" || fail "$1 did not remount"
+    as_user cmp -s "$WORK/data.bin" "$MNT/data.bin" || fail "data on $1 changed after remount"
+    as_user umount "$MNT" || fail "could not unmount $1"
 }
 
 mbr_type() { # whole disk -> type byte of entry 1
@@ -222,6 +232,11 @@ for fs in "ExFAT:exfat" "MS-DOS FAT32:msdos" "APFS:apfs" "ExFAT:exfat"; do
     name="${fs%%:*}"
     kind="${fs##*:}"
     ours "$P"
+    if [[ "$(info "$P" Content)" == "Apple_APFS" ]]; then
+        # As the app does: diskutil won't erase an APFS physical store.
+        diskutil apfs deleteContainer "$P" NFMTEMP >/dev/null || fail "deleteContainer failed"
+        ours "$P"
+    fi
     diskutil eraseVolume "$name" NFMTEST "$P" >/dev/null || fail "eraseVolume $name failed"
     if [[ "$kind" == "apfs" ]]; then
         [[ "$(info "$P" Content)" == "Apple_APFS" ]] || fail "$P is not an APFS store"
@@ -244,7 +259,7 @@ uuid_after="$(info "$P" DiskUUID 2>/dev/null || echo none)"
 echo "    partition GUID while APFS: $uuid_before"
 echo "    partition GUID re-typed:   $uuid_after"
 if [[ "$uuid_before" != "$uuid_after" ]]; then
-    echo "WARN: eraseVolume changed the partition GUID of $P; the app then stops safely before ntfs-format (the drive changed) and leaves the partition exFAT" >&2
+    echo "    (erasing gave the partition a new GUID; after erasing, the app checks the drive, partition name, offset and size instead)"
 fi
 expect_format 0 "$P" --label "Từ APFS" --quick
 check_ntfs "$P"
