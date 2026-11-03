@@ -45,7 +45,7 @@ struct PartitionDetailView: View {
             return (state.label, state.color)
         }
         guard let mount = partition.mount else { return (String(localized: "Not mounted"), .secondary) }
-        return mount.isReadOnly ? (String(localized: "Read-only"), .orange) : (String(localized: "Read & write"), .green)
+        return mount.isReadOnly ? (String(localized: "Read-only"), .orange) : (String(localized: "Read & write"), .blue)
     }
 
     private func usage(_ mount: NTFSDisk.Mount) -> some View {
