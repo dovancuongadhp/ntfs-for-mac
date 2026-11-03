@@ -11,5 +11,5 @@ LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchSe
 [[ -d build ]] || exit 0
 find "$PWD/build" -name "NTFS for Mac.app" -type d -prune -print0 \
     | while IFS= read -r -d '' app; do
-        "$LSREGISTER" -u "$app"
+        "$LSREGISTER" -u "$app" 2>/dev/null || true
     done
