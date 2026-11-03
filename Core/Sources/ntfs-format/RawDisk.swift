@@ -19,6 +19,12 @@ enum RawDisk {
         close(try open(wholeDevice, O_RDWR, ifBusy: .mounted))
     }
 
+    /// Opens and closes the whole disk read-write, which makes macOS re-probe
+    /// its partitions and DiskArbitration notice a new file system.
+    static func reprobe(_ wholeDevice: String) throws {
+        close(try open(wholeDevice, O_RDWR, busyRetries: 10))
+    }
+
     /// Writes `block` only if the disk still holds `expected`, so a table that
     /// changed since it was checked is never overwritten.
     static func replaceFirstBlock(of wholeDevice: String, expected: [UInt8], with block: [UInt8]) throws {

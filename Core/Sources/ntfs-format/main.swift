@@ -37,6 +37,13 @@ func format(_ request: FormatRequest, facts: DeviceFacts) throws {
         var block = table.original
         block[table.typeField] = MBR.ntfsType
         try RawDisk.replaceFirstBlock(of: facts.wholeDevice, expected: table.original, with: block)
+    } else {
+        // The file system is already written; a missed re-probe only delays DiskArbitration noticing it.
+        do {
+            try RawDisk.reprobe(facts.wholeDevice)
+        } catch {
+            FileHandle.standardError.write(Data("ntfs-format: warning: could not re-probe /dev/\(facts.wholeDevice) (\(error))\n".utf8))
+        }
     }
 }
 
