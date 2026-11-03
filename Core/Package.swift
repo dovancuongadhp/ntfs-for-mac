@@ -18,6 +18,7 @@ let package = Package(
         .library(name: "NTFSShared", targets: ["NTFSShared"]),
         .library(name: "NTFSFormat", targets: ["NTFSFormat"]),
         .executable(name: "ntfs-mkfs", targets: ["ntfs-mkfs"]),
+        .executable(name: "ntfs-format", targets: ["ntfs-format"]),
     ],
     targets: [
         .target(
@@ -46,6 +47,7 @@ let package = Package(
         .target(name: "NTFSShared"),
         .target(name: "NTFSCore", dependencies: ["CNTFS", "NTFSProbe", "NTFSShared"]),
         .target(name: "NTFSFormat"),
+        .executableTarget(name: "ntfs-format", dependencies: ["NTFSFormat"]),
         .testTarget(
             name: "NTFSCoreTests",
             dependencies: ["NTFSCore", "NTFSProbe", "NTFSShared", "NTFSFormat", "ntfs-mkfs"]
