@@ -9,7 +9,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 FS_TYPE="ntfsrw"
-WORK="$(mktemp -d /tmp/ntfs-itest.XXXXXX)"
+# Resolved, because mount(8) reports /tmp as /private/tmp.
+WORK="$(cd "$(mktemp -d /tmp/ntfs-itest.XXXXXX)" && pwd -P)"
 IMAGE="$WORK/volume.img"
 MNT="$WORK/mnt"
 DEVICE=""

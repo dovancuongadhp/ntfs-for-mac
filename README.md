@@ -85,8 +85,13 @@ Quit the app (menu → Quit) and drag **NTFS for Mac** from Applications to the 
 
 ## Building from source
 
-Requirements: Xcode 26 or later, [XcodeGen](https://github.com/yonaskolb/XcodeGen), and an Apple Developer account
-(the FSKit entitlement only works in a signed build).
+Requirements: Xcode 26 or later; [XcodeGen](https://github.com/yonaskolb/XcodeGen) only after editing `project.yml`.
+
+Without an Apple Developer account, `scripts/build-local.sh` builds an ad hoc signed app and `build/NTFS-for-Mac.dmg`.
+Install it from the DMG and enable the extension; this works on your own Mac. (Xcode itself refuses to sign the
+extension without a team, so run the script rather than building in Xcode.)
+
+With an account, for debugging in Xcode and for public releases:
 
 ```sh
 cp Config/Local.xcconfig.example Config/Local.xcconfig   # set DEVELOPMENT_TEAM to your Team ID
@@ -95,11 +100,13 @@ open NTFSForMac.xcodeproj                                # build and run the NTF
 ```
 
 Copy the built app to `/Applications` before enabling the extension; macOS only offers extensions from installed apps.
+Replacing the app with a differently signed copy unregisters the extension until it is enabled again.
 
 | Command | What it does |
 | --- | --- |
 | `swift test --package-path Core` | Unit tests for the NTFS core (libntfs-3g bridge), using generated disk images |
 | `xcodebuild -scheme NTFSForMac CODE_SIGNING_ALLOWED=NO test` | App unit tests |
+| `scripts/build-local.sh` | Ad hoc signed Release build and DMG, no developer account needed |
 | `scripts/integration-test.sh` | Mounts a scratch NTFS image through the installed extension and checks data survives a remount |
 | `scripts/make-dmg.sh [app] [dmg]` | Packages an app into a drag-to-install DMG (defaults to the unsigned Release build) |
 | `scripts/release.sh` | Archive, Developer ID signing, notarization, stapling and the final DMG |
