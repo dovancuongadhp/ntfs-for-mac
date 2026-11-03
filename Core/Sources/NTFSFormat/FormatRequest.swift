@@ -19,6 +19,12 @@ public struct FormatRequest: Equatable, Sendable {
         self.quick = quick
     }
 
+    /// BSD name of the disk holding the partition, e.g. `disk6`, or `nil` if
+    /// `device` doesn't name a partition.
+    public var wholeDevice: String? {
+        device.wholeMatch(of: /(disk[0-9]+)s[0-9]+/).map { String($0.1) }
+    }
+
     public var arguments: [String] {
         var arguments = ["--device", device, "--size", String(size), "--offset", String(offset), "--label", label]
         if let clusterSize {

@@ -11,11 +11,14 @@ enum MountBlocker {
             throw FormatToolError.ioError
         }
         let callback: DADiskMountApprovalCallback = refuseMount
-        DASessionSetDispatchQueue(session, DispatchQueue(label: "ntfs-format.mount-blocker"))
+        let queue = DispatchQueue(label: "ntfs-format.mount-blocker")
+        DASessionSetDispatchQueue(session, queue)
         DARegisterDiskMountApprovalCallback(session, nil, callback, name)
         defer {
             DAUnregisterCallback(session, unsafeBitCast(callback, to: UnsafeMutableRawPointer.self), name)
             DASessionSetDispatchQueue(session, nil)
+            // A callback already queued still reads `name`.
+            queue.sync {}
             free(name)
         }
         return try body()

@@ -37,6 +37,27 @@ enum DeviceInspector {
         )
     }
 
+    /// Waits up to about 5 s for the partition's device node to exist and for
+    /// DiskArbitration to report it at `size`. It must be seen twice in a row,
+    /// so a re-probe that hasn't finished isn't mistaken for a settled disk.
+    static func waitForPartition(_ device: String, size: UInt64) throws {
+        guard let session = DASessionCreate(kCFAllocatorDefault) else { throw FormatToolError.ioError }
+        var sightings = 0
+        for _ in 0..<20 {
+            let description = DADiskCreateFromBSDName(kCFAllocatorDefault, session, device)
+                .flatMap { DADiskCopyDescription($0) as? [String: Any] }
+            let reportedSize = (description?[kDADiskDescriptionMediaSizeKey as String] as? NSNumber)?.uint64Value
+            if access("/dev/" + device, F_OK) == 0, reportedSize == size {
+                sightings += 1
+                if sightings == 2 { return }
+            } else {
+                sightings = 0
+            }
+            usleep(250_000)
+        }
+        throw FormatToolError.changed
+    }
+
     /// The physical whole disk holding `/`, following APFS containers to their store.
     static func bootPhysicalDisk(_ session: DASession) -> String? {
         var info = statfs()

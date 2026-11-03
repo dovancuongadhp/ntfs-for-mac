@@ -7,9 +7,11 @@ import NTFSFormat
 
 func formatPartition() throws {
     let request = try FormatRequest.parse(Array(CommandLine.arguments.dropFirst()))
-    let facts = try DeviceInspector.facts(for: request.device)
-    try FormatGuard.check(request, facts: facts)
-    try MountBlocker.blocking(facts.wholeDevice) {
+    guard let wholeDevice = request.wholeDevice else { throw FormatToolError.notAPartition }
+    // Block mounts before inspecting, so nothing can be mounted after the check.
+    try MountBlocker.blocking(wholeDevice) {
+        let facts = try DeviceInspector.facts(for: request.device)
+        try FormatGuard.check(request, facts: facts)
         try format(request, facts: facts)
     }
 }
@@ -23,6 +25,8 @@ func format(_ request: FormatRequest, facts: DeviceFacts) throws {
         if block[typeField] != MBR.ntfsType {
             // Refuse a busy disk now, while nothing has been erased.
             try RawDisk.checkWritable(facts.wholeDevice)
+            // Opening the whole disk read-write makes macOS re-probe its partitions.
+            try DeviceInspector.waitForPartition(request.device, size: request.size)
             table = (block, typeField)
         }
     }

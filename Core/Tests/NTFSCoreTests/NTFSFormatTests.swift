@@ -14,6 +14,15 @@ struct FormatRequestTests {
         #expect(try FormatRequest.parse(full.arguments) == full)
     }
 
+    @Test func wholeDeviceComesFromThePartitionName() {
+        #expect(request.wholeDevice == "disk6")
+        for (device, whole) in [("disk12s10", "disk12"), ("disk6", nil), ("disk6s", nil), ("rdisk6s2", nil), ("disk6s2s1", nil), ("", nil)] {
+            var other = request
+            other.device = device
+            #expect(other.wholeDevice == whole)
+        }
+    }
+
     @Test(arguments: [
         ["--device"],
         ["--device", "disk6s2", "--size", "1", "--offset", "0", "--label", "A", "--force"],
