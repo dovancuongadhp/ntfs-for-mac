@@ -6,7 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Like macOS, every major version is named, here after a flower: 2.x is **Lotus**. Minor and patch updates keep the
-name of their major version, and a name is never reused. Versions 1.0.x have no name.
+name of their major version, and a name is never reused. Versions 1.0.x have no name. Releases are titled
+"NTFS for Mac 2.0.0 Lotus", tagged `v2.0.0` and built from branch `release-2.0.0-lotus`.
 
 ## [Unreleased]
 

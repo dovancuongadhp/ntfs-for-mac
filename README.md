@@ -226,6 +226,15 @@ Yes. NTFS for Mac is free software under the GNU GPL v2 or later: no trial perio
 
 Versions are numbered `major.minor.patch`. Like macOS, every major version also has a name, here an English
 flower name that is never reused. Minor (new features) and patch (fixes) updates keep the name of their major version.
+Each release carries its full version and name, so 2.0.0 and 2.0.1 never look alike:
+
+| | Pattern | Example |
+| --- | --- | --- |
+| Release title | NTFS for Mac *version* *Name* | NTFS for Mac 2.0.1 Lotus |
+| Git tag | v*version* | v2.0.1 |
+| Release branch | release-*version*-*name* | release-2.0.1-lotus |
+
+Unnamed versions just drop the name: NTFS for Mac 1.0.1, branch `release-1.0.1`.
 
 | Version | Name | Highlights |
 | --- | --- | --- |
