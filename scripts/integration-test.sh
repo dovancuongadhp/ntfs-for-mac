@@ -88,6 +88,19 @@ rm "$MNT/delete-me.txt"
 [[ ! -e "$MNT/delete-me.txt" ]] || fail "delete did not remove the file"
 mkdir "$MNT/empty-dir" && rmdir "$MNT/empty-dir"
 
+step "Extended attributes"
+xattr -w com.example.note "xin chào" "$MNT/Tiếng Việt.txt"
+xattr -w com.apple.metadata:kMDItemWhereFroms "https://example.com" "$MNT/Thư mục"
+[[ "$(xattr -p com.example.note "$MNT/Tiếng Việt.txt")" == "xin chào" ]] || fail "xattr value differs"
+xattr -d com.example.note "$MNT/Tiếng Việt.txt"
+xattr -p com.example.note "$MNT/Tiếng Việt.txt" >/dev/null 2>&1 && fail "xattr was not removed"
+xattr -w com.example.note "giữ lại" "$MNT/Tiếng Việt.txt"
+printf 'tagged' > "$WORK/tagged.txt"
+xattr -w com.example.origin "copied" "$WORK/tagged.txt"
+cp "$WORK/tagged.txt" "$MNT/tagged.txt"
+[[ "$(xattr -p com.example.origin "$MNT/tagged.txt")" == "copied" ]] || fail "cp dropped the xattr"
+[[ -z "$(find "$MNT" -name '._*')" ]] || fail "AppleDouble (._) files were created"
+
 (cd "$MNT" && find . -type f ! -name '._*' -print0 | sort -z | xargs -0 shasum -a 256) > "$WORK/expected.sha"
 EXPECTED_COUNT="$(wc -l < "$WORK/expected.sha" | tr -d ' ')"
 
@@ -96,6 +109,9 @@ unmount_volume
 mount_volume -o rdonly
 
 (cd "$MNT" && shasum -a 256 -c --quiet "$WORK/expected.sha") || fail "checksums differ after remount"
+[[ "$(xattr -p com.example.note "$MNT/Tiếng Việt.txt")" == "giữ lại" ]] || fail "xattr lost after remount"
+[[ "$(xattr -p com.apple.metadata:kMDItemWhereFroms "$MNT/Thư mục")" == "https://example.com" ]] \
+    || fail "directory xattr lost after remount"
 if ( : > "$MNT/should-fail.txt" ) 2>/dev/null; then
     fail "a read-only mount accepted a write"
 fi

@@ -1075,3 +1075,161 @@ int nb_set_flag(nb_volume *v, uint64_t id, uint32_t ntfs_flag, int on)
 	close_inode(ni, &res);
 	return res;
 }
+
+/* ---------------------------------------------------------------- xattrs */
+
+static ntfs_inode *open_xattr_owner(nb_volume *v, uint64_t id, int writing)
+{
+	if (writing && NVolReadOnly(v->vol)) {
+		errno = EROFS;
+		return NULL;
+	}
+	return open_inode(v, id);
+}
+
+int nb_xattr_list(nb_volume *v, uint64_t id, void *context, nb_xattr_fn fn)
+{
+	ntfs_inode *ni;
+	ntfs_attr_search_ctx *ctx;
+	int res = 0;
+
+	ni = open_xattr_owner(v, id, 0);
+	if (!ni)
+		return fail();
+	ctx = ntfs_attr_get_search_ctx(ni, NULL);
+	if (!ctx) {
+		res = fail();
+		goto out;
+	}
+	while (!ntfs_attr_lookup(AT_DATA, NULL, 0, CASE_SENSITIVE, 0, NULL, 0,
+			ctx)) {
+		ATTR_RECORD *a = ctx->attr;
+		char *name = NULL;
+		int stop;
+
+		/* Extents of one large stream repeat its name. */
+		if (!a->name_length || (a->non_resident && a->lowest_vcn))
+			continue;
+		if (ntfs_ucstombs((ntfschar *)((u8 *)a
+				+ le16_to_cpu(a->name_offset)),
+				a->name_length, &name, 0) < 0)
+			continue;
+		stop = fn(context, name);
+		free(name);
+		if (stop)
+			break;
+	}
+	ntfs_attr_put_search_ctx(ctx);
+out:
+	close_inode(ni, &res);
+	return res;
+}
+
+int64_t nb_xattr_get(nb_volume *v, uint64_t id, const char *name,
+		void *buffer, uint64_t buffer_size)
+{
+	ntfs_inode *ni;
+	ntfs_attr *na;
+	ntfschar *uname;
+	int64_t size = 0;
+	int len, res = 0;
+
+	ni = open_xattr_owner(v, id, 0);
+	if (!ni)
+		return fail();
+	len = to_unicode(v, name, &uname, FALSE);
+	if (len < 0) {
+		res = len;
+		goto out;
+	}
+	na = ntfs_attr_open(ni, AT_DATA, uname, len);
+	if (!na) {
+		res = errno == ENOENT ? -ENOATTR : fail();
+		goto free_name;
+	}
+	size = na->data_size;
+	if (buffer) {
+		if ((uint64_t)size > buffer_size)
+			res = -ERANGE;
+		else if (size && ntfs_attr_pread(na, 0, size, buffer) != size)
+			res = errno ? -errno : -EIO;
+	}
+	ntfs_attr_close(na);
+free_name:
+	free(uname);
+out:
+	close_inode(ni, &res);
+	return res < 0 ? res : size;
+}
+
+int nb_xattr_set(nb_volume *v, uint64_t id, const char *name,
+		const void *value, uint64_t size, nb_xattr_mode mode)
+{
+	ntfs_inode *ni;
+	ntfs_attr *na;
+	ntfschar *uname;
+	int len, exists, res = 0;
+
+	ni = open_xattr_owner(v, id, 1);
+	if (!ni)
+		return fail();
+	len = to_unicode(v, name, &uname, FALSE);
+	if (len < 0) {
+		res = len;
+		goto out;
+	}
+	exists = ntfs_attr_exist(ni, AT_DATA, uname, len);
+	if (exists && mode == NB_XATTR_CREATE) {
+		res = -EEXIST;
+	} else if (!exists && mode == NB_XATTR_REPLACE) {
+		res = -ENOATTR;
+	} else if (!exists) {
+		if (ntfs_attr_add(ni, AT_DATA, uname, len, (const u8 *)value,
+				(s64)size))
+			res = fail();
+	} else {
+		na = ntfs_attr_open(ni, AT_DATA, uname, len);
+		if (!na) {
+			res = fail();
+		} else {
+			if (ntfs_attr_truncate(na, 0))
+				res = fail();
+			else if (size && ntfs_attr_pwrite(na, 0, (s64)size,
+					value) != (s64)size)
+				res = errno ? -errno : -EIO;
+			ntfs_attr_close(na);
+		}
+	}
+	if (res == 0)
+		ntfs_inode_update_times(ni, NTFS_UPDATE_CTIME);
+	free(uname);
+out:
+	close_inode(ni, &res);
+	return res;
+}
+
+int nb_xattr_remove(nb_volume *v, uint64_t id, const char *name)
+{
+	ntfs_inode *ni;
+	ntfschar *uname;
+	int len, res = 0;
+
+	ni = open_xattr_owner(v, id, 1);
+	if (!ni)
+		return fail();
+	len = to_unicode(v, name, &uname, FALSE);
+	if (len < 0) {
+		res = len;
+		goto out;
+	}
+	if (!ntfs_attr_exist(ni, AT_DATA, uname, len))
+		res = -ENOATTR;
+	else if (ntfs_attr_remove(ni, AT_DATA, uname, len))
+		res = fail();
+	else
+		ntfs_inode_update_times(ni, NTFS_UPDATE_CTIME);
+	free(uname);
+out:
+	close_inode(ni, &res);
+	return res;
+}

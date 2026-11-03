@@ -87,7 +87,7 @@ public final class NTFSVolumeHandle: @unchecked Sendable {
         try check(nb_unmount(volume))
     }
 
-    private func mounted() throws(NTFSError) -> OpaquePointer {
+    func mounted() throws(NTFSError) -> OpaquePointer {
         guard let volume else { throw NTFSError(code: ENXIO) }
         return volume
     }

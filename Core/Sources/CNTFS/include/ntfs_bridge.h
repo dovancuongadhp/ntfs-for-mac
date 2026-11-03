@@ -140,6 +140,29 @@ int nb_set_times(nb_volume *volume, uint64_t id,
 		const struct timespec *birth_time);
 int nb_set_flag(nb_volume *volume, uint64_t id, uint32_t ntfs_flag, int on);
 
+/*
+ * Extended attributes, stored as named $DATA streams (alternate data
+ * streams). Names are stream names in UTF-8; a missing one is -ENOATTR.
+ */
+typedef enum {
+	NB_XATTR_ANY = 0,
+	NB_XATTR_CREATE = 1,	/* fail with -EEXIST if it exists */
+	NB_XATTR_REPLACE = 2,	/* fail with -ENOATTR if it doesn't */
+} nb_xattr_mode;
+
+/* Return non-zero to stop listing. */
+typedef int (*nb_xattr_fn)(void *context, const char *name);
+
+int nb_xattr_list(nb_volume *volume, uint64_t id, void *context,
+		nb_xattr_fn fn);
+/* Returns the value's size; copies it when buffer is non-NULL (-ERANGE if
+ * buffer_size is too small). */
+int64_t nb_xattr_get(nb_volume *volume, uint64_t id, const char *name,
+		void *buffer, uint64_t buffer_size);
+int nb_xattr_set(nb_volume *volume, uint64_t id, const char *name,
+		const void *value, uint64_t size, nb_xattr_mode mode);
+int nb_xattr_remove(nb_volume *volume, uint64_t id, const char *name);
+
 #ifdef __cplusplus
 }
 #endif

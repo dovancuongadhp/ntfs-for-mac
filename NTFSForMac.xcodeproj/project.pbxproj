@@ -17,6 +17,7 @@
 		432F5610225DC005FF4BC89C /* MountController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4BF346B8916DEA7F567FAB /* MountController.swift */; };
 		44FA1FDCE7B26526B7993D0C /* MenuContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D013B22C5C1D8E347B9B1A5C /* MenuContentView.swift */; };
 		4CABD3D47B024514CC5D0746 /* ErrnoMapping.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D5653F5FF45E02C6E1A9C7F /* ErrnoMapping.swift */; };
+		4E192C4761A10CAEC7BA74E1 /* NTFSVolume+Xattr.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F7BFC9133217E76EA936995 /* NTFSVolume+Xattr.swift */; };
 		4EBBC8D0398BACACFD67F40C /* NTFSExtensionMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5929B58E6CCF1651E339958 /* NTFSExtensionMain.swift */; };
 		579FA6D1513944EB3986E512 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 896015FE89BFF05D526362A0 /* Assets.xcassets */; };
 		64A9CBF7D85EBAC59FCBFE9A /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C6FA06A1D3F57B0578451189 /* Localizable.xcstrings */; };
@@ -86,6 +87,7 @@
 		510C89BA49A9EF5A36B48D87 /* NTFSForMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NTFSForMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		53BBF8CFF682971DCA20602B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		53F1337D82B88081886B0D90 /* StatusText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusText.swift; sourceTree = "<group>"; };
+		5F7BFC9133217E76EA936995 /* NTFSVolume+Xattr.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NTFSVolume+Xattr.swift"; sourceTree = "<group>"; };
 		661B0D9B14D475ABA2FB1AF8 /* NTFSForMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NTFSForMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6850571F3F0A04BD8C9F9929 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6A4BF346B8916DEA7F567FAB /* MountController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MountController.swift; sourceTree = "<group>"; };
@@ -214,6 +216,7 @@
 				0942A4EAAAA02062814B7446 /* NTFSVolume.swift */,
 				F3093C3CB59870E472CD6316 /* NTFSVolume+Operations.swift */,
 				F1CE78FD83C2790D1867F6AF /* NTFSVolume+ReadWrite.swift */,
+				5F7BFC9133217E76EA936995 /* NTFSVolume+Xattr.swift */,
 			);
 			path = Extension;
 			sourceTree = "<group>";
@@ -429,6 +432,7 @@
 				3925A4B1966CE528CC35FAAB /* NTFSItem.swift in Sources */,
 				006F37E15905B032E52D35F4 /* NTFSVolume+Operations.swift in Sources */,
 				F2E9E7093C63134CB71BE0CE /* NTFSVolume+ReadWrite.swift in Sources */,
+				4E192C4761A10CAEC7BA74E1 /* NTFSVolume+Xattr.swift in Sources */,
 				A846BD35DBE53B6FE689CC89 /* NTFSVolume.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

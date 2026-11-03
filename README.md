@@ -14,6 +14,7 @@ Read and write Windows (NTFS) drives right in Finder on macOS — free and open 
 - Cắm ổ NTFS vào là ổ hiện trong Finder và **ghi được ngay**: sao chép, đổi tên, xoá, tạo thư mục như ổ bình thường.
 - Biểu tượng trên thanh menu liệt kê các ổ NTFS, cho phép **tắt ghi cho từng ổ** (chỉ đọc), gắn lại và đẩy ra.
 - Tự chuyển sang chỉ đọc và báo lý do khi ổ không an toàn để ghi: Windows đang ngủ đông (Fast Startup), nhật ký chưa xử lý xong, ổ bị đánh dấu cần kiểm tra, hoặc lỗi đọc/ghi.
+- Lưu thuộc tính mở rộng của macOS (thẻ, nguồn tải, Finder info…) thẳng vào NTFS dưới dạng alternate data stream, nên không sinh tệp `._` rác trên ổ.
 - Giao diện tiếng Việt và tiếng Anh theo ngôn ngữ hệ thống (đổi được trong Cài đặt).
 - Chạy dưới dạng FSKit extension của Apple — không cần kext, không cần tắt SIP, không cần macFUSE.
 
@@ -56,6 +57,7 @@ log show --last 10m --predicate 'subsystem BEGINSWITH "com.docuong.ntfsformac"'
 - Plug in an NTFS drive and it shows up in Finder, **writable right away**: copy, rename, delete and create folders as on any other drive.
 - A menu bar icon lists NTFS drives and lets you **turn off writing per drive** (read-only), remount and eject.
 - Falls back to read-only, and tells you why, when writing would be unsafe: Windows is hibernated (Fast Startup), the journal was not replayed, the volume is marked for checking, or an I/O error occurred.
+- Stores macOS extended attributes (tags, download origin, Finder info…) natively as NTFS alternate data streams, so no `._` clutter files appear on the drive.
 - Vietnamese and English UI, following the system language (can be changed in Settings).
 - Runs as an Apple FSKit extension — no kext, no SIP changes, no macFUSE.
 

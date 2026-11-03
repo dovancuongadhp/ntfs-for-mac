@@ -57,6 +57,8 @@ extension NTFSVolume: FSVolume.Operations {
     var restrictsOwnershipChanges: Bool { true }
     var truncatesLongNames: Bool { false }
     var maximumFileSize: UInt64 { UInt64(Int64.max) }
+    /// Extended attributes are alternate data streams, which can be as large as files.
+    var maximumXattrSize: Int { Int(Int32.max) }
 
     // MARK: Life cycle
 
