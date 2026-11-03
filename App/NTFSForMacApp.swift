@@ -41,4 +41,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windows.showWelcome()
         return false
     }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard model.isFormatting else { return .terminateNow }
+        let alert = NSAlert()
+        alert.messageText = String(localized: "A drive is being formatted")
+        alert.informativeText = String(localized: "Wait until formatting finishes before quitting NTFS for Mac.")
+        NSApp.activate()
+        alert.runModal()
+        return .terminateCancel
+    }
 }
