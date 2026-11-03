@@ -1,5 +1,6 @@
 import CNTFS
 import Foundation
+@_exported import NTFSShared
 
 /// NTFS MFT record number. The root directory is `ItemID.root`.
 public typealias ItemID = UInt64
@@ -101,14 +102,7 @@ public struct VolumeStatistics: Sendable, Equatable {
     public var freeBytes: UInt64 { freeClusters * UInt64(clusterSize) }
 }
 
-public enum ReadOnlyReason: Sendable, Equatable {
-    case requested
-    case hibernated
-    case uncleanJournal
-    case dirty
-    case ioError
-    case deviceReadOnly
-
+extension ReadOnlyReason {
     init?(bridgeValue: nb_readonly_reason) {
         switch bridgeValue {
         case NB_RO_REQUESTED: self = .requested

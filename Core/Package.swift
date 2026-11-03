@@ -15,6 +15,7 @@ let package = Package(
     products: [
         .library(name: "NTFSCore", targets: ["NTFSCore"]),
         .library(name: "NTFSProbe", targets: ["NTFSProbe"]),
+        .library(name: "NTFSShared", targets: ["NTFSShared"]),
         .executable(name: "ntfs-mkfs", targets: ["ntfs-mkfs"]),
     ],
     targets: [
@@ -41,10 +42,11 @@ let package = Package(
             cSettings: vendorCSettings
         ),
         .target(name: "NTFSProbe"),
-        .target(name: "NTFSCore", dependencies: ["CNTFS", "NTFSProbe"]),
+        .target(name: "NTFSShared"),
+        .target(name: "NTFSCore", dependencies: ["CNTFS", "NTFSProbe", "NTFSShared"]),
         .testTarget(
             name: "NTFSCoreTests",
-            dependencies: ["NTFSCore", "NTFSProbe", "ntfs-mkfs"]
+            dependencies: ["NTFSCore", "NTFSProbe", "NTFSShared", "ntfs-mkfs"]
         ),
     ]
 )

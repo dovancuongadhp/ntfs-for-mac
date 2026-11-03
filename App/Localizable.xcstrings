@@ -1,0 +1,612 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ of %@ used" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã dùng %1$@ trên %2$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+      "shouldTranslate" : false
+    },
+    "A write to the drive failed, so writing was stopped to protect your data. Eject the drive and check the cable or the drive itself." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ghi dữ liệu vào ổ bị lỗi nên việc ghi đã được dừng để bảo vệ dữ liệu của bạn. Hãy đẩy ổ ra và kiểm tra lại cáp hoặc chính ổ đĩa."
+          }
+        }
+      }
+    },
+    "About" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giới thiệu"
+          }
+        }
+      }
+    },
+    "Allow writing" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cho phép ghi"
+          }
+        }
+      }
+    },
+    "Connect a Windows (NTFS) drive and it will appear here." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cắm một ổ Windows (NTFS) vào máy, ổ sẽ hiện ở đây."
+          }
+        }
+      }
+    },
+    "Connect your drive" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cắm ổ đĩa"
+          }
+        }
+      }
+    },
+    "disk is write-protected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ổ bị chống ghi"
+          }
+        }
+      }
+    },
+    "disk needs checking" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ổ cần được kiểm tra"
+          }
+        }
+      }
+    },
+    "Dismiss" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đóng"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xong"
+          }
+        }
+      }
+    },
+    "Drives stay read-only until you turn on NTFS for Mac in System Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các ổ chỉ đọc được cho đến khi bạn bật NTFS for Mac trong Cài đặt hệ thống."
+          }
+        }
+      }
+    },
+    "Eject" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đẩy ra"
+          }
+        }
+      }
+    },
+    "Eject before unplugging" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đẩy ổ ra trước khi rút"
+          }
+        }
+      }
+    },
+    "File system extension" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiện ích mở rộng hệ thống tệp"
+          }
+        }
+      }
+    },
+    "Free and open source under the GNU General Public License v2 or later. NTFS support is provided by ntfs-3g." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phần mềm tự do, mã nguồn mở theo Giấy phép Công cộng GNU phiên bản 2 trở lên. Phần hỗ trợ NTFS dựa trên ntfs-3g."
+          }
+        }
+      }
+    },
+    "Language" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngôn ngữ"
+          }
+        }
+      }
+    },
+    "Mount" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gắn"
+          }
+        }
+      }
+    },
+    "Not mounted" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa gắn"
+          }
+        }
+      }
+    },
+    "Not supported — encrypted (BitLocker) or damaged" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không hỗ trợ — ổ mã hóa BitLocker hoặc bị hỏng"
+          }
+        }
+      }
+    },
+    "Not turned on yet" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa bật"
+          }
+        }
+      }
+    },
+    "NTFS drive opened read-only" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ NTFS được mở ở chế độ chỉ đọc"
+          }
+        }
+      }
+    },
+    "NTFS Drives" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ NTFS"
+          }
+        }
+      }
+    },
+    "NTFS drives are mounted for reading and writing automatically and show up in Finder like any other drive." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ NTFS được tự động gắn để đọc và ghi, và hiện trong Finder như mọi ổ đĩa khác."
+          }
+        }
+      }
+    },
+    "NTFS for Mac" : {
+      "shouldTranslate" : false
+    },
+    "NTFS for Mac Settings" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cài đặt NTFS for Mac"
+          }
+        }
+      }
+    },
+    "Open NTFS for Mac at login" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở NTFS for Mac khi đăng nhập"
+          }
+        }
+      }
+    },
+    "Open System Settings" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở Cài đặt hệ thống"
+          }
+        }
+      }
+    },
+    "Open System Settings → General → Login Items & Extensions → File System Extensions, then switch on NTFS for Mac." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở Cài đặt hệ thống → Cài đặt chung → Mục đăng nhập & tiện ích mở rộng → Tiện ích mở rộng hệ thống tệp, rồi bật NTFS for Mac."
+          }
+        }
+      }
+    },
+    "Quit" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thoát"
+          }
+        }
+      }
+    },
+    "Read & write" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đọc và ghi"
+          }
+        }
+      }
+    },
+    "Read and write Windows drives right in Finder." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đọc và ghi ổ Windows ngay trong Finder."
+          }
+        }
+      }
+    },
+    "Read-only" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉ đọc"
+          }
+        }
+      }
+    },
+    "Read-only (macOS driver)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉ đọc (trình điều khiển của macOS)"
+          }
+        }
+      }
+    },
+    "Read-only — %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉ đọc — %@"
+          }
+        }
+      }
+    },
+    "Same as system" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Theo hệ thống"
+          }
+        }
+      }
+    },
+    "Settings…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cài đặt…"
+          }
+        }
+      }
+    },
+    "Setup Guide" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hướng dẫn thiết lập"
+          }
+        }
+      }
+    },
+    "Show in Finder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện trong Finder"
+          }
+        }
+      }
+    },
+    "Status" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trạng thái"
+          }
+        }
+      }
+    },
+    "The disk could not be mounted." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không gắn được ổ đĩa."
+          }
+        }
+      }
+    },
+    "The disk is no longer connected." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đĩa không còn được kết nối."
+          }
+        }
+      }
+    },
+    "The drive is write-protected. Check its lock switch, if it has one." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đang được chống ghi. Hãy kiểm tra công tắc khóa trên ổ (nếu có)."
+          }
+        }
+      }
+    },
+    "The file system extension is turned off" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiện ích mở rộng hệ thống tệp đang tắt"
+          }
+        }
+      }
+    },
+    "The new language is used the next time NTFS for Mac opens." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngôn ngữ mới sẽ được dùng từ lần mở NTFS for Mac tiếp theo."
+          }
+        }
+      }
+    },
+    "The operation failed (code %d)." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thao tác thất bại (mã %d)."
+          }
+        }
+      }
+    },
+    "To uninstall, quit the app and move it to the Trash." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muốn gỡ bỏ, hãy thoát ứng dụng rồi kéo nó vào Thùng rác."
+          }
+        }
+      }
+    },
+    "Turn on the file system extension" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bật tiện ích mở rộng hệ thống tệp"
+          }
+        }
+      }
+    },
+    "Turn on “Allow writing” for this drive to make changes." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bật “Cho phép ghi” cho ổ này để có thể chỉnh sửa."
+          }
+        }
+      }
+    },
+    "Turned off" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang tắt"
+          }
+        }
+      }
+    },
+    "Turned on" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã bật"
+          }
+        }
+      }
+    },
+    "Use Eject in Finder or in the menu bar so all changes are written to the drive." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng nút Đẩy ra trong Finder hoặc trên thanh menu để mọi thay đổi được ghi hết vào ổ."
+          }
+        }
+      }
+    },
+    "Version" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phiên bản"
+          }
+        }
+      }
+    },
+    "Welcome to NTFS for Mac" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chào mừng bạn đến với NTFS for Mac"
+          }
+        }
+      }
+    },
+    "Windows didn't shut down cleanly" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows chưa tắt đúng cách"
+          }
+        }
+      }
+    },
+    "Windows flagged this drive for a disk check. Run “chkdsk /f” on it in Windows, then reconnect it." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows đã đánh dấu ổ này cần kiểm tra. Hãy chạy “chkdsk /f” cho ổ trên Windows rồi cắm lại."
+          }
+        }
+      }
+    },
+    "Windows is hibernated" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows đang ngủ đông"
+          }
+        }
+      }
+    },
+    "Windows still has unsaved changes on this drive. Connect it to Windows and shut down normally, then reconnect it." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows vẫn còn thay đổi chưa ghi xong trên ổ này. Hãy cắm ổ vào Windows, tắt máy bình thường rồi cắm lại."
+          }
+        }
+      }
+    },
+    "Windows was hibernated or Fast Startup is on. Start Windows and choose Shut Down while holding Shift, or turn off Fast Startup, then reconnect the drive." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Windows đang ngủ đông hoặc bật Khởi động nhanh (Fast Startup). Hãy vào Windows, giữ Shift khi chọn Shut Down, hoặc tắt Khởi động nhanh, rồi cắm lại ổ."
+          }
+        }
+      }
+    },
+    "write error" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lỗi ghi"
+          }
+        }
+      }
+    },
+    "writing turned off" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "đã tắt ghi"
+          }
+        }
+      }
+    },
+    "“%@”: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%1$@”: %2$@"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
