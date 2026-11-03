@@ -163,9 +163,25 @@ final class AppModel {
         }
         guard let disk else { return nil }
         let deviceName = FormatSafety.device(for: target, on: disk)
-        guard let device = inventory.freshInfo(deviceName) else { return nil }
-        let children = device.isWhole ? inventory.childNames(ofWhole: deviceName) : []
-        return FormatSafety.prepare(target: target, disk: disk, device: device, children: children, context: formatContext)
+        guard let device = inventory.freshInfo(deviceName), let fingerprint = currentFingerprint(of: deviceName) else {
+            return nil
+        }
+        return FormatSafety.prepare(
+            target: target, disk: disk, device: device, fingerprint: fingerprint, context: formatContext)
+    }
+
+    /// Whether the drive a format sheet was opened for is still there, unchanged.
+    func isCurrent(_ preparation: FormatPreparation) -> Bool {
+        FormatSafety.isCurrent(
+            preparation,
+            disk: inventory.physicalDisk(named: preparation.disk.bsdName),
+            fingerprint: currentFingerprint(of: preparation.device.bsdName))
+    }
+
+    private func currentFingerprint(of bsdName: String) -> DiskFingerprint? {
+        let inventory = inventory
+        return DiskFingerprint.read(
+            bsdName, freshInfo: { inventory.freshInfo($0) }, childNames: { inventory.childNames(ofWhole: $0) })
     }
 
     func format(

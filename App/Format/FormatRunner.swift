@@ -72,10 +72,12 @@ final class FormatRunner {
     }
 
     private func checkFingerprint(_ fingerprint: DiskFingerprint) throws {
-        guard let info = environment.freshInfo(fingerprint.bsdName),
-              DiskFingerprint(info: info, children: info.isWhole ? environment.childNames(ofWhole: info.bsdName) : [])
-                == fingerprint
-        else { throw FormatError.diskChanged }
+        let environment = environment
+        let current = DiskFingerprint.read(
+            fingerprint.bsdName,
+            freshInfo: { environment.freshInfo($0) },
+            childNames: { environment.childNames(ofWhole: $0) })
+        guard current == fingerprint else { throw FormatError.diskChanged }
     }
 
     private func unmount(_ name: String, whole: Bool) async throws {

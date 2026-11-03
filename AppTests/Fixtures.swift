@@ -6,6 +6,13 @@ enum Fixture {
         NTFSDisk.Mount(path: URL(fileURLWithPath: path), fileSystemType: type, isReadOnly: false, totalBytes: total, freeBytes: free)
     }
 
+    /// What `DiskFingerprint.read` takes of `device` when DiskArbitration reports `infos`.
+    static func fingerprint(_ device: DiskInfo, in infos: [DiskInfo]) -> DiskFingerprint {
+        let whole = infos.first { $0.isWhole && $0.bsdName == device.wholeBSDName }
+        let children = device.isWhole ? infos.filter { !$0.isWhole && $0.wholeBSDName == device.bsdName } : []
+        return DiskFingerprint(info: device, whole: whole, children: children)
+    }
+
     /// USB SSD: EFI, an exFAT partition and an NTFS partition.
     static var usbGPT: [DiskInfo] {
         [

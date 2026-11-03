@@ -6,7 +6,7 @@ import Testing
 struct FormatPlannerTests {
     private func preparation(_ target: FormatTarget, _ infos: [DiskInfo], device: DiskInfo) throws -> FormatPreparation {
         let disk = try #require(DiskTreeBuilder.build(infos).first)
-        return FormatSafety.prepare(target: target, disk: disk, device: device, children: [], context: FormatContext())
+        return FormatSafety.prepare(target: target, disk: disk, device: device, fingerprint: Fixture.fingerprint(device, in: infos), context: FormatContext())
     }
 
     @Test func partitionToExFAT() throws {

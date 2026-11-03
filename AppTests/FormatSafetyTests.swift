@@ -40,7 +40,7 @@ struct FormatSafetyTests {
         #expect(FormatSafety.fileSystems(for: .partition("disk4s1"), on: orphan, device: infos[1]).isEmpty)
         #expect(FormatSafety.fileSystems(for: .disk("disk4"), on: orphan, device: infos[0]).isEmpty)
         let preparation = FormatSafety.prepare(
-            target: .disk("disk4"), disk: orphan, device: infos[0], children: [], context: FormatContext())
+            target: .disk("disk4"), disk: orphan, device: infos[0], fingerprint: Fixture.fingerprint(infos[0], in: infos), context: FormatContext())
         #expect(preparation.block == .unsupported)
     }
 
@@ -56,29 +56,29 @@ struct FormatSafetyTests {
         #expect(FormatSafety.blockReason(for: .disk("disk6"), on: usb, context: FormatContext()) == nil)
         #expect(FormatSafety.blockReason(for: .partition("disk7s1"), on: usb, context: FormatContext()) == .unsupported)
         let wrongDisk = FormatSafety.prepare(
-            target: .disk("disk7"), disk: usb, device: Fixture.mbrFAT[0], children: [], context: FormatContext())
+            target: .disk("disk7"), disk: usb, device: Fixture.mbrFAT[0], fingerprint: Fixture.fingerprint(Fixture.mbrFAT[0], in: Fixture.mbrFAT), context: FormatContext())
         #expect(wrongDisk.block == .unsupported)
     }
 
     @Test func preparedDeviceMustBeTheErasedOne() throws {
         let usb = try disk(Fixture.usbGPT)
         let otherPartition = FormatSafety.prepare(
-            target: .partition("disk6s3"), disk: usb, device: Fixture.usbGPT[2], children: [], context: FormatContext())
+            target: .partition("disk6s3"), disk: usb, device: Fixture.usbGPT[2], fingerprint: Fixture.fingerprint(Fixture.usbGPT[2], in: Fixture.usbGPT), context: FormatContext())
         #expect(otherPartition.block == .unsupported)
         let wholeForPartition = FormatSafety.prepare(
-            target: .partition("disk6s3"), disk: usb, device: Fixture.usbGPT[0], children: [], context: FormatContext())
+            target: .partition("disk6s3"), disk: usb, device: Fixture.usbGPT[0], fingerprint: Fixture.fingerprint(Fixture.usbGPT[0], in: Fixture.usbGPT), context: FormatContext())
         #expect(wholeForPartition.block == .unsupported)
         let partitionForWhole = FormatSafety.prepare(
-            target: .disk("disk6"), disk: usb, device: Fixture.usbGPT[3], children: [], context: FormatContext())
+            target: .disk("disk6"), disk: usb, device: Fixture.usbGPT[3], fingerprint: Fixture.fingerprint(Fixture.usbGPT[3], in: Fixture.usbGPT), context: FormatContext())
         #expect(partitionForWhole.block == .unsupported)
 
         let apfs = try disk(Fixture.usbAPFS)
         let volume = Fixture.usbAPFS[4]
         let store = Fixture.usbAPFS[1]
         #expect(FormatSafety.prepare(
-            target: .partition("disk9s2"), disk: apfs, device: volume, children: [], context: FormatContext()).block == .unsupported)
+            target: .partition("disk9s2"), disk: apfs, device: volume, fingerprint: Fixture.fingerprint(volume, in: Fixture.usbAPFS), context: FormatContext()).block == .unsupported)
         #expect(FormatSafety.prepare(
-            target: .partition("disk9s2"), disk: apfs, device: store, children: [], context: FormatContext()).block == nil)
+            target: .partition("disk9s2"), disk: apfs, device: store, fingerprint: Fixture.fingerprint(store, in: Fixture.usbAPFS), context: FormatContext()).block == nil)
     }
 
     @Test func diskImagesNeedTheDebugSwitch() throws {
@@ -148,10 +148,14 @@ struct FormatSafetyTests {
     @Test func preparationForAPartition() throws {
         let usb = try disk(Fixture.usbGPT)
         let device = Fixture.usbGPT[3]
-        let preparation = FormatSafety.prepare(target: .partition("disk6s3"), disk: usb, device: device, children: [], context: FormatContext())
+        let fingerprint = Fixture.fingerprint(device, in: Fixture.usbGPT)
+        let preparation = FormatSafety.prepare(
+            target: .partition("disk6s3"), disk: usb, device: device, fingerprint: fingerprint, context: FormatContext())
         #expect(preparation.displayName == "New Volume")
         #expect(preparation.suggestedName == "New Volume")
-        #expect(preparation.fingerprint == DiskFingerprint(info: device, children: []))
+        #expect(preparation.fingerprint == fingerprint)
+        #expect(fingerprint.deviceModel == "Samsung T7 Shield")
+        #expect(fingerprint.mediaName == "T7 Media")
         #expect(preparation.block == nil)
         #expect(preparation.usedBytes == 90_000)
     }
@@ -160,24 +164,107 @@ struct FormatSafetyTests {
         let usb = try disk(Fixture.usbGPT)
         let preparation = FormatSafety.prepare(
             target: .disk("disk6"), disk: usb, device: Fixture.usbGPT[0],
-            children: ["disk6s1", "disk6s2", "disk6s3"], context: FormatContext())
+            fingerprint: Fixture.fingerprint(Fixture.usbGPT[0], in: Fixture.usbGPT), context: FormatContext())
         #expect(preparation.displayName == "Samsung T7 Shield")
         #expect(preparation.suggestedName == "Untitled")
-        #expect(preparation.fingerprint.children == ["disk6s1", "disk6s2", "disk6s3"])
+        #expect(preparation.fingerprint.children.map(\.bsdName) == ["disk6s1", "disk6s2", "disk6s3"])
+        #expect(preparation.fingerprint.children.map(\.mediaUUID) == [nil, "UUID-S2", "UUID-S3"])
+    }
+
+    @Test func unnamedPartitionIsConfirmedByItsDeviceName() throws {
+        var infos = Fixture.usbGPT
+        infos[3].volumeName = ""
+        let preparation = FormatSafety.prepare(
+            target: .partition("disk6s3"), disk: try disk(infos), device: infos[3],
+            fingerprint: Fixture.fingerprint(infos[3], in: infos), context: FormatContext())
+        #expect(preparation.displayName == "disk6s3")
+        #expect(preparation.suggestedName == "Untitled")
+        #expect(!FormatSafety.isConfirmed("", displayName: preparation.displayName))
+        #expect(FormatSafety.isConfirmed("disk6s3", displayName: preparation.displayName))
+    }
+
+    @Test func confirmationMustMatchAndCantBeEmpty() {
+        #expect(FormatSafety.isConfirmed("New Volume", displayName: "New Volume"))
+        #expect(FormatSafety.isConfirmed(" New Volume ", displayName: "New Volume"))
+        #expect(!FormatSafety.isConfirmed("new volume", displayName: "New Volume"))
+        #expect(!FormatSafety.isConfirmed("New", displayName: "New Volume"))
+        #expect(!FormatSafety.isConfirmed("", displayName: "New Volume"))
+        #expect(!FormatSafety.isConfirmed("", displayName: ""))
+        #expect(!FormatSafety.isConfirmed("  ", displayName: " "))
+    }
+
+    @Test func sheetGoesStaleWhenTheDriveIsGoneOrReplaced() throws {
+        let usb = try disk(Fixture.usbGPT)
+        let device = Fixture.usbGPT[3]
+        let fingerprint = Fixture.fingerprint(device, in: Fixture.usbGPT)
+        let preparation = FormatSafety.prepare(
+            target: .partition("disk6s3"), disk: usb, device: device, fingerprint: fingerprint, context: FormatContext())
+        #expect(FormatSafety.isCurrent(preparation, disk: usb, fingerprint: fingerprint))
+        #expect(!FormatSafety.isCurrent(preparation, disk: nil, fingerprint: fingerprint))
+        #expect(!FormatSafety.isCurrent(preparation, disk: usb, fingerprint: nil))
+        var replacement = Fixture.usbGPT
+        replacement[0].deviceModel = "Samsung T7"
+        #expect(!FormatSafety.isCurrent(
+            preparation, disk: try disk(replacement), fingerprint: Fixture.fingerprint(replacement[3], in: replacement)))
+        let other = try disk(Fixture.mbrFAT)
+        #expect(!FormatSafety.isCurrent(preparation, disk: other, fingerprint: fingerprint))
     }
 
     @Test func fingerprintNoticesAnyChange() {
-        let info = Fixture.usbGPT[3]
-        let original = DiskFingerprint(info: info, children: [])
-        var resized = info
-        resized.size += 512
-        var moved = info
-        moved.offset = 0
-        var other = info
-        other.mediaUUID = "SOMETHING-ELSE"
-        #expect(DiskFingerprint(info: resized, children: []) != original)
-        #expect(DiskFingerprint(info: moved, children: []) != original)
-        #expect(DiskFingerprint(info: other, children: []) != original)
-        #expect(DiskFingerprint(info: info, children: ["disk6s4"]) != original)
+        let infos = Fixture.usbGPT
+        let info = infos[3]
+        let original = Fixture.fingerprint(info, in: infos)
+        func changed(_ index: Int, _ change: (inout DiskInfo) -> Void) -> DiskFingerprint {
+            var copy = infos
+            change(&copy[index])
+            return Fixture.fingerprint(copy[3], in: copy)
+        }
+        #expect(changed(3) { $0.size += 512 } != original)
+        #expect(changed(3) { $0.offset = 0 } != original)
+        #expect(changed(3) { $0.mediaUUID = "SOMETHING-ELSE" } != original)
+        #expect(changed(0) { $0.deviceModel = "Another Stick" } != original)
+        #expect(changed(0) { $0.mediaName = "Another Media" } != original)
+        #expect(DiskFingerprint(info: info, whole: nil, children: []) != original)
+
+        let whole = infos[0]
+        let wholeOriginal = Fixture.fingerprint(whole, in: infos)
+        func changedChild(_ change: (inout DiskInfo) -> Void) -> DiskFingerprint {
+            var copy = infos
+            change(&copy[2])
+            return Fixture.fingerprint(whole, in: copy)
+        }
+        #expect(changedChild { $0.mediaUUID = "NEW-PARTITION" } != wholeOriginal)
+        #expect(changedChild { $0.volumeUUID = "NEW-VOLUME" } != wholeOriginal)
+        #expect(Fixture.fingerprint(whole, in: Array(infos.dropLast())) != wholeOriginal)
+    }
+
+    @Test func fingerprintIgnoresMountsAndContent() {
+        let infos = Fixture.usbGPT
+        var changed = infos
+        for index in changed.indices {
+            changed[index].mount = nil
+            changed[index].content = "48465300-0000-11AA-AA11-00306543ECAC"
+            changed[index].volumeKind = nil
+        }
+        #expect(Fixture.fingerprint(changed[3], in: changed) == Fixture.fingerprint(infos[3], in: infos))
+        #expect(Fixture.fingerprint(changed[0], in: changed) == Fixture.fingerprint(infos[0], in: infos))
+    }
+}
+
+@MainActor
+struct DiskFingerprintReadTests {
+    @Test func readsTheDeviceItsDriveAndItsPartitions() {
+        let environment = FakeFormatEnvironment(Fixture.usbGPT)
+        func read(_ name: String) -> DiskFingerprint? {
+            DiskFingerprint.read(
+                name, freshInfo: { environment.freshInfo($0) }, childNames: { environment.childNames(ofWhole: $0) })
+        }
+        #expect(read("disk6s3") == Fixture.fingerprint(Fixture.usbGPT[3], in: Fixture.usbGPT))
+        #expect(read("disk6") == Fixture.fingerprint(Fixture.usbGPT[0], in: Fixture.usbGPT))
+        #expect(read("disk9s9") == nil)
+        environment.infos["disk6s2"] = nil
+        #expect(read("disk6") == nil)
+        environment.infos["disk6"] = nil
+        #expect(read("disk6s3") == nil)
     }
 }

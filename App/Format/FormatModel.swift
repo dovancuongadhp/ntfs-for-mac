@@ -55,23 +55,56 @@ struct FormatOptions: Equatable, Sendable {
 }
 
 /// What identifies the device the user confirmed. Formatting stops if any of
-/// it differs when the work starts.
+/// it differs when the work starts. Mount state and partition content are
+/// left out: unmounting and re-typing the partition must not change it.
 struct DiskFingerprint: Equatable, Sendable {
+    struct Child: Equatable, Sendable {
+        var bsdName: String
+        var mediaUUID: String?
+        var volumeUUID: String?
+    }
+
     var bsdName: String
     var wholeBSDName: String
     var size: UInt64
     var offset: UInt64?
     var mediaUUID: String?
+    /// Of the whole drive, so an identical-looking replacement is noticed.
+    var deviceModel: String?
+    var mediaName: String?
     /// For a whole disk: its partitions.
-    var children: [String]
+    var children: [Child]
 
-    init(info: DiskInfo, children: [String]) {
+    /// `whole` is the drive holding `info`, or `info` itself for a whole disk.
+    init(info: DiskInfo, whole: DiskInfo?, children: [DiskInfo]) {
+        let whole = info.isWhole ? info : whole
         bsdName = info.bsdName
         wholeBSDName = info.wholeBSDName
         size = info.size
         offset = info.offset
         mediaUUID = info.mediaUUID
-        self.children = children
+        deviceModel = whole?.deviceModel
+        mediaName = whole?.mediaName
+        self.children = children.map { Child(bsdName: $0.bsdName, mediaUUID: $0.mediaUUID, volumeUUID: $0.volumeUUID) }
+    }
+
+    /// Reads the device, its drive and, for a whole disk, its partitions again
+    /// now; `nil` if any of them is gone.
+    @MainActor
+    static func read(
+        _ bsdName: String, freshInfo: (String) -> DiskInfo?, childNames: (String) -> [String]
+    ) -> DiskFingerprint? {
+        guard let info = freshInfo(bsdName) else { return nil }
+        let whole = info.isWhole ? info : freshInfo(info.wholeBSDName)
+        guard whole != nil else { return nil }
+        var children: [DiskInfo] = []
+        if info.isWhole {
+            for name in childNames(bsdName) {
+                guard let child = freshInfo(name) else { return nil }
+                children.append(child)
+            }
+        }
+        return DiskFingerprint(info: info, whole: whole, children: children)
     }
 }
 

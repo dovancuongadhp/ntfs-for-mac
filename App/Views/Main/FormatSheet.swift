@@ -51,6 +51,12 @@ struct FormatSheet: View {
         .onChange(of: fileSystem) { _, newValue in
             if newValue == .apfs { scheme = .gpt }
         }
+        .onChange(of: model.inventory.tree) {
+            // A drive unplugged or swapped while the sheet is open must not be erased.
+            if phase == .editing, let preparation, !model.isCurrent(preparation) {
+                self.preparation = nil
+            }
+        }
     }
 
     @ViewBuilder
@@ -184,7 +190,7 @@ struct FormatSheet: View {
         guard phase == .editing, preparation.block == nil, preparation.fileSystems.contains(fileSystem),
               case .success = nameCheck
         else { return false }
-        return confirmation.trimmingCharacters(in: .whitespaces) == preparation.displayName
+        return FormatSafety.isConfirmed(confirmation, displayName: preparation.displayName)
     }
 
     private func start(_ preparation: FormatPreparation) {

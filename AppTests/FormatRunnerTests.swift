@@ -55,8 +55,8 @@ final class FakeFormatEnvironment: FormatEnvironment {
 
 @MainActor
 struct FormatRunnerTests {
-    private func job(_ steps: [FormatStep], device: DiskInfo, children: [String] = []) -> FormatJob {
-        FormatJob(fingerprint: DiskFingerprint(info: device, children: children), steps: steps)
+    private func job(_ steps: [FormatStep], device: DiskInfo, in infos: [DiskInfo] = Fixture.usbGPT) -> FormatJob {
+        FormatJob(fingerprint: Fixture.fingerprint(device, in: infos), steps: steps)
     }
 
     private let s3 = Fixture.usbGPT[3]
@@ -115,7 +115,7 @@ struct FormatRunnerTests {
             .unmount("disk6", whole: true),
             .diskutil(["eraseDisk", "ExFAT", "NTFS", "GPT", "disk6"]),
             .ntfsFormatNewPartition(whole: "disk6", label: "Data", clusterSize: nil, quick: true),
-        ], device: Fixture.usbGPT[0], children: ["disk6s1", "disk6s2", "disk6s3"])
+        ], device: Fixture.usbGPT[0])
     }
 
     /// After eraseDisk: EFI plus one new, mounted exFAT partition.

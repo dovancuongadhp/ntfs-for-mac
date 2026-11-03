@@ -150,26 +150,41 @@ enum FormatSafety {
         return warnings
     }
 
+    /// Whether the typed text confirms erasing `displayName`. Nothing empty confirms anything.
+    static func isConfirmed(_ typed: String, displayName: String) -> Bool {
+        let typed = typed.trimmingCharacters(in: .whitespaces)
+        let expected = displayName.trimmingCharacters(in: .whitespaces)
+        return !typed.isEmpty && !expected.isEmpty && typed == expected
+    }
+
+    /// Whether the drive the sheet was prepared for is still connected and unchanged.
+    static func isCurrent(_ preparation: FormatPreparation, disk: PhysicalDisk?, fingerprint: DiskFingerprint?) -> Bool {
+        disk?.bsdName == preparation.disk.bsdName && fingerprint == preparation.fingerprint
+    }
+
     static func prepare(
-        target: FormatTarget, disk: PhysicalDisk, device: DiskInfo, children: [String], context: FormatContext
+        target: FormatTarget, disk: PhysicalDisk, device: DiskInfo, fingerprint: DiskFingerprint, context: FormatContext
     ) -> FormatPreparation {
         let affected = affected(by: target, on: disk)
-        let displayName: String
+        let name: String
         let suggestedName: String
         switch target {
-        case .disk:
-            displayName = disk.name
+        case .disk(let bsdName):
+            name = disk.name.trimmingCharacters(in: .whitespaces).isEmpty ? bsdName : disk.name
             suggestedName = String(localized: "Untitled")
-        case .partition(let name):
-            displayName = disk.partitions.first { $0.bsdName == name }?.name ?? name
-            suggestedName = displayName
+        case .partition(let bsdName):
+            let partitionName = disk.partitions.first { $0.bsdName == bsdName }?.name ?? ""
+            let isUnnamed = partitionName.trimmingCharacters(in: .whitespaces).isEmpty
+            // An unnamed volume is confirmed by typing its device name.
+            name = isUnnamed ? bsdName : partitionName
+            suggestedName = isUnnamed ? String(localized: "Untitled") : partitionName
         }
         return FormatPreparation(
             target: target,
             disk: disk,
-            displayName: displayName,
+            displayName: name,
             device: device,
-            fingerprint: DiskFingerprint(info: device, children: children),
+            fingerprint: fingerprint,
             affected: affected,
             unaffected: unaffected(by: target, on: disk),
             usedBytes: usedBytes(affected),
