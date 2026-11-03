@@ -1,0 +1,50 @@
+// swift-tools-version: 6.2
+import PackageDescription
+
+// Vendored ntfs-3g sources are compiled as-is; their warnings are not ours.
+let vendorCSettings: [CSetting] = [
+    .define("HAVE_CONFIG_H"),
+    .headerSearchPath("config"),
+    .headerSearchPath("ntfs-3g"),
+    .unsafeFlags(["-w"]),
+]
+
+let package = Package(
+    name: "NTFSCore",
+    platforms: [.macOS(.v26)],
+    products: [
+        .library(name: "NTFSCore", targets: ["NTFSCore"]),
+        .library(name: "NTFSProbe", targets: ["NTFSProbe"]),
+        .executable(name: "ntfs-mkfs", targets: ["ntfs-mkfs"]),
+    ],
+    targets: [
+        .target(
+            name: "CNTFS",
+            path: "Sources/CNTFS",
+            exclude: [
+                "libntfs-3g/win32_io.c",
+                "libntfs-3g/Makefile.am",
+                "libntfs-3g/libntfs-3g.pc.in",
+                "libntfs-3g/libntfs-3g.script.so.in",
+                "ntfs-3g",
+                "config",
+            ],
+            sources: ["libntfs-3g", "bridge"],
+            publicHeadersPath: "include",
+            cSettings: vendorCSettings
+        ),
+        .executableTarget(
+            name: "ntfs-mkfs",
+            dependencies: ["CNTFS"],
+            path: "Sources/ntfs-mkfs",
+            exclude: ["ntfs-3g", "config"],
+            cSettings: vendorCSettings
+        ),
+        .target(name: "NTFSProbe"),
+        .target(name: "NTFSCore", dependencies: ["CNTFS", "NTFSProbe"]),
+        .testTarget(
+            name: "NTFSCoreTests",
+            dependencies: ["NTFSCore", "NTFSProbe", "ntfs-mkfs"]
+        ),
+    ]
+)
