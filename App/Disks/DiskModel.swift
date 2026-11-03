@@ -57,7 +57,7 @@ struct DiskInfo: Equatable, Sendable {
         volumeName ?? mediaName ?? bsdName
     }
 
-    /// Same key `DiskMonitor` used, so "Allow writing" settings survive the update.
+    /// Same key 1.0.1 used, so "Allow writing" settings survive the update.
     var preferenceKey: String {
         mediaUUID ?? volumeUUID ?? "\(bsdName)-\(size)"
     }

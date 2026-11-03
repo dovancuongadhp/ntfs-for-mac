@@ -23,6 +23,8 @@ targets:
         codeSign: true
       - package: NTFSCore
         product: NTFSShared
+      - package: NTFSCore
+        product: NTFSFormat
     settings:
       base:
         PRODUCT_NAME: NTFS for Mac

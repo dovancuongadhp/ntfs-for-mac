@@ -6,7 +6,7 @@ import Observation
 @MainActor
 @Observable
 final class AppModel {
-    let monitor = DiskMonitor()
+    let inventory = DiskInventory()
     let extensionStatus = ExtensionStatus()
     let preferences = VolumePreferences()
     let launchAtLogin = LaunchAtLogin()
@@ -14,7 +14,7 @@ final class AppModel {
     private(set) var busy: Set<String> = []
     private(set) var lastError: String?
 
-    @ObservationIgnored private lazy var mounter = MountController(session: monitor.session)
+    @ObservationIgnored private lazy var mounter = MountController(session: inventory.session)
     @ObservationIgnored private let notifier = Notifier()
     /// Disks already auto-mounted during their current connection.
     @ObservationIgnored private var handled: Set<String> = []
@@ -27,15 +27,15 @@ final class AppModel {
         notifier.observeReadOnlyFallbacks { [weak self] reason in
             self?.extensionReportedReadOnly(reason)
         }
-        monitor.onDiskChanged = { [weak self] disk in
+        inventory.onDiskChanged = { [weak self] disk in
             self?.diskChanged(disk)
         }
-        monitor.onDiskRemoved = { [weak self] bsdName in
+        inventory.onDiskRemoved = { [weak self] bsdName in
             self?.handled.remove(bsdName)
             self?.reasons[bsdName] = nil
         }
         extensionStatus.refresh()
-        for disk in monitor.disks {
+        for disk in inventory.disks {
             diskChanged(disk)
         }
     }
@@ -104,7 +104,7 @@ final class AppModel {
                 self.lastError = String(localized: "“\(disk.name)”: \(error.localizedDescription)")
             }
             self.busy.remove(disk.bsdName)
-            self.monitor.refresh(bsdName: disk.bsdName)
+            self.inventory.refresh(bsdName: disk.bsdName)
         }
     }
 
@@ -129,7 +129,7 @@ final class AppModel {
     }
 
     private func extensionReportedReadOnly(_ reason: ReadOnlyReason) {
-        let candidates = monitor.disks.filter {
+        let candidates = inventory.disks.filter {
             $0.isMountedByExtension && $0.mount?.isReadOnly == true && reasons[$0.bsdName] == nil
         }
         if candidates.count == 1 {

@@ -13,15 +13,15 @@ struct MenuContentView: View {
                 ExtensionDisabledBanner(model: model)
             }
 
-            if model.monitor.disks.isEmpty {
+            if model.inventory.disks.isEmpty {
                 Text("Connect a Windows (NTFS) drive and it will appear here.")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, 8)
             } else {
-                ForEach(model.monitor.disks) { disk in
+                ForEach(model.inventory.disks) { disk in
                     DiskRowView(model: model, disk: disk)
-                    if disk.id != model.monitor.disks.last?.id {
+                    if disk.id != model.inventory.disks.last?.id {
                         Divider()
                     }
                 }
@@ -60,7 +60,7 @@ struct MenuContentView: View {
         .onAppear { model.extensionStatus.refresh() }
         .task {
             while !Task.isCancelled {
-                model.monitor.refreshUsage()
+                model.inventory.refreshUsage()
                 try? await Task.sleep(for: .seconds(2))
             }
         }

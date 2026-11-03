@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		006F37E15905B032E52D35F4 /* NTFSVolume+Operations.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3093C3CB59870E472CD6316 /* NTFSVolume+Operations.swift */; };
-		13BC7431390C4A3CB093B78E /* DiskMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0C2BC6FC96EEE088CEA7D94 /* DiskMonitor.swift */; };
 		13E226E2539DD40C14F6AEE2 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4553E4B4FCAE427951A7B71 /* SettingsView.swift */; };
 		1A915EE13C8845DAF2F39018 /* WindowPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDFD749A4B9B1A12C2E7E3D7 /* WindowPresenter.swift */; };
 		2FD75A2114F310F87AD54AC7 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B56072589CD9D5143608846D /* WelcomeView.swift */; };
@@ -23,6 +22,7 @@
 		64A9CBF7D85EBAC59FCBFE9A /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C6FA06A1D3F57B0578451189 /* Localizable.xcstrings */; };
 		740634C20E060C4E74581D3E /* NTFSForMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C29FC469B533DBA1A30B5D /* NTFSForMacApp.swift */; };
 		75BF905EA03470949584302E /* DiskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EFB185B4C07D3468995DAE1 /* DiskRowView.swift */; };
+		76A74AB98350B85C8DA6A609 /* NTFSFormat in Frameworks */ = {isa = PBXBuildFile; productRef = F9F62E2E3A487429EA637CD2 /* NTFSFormat */; };
 		77AAB468D88BE3240BA17A15 /* NTFSExtension.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = 1B2EAA00A6FA2BA006077FCE /* NTFSExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7FE05C1F27636B83E2F37AA9 /* DiskTreeBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD71D7672AD549F52E483E33 /* DiskTreeBuilder.swift */; };
 		81E8DD3BB10DDA0C46DECBBE /* StatusText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F1337D82B88081886B0D90 /* StatusText.swift */; };
@@ -40,11 +40,13 @@
 		A846BD35DBE53B6FE689CC89 /* NTFSVolume.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0942A4EAAAA02062814B7446 /* NTFSVolume.swift */; };
 		ADE5FEFAA019B435258F24A2 /* NTFSDisk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1622A7178AC2ABED3DA77F47 /* NTFSDisk.swift */; };
 		AE53E445D585A4E8F4FD97C7 /* DiskTreeBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56DAD8FE64D69A167F4500F2 /* DiskTreeBuilderTests.swift */; };
+		B4946D0E0C19C6995FC281F6 /* DiskInfoReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E791291E97E3E616E4A1A89F /* DiskInfoReader.swift */; };
 		B988DDC73D147C14520A2049 /* NTFSCore in Frameworks */ = {isa = PBXBuildFile; productRef = EF339D4FF3DE7914E5DE8518 /* NTFSCore */; };
 		C1578629690ED27FA7868CF9 /* FSBlockDeviceAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5BBF20BD5D6EC688DA552A /* FSBlockDeviceAdapter.swift */; };
 		CE522316DA08759799597D80 /* DiskModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5425B6EBBD7EDC72E9916369 /* DiskModel.swift */; };
 		CF296E88434033FDE632AB82 /* AppLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E3ACD854255F0A0A62DAA7D /* AppLog.swift */; };
 		F2E9E7093C63134CB71BE0CE /* NTFSVolume+ReadWrite.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1CE78FD83C2790D1867F6AF /* NTFSVolume+ReadWrite.swift */; };
+		FC65D83494D59ABE67C2B321 /* DiskInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = D497A6647E3D1551CDF0EC4D /* DiskInventory.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,7 +106,6 @@
 		896015FE89BFF05D526362A0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8D5653F5FF45E02C6E1A9C7F /* ErrnoMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrnoMapping.swift; sourceTree = "<group>"; };
 		A5929B58E6CCF1651E339958 /* NTFSExtensionMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSExtensionMain.swift; sourceTree = "<group>"; };
-		B0C2BC6FC96EEE088CEA7D94 /* DiskMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskMonitor.swift; sourceTree = "<group>"; };
 		B4553E4B4FCAE427951A7B71 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B56072589CD9D5143608846D /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		B5F4E02B60904B675A22BE39 /* VolumePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumePreferences.swift; sourceTree = "<group>"; };
@@ -117,8 +118,10 @@
 		CDD157A2D8050F8A3C3BF1AA /* NTFSExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NTFSExtension.entitlements; sourceTree = "<group>"; };
 		D013B22C5C1D8E347B9B1A5C /* MenuContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuContentView.swift; sourceTree = "<group>"; };
 		D0245E5B9DA672D8A44B77B7 /* NTFSForMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NTFSForMac.entitlements; sourceTree = "<group>"; };
+		D497A6647E3D1551CDF0EC4D /* DiskInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskInventory.swift; sourceTree = "<group>"; };
 		DC5BBF20BD5D6EC688DA552A /* FSBlockDeviceAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSBlockDeviceAdapter.swift; sourceTree = "<group>"; };
 		DD71D7672AD549F52E483E33 /* DiskTreeBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskTreeBuilder.swift; sourceTree = "<group>"; };
+		E791291E97E3E616E4A1A89F /* DiskInfoReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskInfoReader.swift; sourceTree = "<group>"; };
 		EA07CD8B87B5F9A8E83FDCD1 /* FSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FSKit.framework; path = System/Library/Frameworks/FSKit.framework; sourceTree = SDKROOT; };
 		F1CE78FD83C2790D1867F6AF /* NTFSVolume+ReadWrite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NTFSVolume+ReadWrite.swift"; sourceTree = "<group>"; };
 		F3093C3CB59870E472CD6316 /* NTFSVolume+Operations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NTFSVolume+Operations.swift"; sourceTree = "<group>"; };
@@ -131,6 +134,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				83A6BC4C5267BA4785468290 /* NTFSShared in Frameworks */,
+				76A74AB98350B85C8DA6A609 /* NTFSFormat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,8 +238,9 @@
 		7607C5CE23F615EA7744B924 /* Disks */ = {
 			isa = PBXGroup;
 			children = (
+				E791291E97E3E616E4A1A89F /* DiskInfoReader.swift */,
+				D497A6647E3D1551CDF0EC4D /* DiskInventory.swift */,
 				5425B6EBBD7EDC72E9916369 /* DiskModel.swift */,
-				B0C2BC6FC96EEE088CEA7D94 /* DiskMonitor.swift */,
 				DD71D7672AD549F52E483E33 /* DiskTreeBuilder.swift */,
 				6A4BF346B8916DEA7F567FAB /* MountController.swift */,
 				29D0D44AE0E0B79FD9A7910D /* MountPolicy.swift */,
@@ -322,6 +327,7 @@
 			name = NTFSForMac;
 			packageProductDependencies = (
 				9091DDCAC0085BCCFDA9BBB5 /* NTFSShared */,
+				F9F62E2E3A487429EA637CD2 /* NTFSFormat */,
 			);
 			productName = NTFSForMac;
 			productReference = 510C89BA49A9EF5A36B48D87 /* NTFSForMac.app */;
@@ -410,8 +416,9 @@
 			files = (
 				CF296E88434033FDE632AB82 /* AppLog.swift in Sources */,
 				A2455424DF7B24B8AC4BFA0A /* AppModel.swift in Sources */,
+				B4946D0E0C19C6995FC281F6 /* DiskInfoReader.swift in Sources */,
+				FC65D83494D59ABE67C2B321 /* DiskInventory.swift in Sources */,
 				CE522316DA08759799597D80 /* DiskModel.swift in Sources */,
-				13BC7431390C4A3CB093B78E /* DiskMonitor.swift in Sources */,
 				75BF905EA03470949584302E /* DiskRowView.swift in Sources */,
 				7FE05C1F27636B83E2F37AA9 /* DiskTreeBuilder.swift in Sources */,
 				A55DF70F18A228F4EBD3611C /* ExtensionStatus.swift in Sources */,
@@ -752,6 +759,10 @@
 		EF339D4FF3DE7914E5DE8518 /* NTFSCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = NTFSCore;
+		};
+		F9F62E2E3A487429EA637CD2 /* NTFSFormat */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NTFSFormat;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
