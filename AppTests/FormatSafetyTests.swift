@@ -20,6 +20,67 @@ struct FormatSafetyTests {
         #expect(FormatSafety.blockReason(for: usb, context: FormatContext()) == nil)
     }
 
+    @Test func busyAPFSContainerBlocksItsDisk() throws {
+        let usb = try disk(Fixture.usbAPFS)
+        #expect(FormatSafety.blockReason(for: usb, context: FormatContext(busy: ["disk9"])) == .busy)
+        #expect(FormatSafety.blockReason(for: .partition("disk9s1"), on: usb, context: FormatContext(busy: ["disk9"])) == .busy)
+    }
+
+    @Test func orphanContainersCantBeFormatted() throws {
+        let infos = Fixture.orphanContainer.map { info in
+            var info = info
+            info.isInternal = false
+            return info
+        }
+        let orphan = try disk(infos)
+        #expect(orphan.bsdName == "disk4")
+        #expect(FormatSafety.blockReason(for: .partition("disk4s1"), on: orphan, context: FormatContext()) == .unsupported)
+        #expect(FormatSafety.blockReason(for: .partition("disk4s5"), on: orphan, context: FormatContext()) == .unsupported)
+        #expect(FormatSafety.blockReason(for: .disk("disk4"), on: orphan, context: FormatContext()) == .unsupported)
+        #expect(FormatSafety.fileSystems(for: .partition("disk4s1"), on: orphan, device: infos[1]).isEmpty)
+        #expect(FormatSafety.fileSystems(for: .disk("disk4"), on: orphan, device: infos[0]).isEmpty)
+        let preparation = FormatSafety.prepare(
+            target: .disk("disk4"), disk: orphan, device: infos[0], children: [], context: FormatContext())
+        #expect(preparation.block == .unsupported)
+    }
+
+    @Test func superfloppyCanBeFormatted() throws {
+        let card = try disk(Fixture.superfloppy)
+        #expect(FormatSafety.blockReason(for: .partition("disk10"), on: card, context: FormatContext()) == nil)
+        #expect(FormatSafety.blockReason(for: .disk("disk10"), on: card, context: FormatContext()) == nil)
+    }
+
+    @Test func targetMustBelongToTheDisk() throws {
+        let usb = try disk(Fixture.usbGPT)
+        #expect(FormatSafety.blockReason(for: .disk("disk7"), on: usb, context: FormatContext()) == .unsupported)
+        #expect(FormatSafety.blockReason(for: .disk("disk6"), on: usb, context: FormatContext()) == nil)
+        #expect(FormatSafety.blockReason(for: .partition("disk7s1"), on: usb, context: FormatContext()) == .unsupported)
+        let wrongDisk = FormatSafety.prepare(
+            target: .disk("disk7"), disk: usb, device: Fixture.mbrFAT[0], children: [], context: FormatContext())
+        #expect(wrongDisk.block == .unsupported)
+    }
+
+    @Test func preparedDeviceMustBeTheErasedOne() throws {
+        let usb = try disk(Fixture.usbGPT)
+        let otherPartition = FormatSafety.prepare(
+            target: .partition("disk6s3"), disk: usb, device: Fixture.usbGPT[2], children: [], context: FormatContext())
+        #expect(otherPartition.block == .unsupported)
+        let wholeForPartition = FormatSafety.prepare(
+            target: .partition("disk6s3"), disk: usb, device: Fixture.usbGPT[0], children: [], context: FormatContext())
+        #expect(wholeForPartition.block == .unsupported)
+        let partitionForWhole = FormatSafety.prepare(
+            target: .disk("disk6"), disk: usb, device: Fixture.usbGPT[3], children: [], context: FormatContext())
+        #expect(partitionForWhole.block == .unsupported)
+
+        let apfs = try disk(Fixture.usbAPFS)
+        let volume = Fixture.usbAPFS[4]
+        let store = Fixture.usbAPFS[1]
+        #expect(FormatSafety.prepare(
+            target: .partition("disk9s2"), disk: apfs, device: volume, children: [], context: FormatContext()).block == .unsupported)
+        #expect(FormatSafety.prepare(
+            target: .partition("disk9s2"), disk: apfs, device: store, children: [], context: FormatContext()).block == nil)
+    }
+
     @Test func diskImagesNeedTheDebugSwitch() throws {
         let image = try disk(Fixture.diskImage)
         #expect(FormatSafety.blockReason(for: image, context: FormatContext()) == .virtualDisk)
@@ -71,7 +132,7 @@ struct FormatSafetyTests {
         #expect(FormatSafety.fileSystems(for: .partition("disk7s1"), on: mbr, device: s1) == [.exfat, .fat32])
 
         let card = try disk(Fixture.superfloppy)
-        #expect(FormatSafety.fileSystems(for: .partition("disk10"), on: card, device: Fixture.superfloppy[0]) == [.exfat, .fat32])
+        #expect(FormatSafety.fileSystems(for: .partition("disk10"), on: card, device: Fixture.superfloppy[0]) == [.exfat, .fat32, .apfs])
     }
 
     @Test func warnings() throws {

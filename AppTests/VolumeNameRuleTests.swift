@@ -22,6 +22,16 @@ struct VolumeNameRuleTests {
         #expect(VolumeNameRule.validate(String(repeating: "ổ", count: 100), for: .apfs) == .failure(.tooLong(255)))
     }
 
+    @Test func limitsAreCountedInTheFileSystemsUnits() {
+        // Each emoji is two UTF-16 code units.
+        #expect(VolumeNameRule.validate(String(repeating: "😀", count: 5), for: .exfat) == .success(String(repeating: "😀", count: 5)))
+        #expect(VolumeNameRule.validate(String(repeating: "😀", count: 6), for: .exfat) == .failure(.tooLong(11)))
+        #expect(VolumeNameRule.validate(String(repeating: "a", count: 128), for: .ntfs) == .success(String(repeating: "a", count: 128)))
+        #expect(VolumeNameRule.validate(String(repeating: "a", count: 129), for: .ntfs) == .failure(.tooLong(128)))
+        #expect(VolumeNameRule.validate(String(repeating: "a", count: 255), for: .apfs) == .success(String(repeating: "a", count: 255)))
+        #expect(VolumeNameRule.validate(String(repeating: "a", count: 256), for: .apfs) == .failure(.tooLong(255)))
+    }
+
     @Test func rejectsEmptyAndForbiddenCharacters() {
         #expect(VolumeNameRule.validate("   ", for: .ntfs) == .failure(.empty))
         #expect(VolumeNameRule.validate("a/b", for: .ntfs) == .failure(.invalidCharacter("/")))

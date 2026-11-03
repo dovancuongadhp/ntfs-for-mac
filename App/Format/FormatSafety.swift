@@ -43,19 +43,35 @@ enum FormatSafety {
         if context.appDisk == disk.bsdName { return .appDisk }
         if disk.isVirtual, !context.allowsVirtualDisks { return .virtualDisk }
         if !disk.isWritable { return .readOnlyMedia }
-        if context.busy.contains(disk.bsdName) || disk.partitions.contains(where: { context.busy.contains($0.bsdName) }) {
-            return .busy
+        let isBusy = context.busy.contains(disk.bsdName) || disk.partitions.contains {
+            context.busy.contains($0.bsdName) || context.busy.contains($0.wholeBSDName)
         }
-        return nil
+        return isBusy ? .busy : nil
     }
 
     static func blockReason(for target: FormatTarget, on disk: PhysicalDisk, context: FormatContext) -> FormatBlock? {
         if let reason = blockReason(for: disk, context: context) { return reason }
-        guard case .partition(let name) = target else { return nil }
-        guard let partition = disk.partitions.first(where: { $0.bsdName == name }), !partition.isHidden else {
-            return .unsupported
+        guard hasKnownLayout(disk) else { return .unsupported }
+        switch target {
+        case .disk(let name):
+            return name == disk.bsdName ? nil : .unsupported
+        case .partition(let name):
+            guard let partition = disk.partitions.first(where: { $0.bsdName == name }), !partition.isHidden else {
+                return .unsupported
+            }
+            return partition.isWritable ? nil : .readOnlyMedia
         }
-        return partition.isWritable ? nil : .readOnlyMedia
+    }
+
+    /// A disk without a partition table is only understood when it is a
+    /// superfloppy: one file system on the whole disk. An APFS container
+    /// whose store wasn't found also has no scheme, and isn't formattable.
+    private static func hasKnownLayout(_ disk: PhysicalDisk) -> Bool {
+        disk.scheme != .none || isSuperfloppy(disk)
+    }
+
+    private static func isSuperfloppy(_ disk: PhysicalDisk) -> Bool {
+        disk.scheme == .none && disk.partitions.count == 1 && disk.partitions[0].bsdName == disk.bsdName
     }
 
     /// The BSD name that is erased: the disk, the partition, or for an APFS
@@ -87,6 +103,7 @@ enum FormatSafety {
     }
 
     static func fileSystems(for target: FormatTarget, on disk: PhysicalDisk, device: DiskInfo) -> [FormatFileSystem] {
+        guard hasKnownLayout(disk) else { return [] }
         if target.isDisk {
             return FormatFileSystem.allCases
         }
@@ -97,7 +114,7 @@ enum FormatSafety {
             let canNTFS = device.offset != nil && (1...4).contains(device.partitionID ?? 0)
             return canNTFS ? [.ntfs, .exfat, .fat32] : [.exfat, .fat32]
         case .none:
-            return [.exfat, .fat32]
+            return [.exfat, .fat32, .apfs]
         }
     }
 
@@ -158,7 +175,8 @@ enum FormatSafety {
             usedBytes: usedBytes(affected),
             warnings: warnings(for: affected),
             fileSystems: fileSystems(for: target, on: disk, device: device),
-            block: blockReason(for: target, on: disk, context: context),
+            block: blockReason(for: target, on: disk, context: context)
+                ?? (device.bsdName == self.device(for: target, on: disk) ? nil : .unsupported),
             suggestedName: suggestedName
         )
     }
