@@ -80,7 +80,7 @@ struct DiskRowView: View {
 extension DiskState {
     var color: Color {
         switch self {
-        case .readWrite: .green
+        case .readWrite: .blue
         case .readOnly, .systemReadOnly: .orange
         case .notMounted: .secondary
         case .unrecognized: .red
