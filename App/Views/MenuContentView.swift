@@ -64,7 +64,10 @@ struct MenuContentView: View {
         }
         .padding(14)
         .frame(width: 340)
-        .onAppear { model.extensionStatus.refresh() }
+        .onAppear {
+            model.extensionStatus.refresh()
+            model.inventory.refreshUsage()
+        }
     }
 }
 

@@ -82,7 +82,7 @@ final class AppModel {
     }
 
     func eject(_ disk: NTFSDisk) {
-        if let physical = inventory.partition(named: disk.bsdName)?.disk, isProtected(physical) { return }
+        guard let physical = inventory.partition(named: disk.bsdName)?.disk, !isProtected(physical) else { return }
         perform(on: disk.bsdName, name: disk.name) { [mounter] in
             try await mounter.eject(bsdName: disk.bsdName)
         }

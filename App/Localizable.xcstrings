@@ -784,6 +784,16 @@
         }
       }
     },
+    "NTFS for Mac is formatting a drive. Wait until it finishes before closing this window." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NTFS for Mac đang định dạng một ổ. Hãy đợi xong rồi hãy đóng cửa sổ này."
+          }
+        }
+      }
+    },
     "NTFS for Mac is running from this drive." : {
       "localizations" : {
         "vi" : {

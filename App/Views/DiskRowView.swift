@@ -64,7 +64,7 @@ struct DiskRowView: View {
     }
 
     private var isOnProtectedDisk: Bool {
-        model.inventory.partition(named: disk.bsdName).map { model.isProtected($0.disk) } ?? false
+        model.inventory.partition(named: disk.bsdName).map { model.isProtected($0.disk) } ?? true
     }
 }
 

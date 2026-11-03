@@ -58,7 +58,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard sender === mainWindow, model.isFormatting else { return true }
-        Self.showFormattingInProgress()
+        Self.showFormattingInProgress(closingWindow: true)
         return false
     }
 
@@ -71,10 +71,12 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     }
 
     /// Explains why the app won't quit, or the main window won't close, mid-format.
-    static func showFormattingInProgress() {
+    static func showFormattingInProgress(closingWindow: Bool = false) {
         let alert = NSAlert()
         alert.messageText = String(localized: "A drive is being formatted")
-        alert.informativeText = String(localized: "Wait until formatting finishes before quitting NTFS for Mac.")
+        alert.informativeText = closingWindow
+            ? String(localized: "NTFS for Mac is formatting a drive. Wait until it finishes before closing this window.")
+            : String(localized: "Wait until formatting finishes before quitting NTFS for Mac.")
         NSApp.activate()
         alert.runModal()
     }
