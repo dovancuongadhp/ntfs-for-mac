@@ -14,6 +14,7 @@ final class DiskInventory {
     @ObservationIgnored var onDiskChanged: ((NTFSDisk) -> Void)?
     @ObservationIgnored var onDiskRemoved: ((String) -> Void)?
     @ObservationIgnored private var infos: [String: DiskInfo] = [:]
+    @ObservationIgnored private var callbacks: [UnsafeMutableRawPointer] = []
 
     /// Disk images stay hidden, except in debug builds for testing:
     /// `defaults write com.docuong.ntfsformac ShowVirtualDisks -bool YES`.
@@ -33,20 +34,32 @@ final class DiskInventory {
         session = DASessionCreate(kCFAllocatorDefault)!
         DASessionSetDispatchQueue(session, .main)
 
-        let context = Unmanaged.passUnretained(self).toOpaque()
-        DARegisterDiskAppearedCallback(session, nil, { disk, context in
+        let appeared: DADiskAppearedCallback = { disk, context in
             MainActor.assumeIsolated { DiskInventory.instance(context).update(disk) }
-        }, context)
-        DARegisterDiskDescriptionChangedCallback(session, nil, nil, { disk, _, context in
+        }
+        let changed: DADiskDescriptionChangedCallback = { disk, _, context in
             MainActor.assumeIsolated { DiskInventory.instance(context).update(disk) }
-        }, context)
-        DARegisterDiskDisappearedCallback(session, nil, { disk, context in
+        }
+        let disappeared: DADiskDisappearedCallback = { disk, context in
             MainActor.assumeIsolated { DiskInventory.instance(context).remove(disk) }
-        }, context)
+        }
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        DARegisterDiskAppearedCallback(session, nil, appeared, context)
+        DARegisterDiskDescriptionChangedCallback(session, nil, nil, changed, context)
+        DARegisterDiskDisappearedCallback(session, nil, disappeared, context)
+        callbacks = [
+            unsafeBitCast(appeared, to: UnsafeMutableRawPointer.self),
+            unsafeBitCast(changed, to: UnsafeMutableRawPointer.self),
+            unsafeBitCast(disappeared, to: UnsafeMutableRawPointer.self),
+        ]
     }
 
     isolated deinit {
         // Callbacks hold an unretained pointer to self.
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        for callback in callbacks {
+            DAUnregisterCallback(session, callback, context)
+        }
         DASessionSetDispatchQueue(session, nil)
     }
 
@@ -141,10 +154,15 @@ final class DiskInventory {
     }
 
     private func rebuild() {
-        tree = DiskTreeBuilder.build(Array(infos.values))
+        let newTree = DiskTreeBuilder.build(Array(infos.values))
+        if newTree != tree {
+            tree = newTree
+        }
         let old = disks
-        disks = tree.flatMap(\.partitions).compactMap(\.ntfsDisk)
+        let newDisks = newTree.flatMap(\.partitions).compactMap(\.ntfsDisk)
             .sorted { $0.bsdName.localizedStandardCompare($1.bsdName) == .orderedAscending }
+        guard newDisks != old else { return }
+        disks = newDisks
         for disk in disks where old.first(where: { $0.bsdName == disk.bsdName }) != disk {
             onDiskChanged?(disk)
         }

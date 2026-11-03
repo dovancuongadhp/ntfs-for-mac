@@ -9,7 +9,9 @@ enum DiskInfoReader {
               let bsdName = description[kDADiskDescriptionMediaBSDNameKey as String] as? String
         else { return nil }
 
-        let wholeName = DADiskCopyWholeDisk(disk).flatMap { DADiskGetBSDName($0) }.map { String(cString: $0) } ?? bsdName
+        let wholeName = DADiskCopyWholeDisk(disk).flatMap { whole in
+            DADiskGetBSDName(whole).map { String(cString: $0) }
+        } ?? bsdName
         let isWhole = description[kDADiskDescriptionMediaWholeKey as String] as? Bool ?? false
         let content = description[kDADiskDescriptionMediaContentKey as String] as? String
         let deviceProtocol = description[kDADiskDescriptionDeviceProtocolKey as String] as? String
