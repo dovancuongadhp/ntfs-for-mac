@@ -5,9 +5,12 @@ All notable changes to NTFS for Mac are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Like macOS, every major version is named, here after a flower: 2.x is **Lotus**. Minor and patch updates keep the
+name of their major version, and a name is never reused. Versions 1.0.x have no name.
+
 ## [Unreleased]
 
-## [1.0.2] - 2026-11-XX
+## [2.0.0] Lotus - 2026-11-04
 
 ### Added
 
@@ -62,7 +65,7 @@ First public release.
 - English and Vietnamese user interface.
 - Drag-to-install DMG, and `scripts/build-local.sh` to build an ad hoc signed copy without an Apple Developer account.
 
-[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.2...HEAD
-[1.0.2]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.1...v1.0.2
+[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/dovancuongadhp/ntfs-for-mac/releases/tag/v1.0.0

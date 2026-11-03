@@ -39,6 +39,7 @@ Applications. Gỡ bỏ: kéo app vào Thùng rác.
 - [Giới hạn](#giới-hạn)
 - [Gỡ bỏ](#gỡ-bỏ)
 - [Câu hỏi thường gặp](#câu-hỏi-thường-gặp)
+- [Phiên bản](#phiên-bản)
 - [Báo lỗi](#báo-lỗi)
 - [Cách hoạt động](#cách-hoạt-động)
 - [Tự build từ mã nguồn](#tự-build-từ-mã-nguồn)
@@ -162,7 +163,7 @@ NTFS for Mac không bao giờ ép ghi vào ổ đang ở trạng thái có thể
 
 ## Giới hạn
 
-Phiên bản 1 **chưa hỗ trợ**:
+NTFS for Mac **chưa hỗ trợ**:
 
 - đổi kích thước, thêm hoặc xoá phân vùng (chỉ định dạng phân vùng có sẵn hoặc xoá toàn bộ ổ),
 - sửa lỗi ổ (hãy dùng `chkdsk` trên Windows),
@@ -219,6 +220,19 @@ bị lỗi (chạy `chkdsk /f` cho ổ trên Windows).
 Có. NTFS for Mac là phần mềm tự do theo giấy phép GNU GPL v2 trở lên: không giới hạn thời gian dùng thử, không
 quảng cáo, không thu thập dữ liệu.
 </details>
+
+## Phiên bản
+
+Phiên bản được đánh số `chính.phụ.sửa-lỗi`. Giống macOS, mỗi phiên bản chính có thêm một tên riêng, ở đây là tên
+một loài hoa bằng tiếng Anh và không bao giờ dùng lại. Các bản cập nhật phụ (thêm tính năng) và sửa lỗi giữ tên của
+phiên bản chính.
+
+| Phiên bản | Tên | Điểm nổi bật |
+| --- | --- | --- |
+| 2.x | **Lotus** (hoa sen) | Quản lý ổ và định dạng ổ, kể cả NTFS |
+| 1.0.x | — | Bản đầu tiên: đọc và ghi ổ NTFS trong Finder |
+
+Xem [nhật ký thay đổi](CHANGELOG.md) để biết mọi thay đổi.
 
 ## Báo lỗi
 

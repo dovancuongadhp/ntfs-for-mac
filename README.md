@@ -39,6 +39,7 @@ Applications; to uninstall, drag it to the Trash.
 - [Limitations](#limitations)
 - [Uninstalling](#uninstalling)
 - [FAQ](#faq)
+- [Versions](#versions)
 - [Reporting a bug](#reporting-a-bug)
 - [How it works](#how-it-works)
 - [Building from source](#building-from-source)
@@ -163,7 +164,7 @@ NTFS for Mac never forces a write onto a drive that may be in an inconsistent st
 
 ## Limitations
 
-Version 1 does **not** support:
+NTFS for Mac does **not** support yet:
 
 - resizing, adding or deleting partitions (only formatting an existing partition or erasing a whole drive),
 - repairing volumes (use `chkdsk` on Windows),
@@ -220,6 +221,18 @@ Windows) or damaged (run `chkdsk /f` on it in Windows).
 
 Yes. NTFS for Mac is free software under the GNU GPL v2 or later: no trial period, no ads, no data collection.
 </details>
+
+## Versions
+
+Versions are numbered `major.minor.patch`. Like macOS, every major version also has a name, here an English
+flower name that is never reused. Minor (new features) and patch (fixes) updates keep the name of their major version.
+
+| Version | Name | Highlights |
+| --- | --- | --- |
+| 2.x | **Lotus** | Drive manager and formatting, including NTFS |
+| 1.0.x | — | First release: read and write NTFS drives in Finder |
+
+See the [changelog](CHANGELOG.md) for every change.
 
 ## Reporting a bug
 
