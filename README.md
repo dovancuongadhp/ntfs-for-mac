@@ -87,6 +87,13 @@ Quit the app (menu → Quit) and drag **NTFS for Mac** from Applications to the 
 
 Requirements: Xcode 26 or later; [XcodeGen](https://github.com/yonaskolb/XcodeGen) only after editing `project.yml`.
 
+ntfs-3g is a git submodule, so clone with it:
+
+```sh
+git clone --recursive https://github.com/dovancuongadhp/ntfs-for-mac.git
+# or, in an existing clone: git submodule update --init
+```
+
 Without an Apple Developer account, `scripts/build-local.sh` builds an ad hoc signed app and `build/NTFS-for-Mac.dmg`.
 Install it from the DMG and enable the extension; this works on your own Mac. (Xcode itself refuses to sign the
 extension without a team, so run the script rather than building in Xcode.)
