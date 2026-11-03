@@ -29,16 +29,29 @@ final class FormatRunner {
         progress(.checking)
         try checkFingerprint(job.fingerprint)
 
+        let formatsNTFS = job.steps.contains {
+            switch $0 {
+            case .ntfsFormat, .ntfsFormatNewPartition: true
+            default: false
+            }
+        }
         var erased = false
+        /// The last erase made the exFAT placeholder that NTFS replaces.
+        var placeholderCreated = false
         for step in job.steps {
             do {
                 try await run(step, job: job, erased: erased, progress: progress)
             } catch {
                 guard erased else { throw error }
-                throw FormatError.ntfsFailedAfterErase(Self.detail(of: error), partition: job.fingerprint.isPartition)
+                let detail = Self.detail(of: error)
+                let partition = job.fingerprint.isPartition
+                throw placeholderCreated
+                    ? FormatError.ntfsFailedAfterErase(detail, partition: partition)
+                    : FormatError.failedAfterErase(detail, partition: partition)
             }
-            if case .diskutil = step {
+            if case .diskutil(let arguments) = step {
                 erased = true
+                placeholderCreated = formatsNTFS && FormatPlanner.isNTFSPlaceholder(arguments)
             }
         }
         progress(.finishing)

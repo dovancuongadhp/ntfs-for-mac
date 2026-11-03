@@ -1264,6 +1264,16 @@
         }
       }
     },
+    "The drive was erased, but formatting didn't finish (%@). Format it again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đã bị xóa nhưng việc định dạng chưa hoàn tất (%@). Hãy định dạng lại."
+          }
+        }
+      }
+    },
     "The drive's partition table looks different than expected, so NTFS for Mac stopped." : {
       "localizations" : {
         "vi" : {
@@ -1400,6 +1410,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Phân vùng đã bị xóa và định dạng thành exFAT, nhưng định dạng NTFS chưa hoàn tất (%@). Hãy định dạng lại thành NTFS."
+          }
+        }
+      }
+    },
+    "The partition was erased, but formatting didn't finish (%@). Format it again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phân vùng đã bị xóa nhưng việc định dạng chưa hoàn tất (%@). Hãy định dạng lại."
           }
         }
       }

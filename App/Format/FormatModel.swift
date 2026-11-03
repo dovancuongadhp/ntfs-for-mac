@@ -146,7 +146,10 @@ enum FormatError: LocalizedError, Equatable {
     case tool(FormatToolError)
     case failed(String)
     /// `partition`: only that partition was erased, not the whole drive.
+    /// After the exFAT placeholder for NTFS was created.
     case ntfsFailedAfterErase(String, partition: Bool = false)
+    /// After anything else was erased.
+    case failedAfterErase(String, partition: Bool = false)
     case blocked(String)
 
     var errorDescription: String? {
@@ -167,6 +170,10 @@ enum FormatError: LocalizedError, Equatable {
             String(localized: "The partition was erased and formatted as exFAT, but NTFS formatting didn't finish (\(detail)). Format it again as NTFS.")
         case .ntfsFailedAfterErase(let detail, partition: false):
             String(localized: "The drive was erased and formatted as exFAT, but NTFS formatting didn't finish (\(detail)). Format it again as NTFS.")
+        case .failedAfterErase(let detail, partition: true):
+            String(localized: "The partition was erased, but formatting didn't finish (\(detail)). Format it again.")
+        case .failedAfterErase(let detail, partition: false):
+            String(localized: "The drive was erased, but formatting didn't finish (\(detail)). Format it again.")
         case .blocked(let reason):
             reason
         }

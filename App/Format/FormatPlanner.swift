@@ -67,6 +67,15 @@ enum FormatPlanner {
         return FormatJob(fingerprint: preparation.fingerprint, steps: steps)
     }
 
+    /// The exFAT erase that only makes room for NTFS: a re-typed partition or a new drive layout.
+    static func isNTFSPlaceholder(_ arguments: [String]) -> Bool {
+        switch arguments.count {
+        case 4: arguments.starts(with: ["eraseVolume", "ExFAT", "NTFS"])
+        case 5: arguments.starts(with: ["eraseDisk", "ExFAT", "NTFS"])
+        default: false
+        }
+    }
+
     /// The store whose APFS container the arguments delete, if they do.
     static func deletedContainerStore(_ arguments: [String]) -> String? {
         arguments.count == 4 && arguments.starts(with: ["apfs", "deleteContainer"]) ? arguments[2] : nil

@@ -13,6 +13,8 @@ final class FakeFormatEnvironment: FormatEnvironment {
     /// How many of the next unmounts fail as busy.
     var failingUnmounts = 0
     var ntfsError: (any Error)?
+    /// diskutil fails for arguments starting with this verb.
+    var failingDiskutilVerb: String?
     var afterUnmount: (() -> Void)?
     var afterDiskutil: (() -> Void)?
 
@@ -43,6 +45,9 @@ final class FakeFormatEnvironment: FormatEnvironment {
 
     func runDiskutil(_ arguments: [String]) async throws {
         log.append("diskutil " + arguments.joined(separator: " "))
+        if let failingDiskutilVerb, arguments.first == failingDiskutilVerb {
+            throw FormatError.failed("diskutil failed")
+        }
         afterDiskutil?()
     }
 
@@ -334,7 +339,8 @@ struct FormatRunnerTests {
             self.retype(environment, "disk8s1")
             environment.infos["disk8s1"]?.offset = store.offset! + 4096
         }
-        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive changed", partition: true)) {
+        // Only the container was deleted; no exFAT placeholder exists yet.
+        await #expect(throws: FormatError.failedAfterErase("the drive changed", partition: true)) {
             try await FormatRunner(environment: environment).run(self.apfsStoreJob(store, in: infos)) { _ in }
         }
         #expect(environment.log == [
@@ -454,6 +460,62 @@ struct FormatRunnerTests {
         }
         try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
         #expect(environment.log.last == "ntfs-format disk6s2")
+    }
+
+    // MARK: Messages after erasing
+
+    @Test func failureAfterDeletingTheContainerIsGeneric() async {
+        let infos = Fixture.usbAPFS
+        let environment = FakeFormatEnvironment(infos)
+        environment.failingDiskutilVerb = "eraseVolume"
+        let job = job([
+            .unmount("disk9s1", whole: false),
+            .unmount("disk9s2", whole: false),
+            .diskutil(["apfs", "deleteContainer", "disk8s1", "NFMTEMP"]),
+            .diskutil(["eraseVolume", "ExFAT", "Backup", "disk8s1"]),
+        ], device: infos[1], in: infos)
+        await #expect(throws: FormatError.failedAfterErase("diskutil failed", partition: true)) {
+            try await FormatRunner(environment: environment).run(job) { _ in }
+        }
+    }
+
+    @Test func failureAfterThePlaceholderOfANonNTFSJobIsGeneric() async {
+        // An exFAT volume the user named "NTFS" isn't a placeholder: nothing replaces it.
+        let infos = Fixture.usbAPFS
+        let environment = FakeFormatEnvironment(infos)
+        environment.afterDiskutil = { [unowned environment] in environment.infos["disk8"] = nil }
+        let job = job([
+            .diskutil(["eraseVolume", "ExFAT", "NTFS", "disk8s1"]),
+            .unmountErased("disk8s1"),
+            .diskutil(["eraseVolume", "ExFAT", "NTFS", "disk8s1"]),
+        ], device: infos[1], in: infos)
+        await #expect(throws: FormatError.failedAfterErase("the drive changed", partition: true)) {
+            try await FormatRunner(environment: environment).run(job) { _ in }
+        }
+    }
+}
+
+struct FormatErrorMessageTests {
+    @Test func afterEraseMessagesSayWhatWasErased() {
+        #expect(FormatError.failedAfterErase("x", partition: true).localizedDescription
+            == "The partition was erased, but formatting didn't finish (x). Format it again.")
+        #expect(FormatError.failedAfterErase("x").localizedDescription
+            == "The drive was erased, but formatting didn't finish (x). Format it again.")
+        #expect(FormatError.ntfsFailedAfterErase("x", partition: true).localizedDescription
+            == "The partition was erased and formatted as exFAT, but NTFS formatting didn't finish (x). Format it again as NTFS.")
+        #expect(FormatError.ntfsFailedAfterErase("x").localizedDescription
+            == "The drive was erased and formatted as exFAT, but NTFS formatting didn't finish (x). Format it again as NTFS.")
+        #expect(FormatError.failedAfterErase("x", partition: true).shortDetail == "x")
+    }
+
+    @Test func recognizesPlannerSteps() {
+        #expect(FormatPlanner.isNTFSPlaceholder(["eraseVolume", "ExFAT", "NTFS", "disk6s3"]))
+        #expect(FormatPlanner.isNTFSPlaceholder(["eraseDisk", "ExFAT", "NTFS", "GPT", "disk6"]))
+        #expect(!FormatPlanner.isNTFSPlaceholder(["eraseVolume", "ExFAT", "Data", "disk6s3"]))
+        #expect(!FormatPlanner.isNTFSPlaceholder(["eraseVolume", "MS-DOS FAT32", "NTFS", "disk6s3"]))
+        #expect(!FormatPlanner.isNTFSPlaceholder(["apfs", "deleteContainer", "disk8s1", "NFMTEMP"]))
+        #expect(FormatPlanner.deletedContainerStore(["apfs", "deleteContainer", "disk8s1", "NFMTEMP"]) == "disk8s1")
+        #expect(FormatPlanner.deletedContainerStore(["eraseVolume", "ExFAT", "NTFS", "disk8s1"]) == nil)
     }
 }
 
