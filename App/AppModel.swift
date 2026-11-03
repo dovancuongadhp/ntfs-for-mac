@@ -222,7 +222,8 @@ final class AppModel {
         }
     }
 
-    private func isBeingFormatted(_ bsdName: String) -> Bool {
+    /// Whether a disk, or the physical disk holding a partition, is being formatted.
+    func isBeingFormatted(_ bsdName: String) -> Bool {
         guard !formatting.isEmpty else { return false }
         if formatting.contains(bsdName) { return true }
         return inventory.partition(named: bsdName).map { formatting.contains($0.disk.bsdName) } ?? false

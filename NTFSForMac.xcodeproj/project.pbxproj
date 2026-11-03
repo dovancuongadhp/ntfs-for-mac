@@ -9,8 +9,10 @@
 /* Begin PBXBuildFile section */
 		006F37E15905B032E52D35F4 /* NTFSVolume+Operations.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3093C3CB59870E472CD6316 /* NTFSVolume+Operations.swift */; };
 		13E226E2539DD40C14F6AEE2 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4553E4B4FCAE427951A7B71 /* SettingsView.swift */; };
+		1410F59EDB503027B22543DD /* FormatSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3521D956FFA553C5068254BC /* FormatSheet.swift */; };
 		16E8117290008DFF282C370C /* VolumeNameRuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C814D3D41ACE4A2AEA810A /* VolumeNameRuleTests.swift */; };
 		1A915EE13C8845DAF2F39018 /* WindowPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDFD749A4B9B1A12C2E7E3D7 /* WindowPresenter.swift */; };
+		285F80403C20AA0588A1E4B5 /* DiskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55383C3DDC8AFB36EABC4D03 /* DiskDetailView.swift */; };
 		2FD75A2114F310F87AD54AC7 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B56072589CD9D5143608846D /* WelcomeView.swift */; };
 		336F584844A3A7F92B7409ED /* Notifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA3CD2C8A24164BE3F5F6FA8 /* Notifier.swift */; };
 		3925A4B1966CE528CC35FAAB /* NTFSItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A73EBEEB1488DF2E2DF7D1 /* NTFSItem.swift */; };
@@ -37,6 +39,7 @@
 		83A6BC4C5267BA4785468290 /* NTFSShared in Frameworks */ = {isa = PBXBuildFile; productRef = 9091DDCAC0085BCCFDA9BBB5 /* NTFSShared */; };
 		877FE0433EC5F2BB784DAACD /* NTFSFileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15071AB9EFF277E01AC8899C /* NTFSFileSystem.swift */; };
 		8782B188F481EFBC24731274 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7960144BF1EE5310C679D219 /* StatusItemController.swift */; };
+		8EB7944FB8CEC5C27409683C /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E167F2ED070DAC98C04DE67D /* MainWindowView.swift */; };
 		8FD2503D008C45F79C1469D9 /* MountPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C5720C2030DBA3BEB6B901 /* MountPolicyTests.swift */; };
 		936BC37485E6DF5BC9F4117B /* FSKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EA07CD8B87B5F9A8E83FDCD1 /* FSKit.framework */; };
 		97C31DE4C562349C0D76C0D3 /* FormatMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31515132760377BC96B5741B /* FormatMessages.swift */; };
@@ -53,9 +56,13 @@
 		B988DDC73D147C14520A2049 /* NTFSCore in Frameworks */ = {isa = PBXBuildFile; productRef = EF339D4FF3DE7914E5DE8518 /* NTFSCore */; };
 		C1578629690ED27FA7868CF9 /* FSBlockDeviceAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5BBF20BD5D6EC688DA552A /* FSBlockDeviceAdapter.swift */; };
 		C222D3734DD298286360196A /* VolumeNameRule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89DA9E4BE1C0F1873F4A0351 /* VolumeNameRule.swift */; };
+		CD9E1A395328A88D1158A8DE /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = C490A36A8848A0D18D4E8BF2 /* Components.swift */; };
 		CE522316DA08759799597D80 /* DiskModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5425B6EBBD7EDC72E9916369 /* DiskModel.swift */; };
 		CF296E88434033FDE632AB82 /* AppLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E3ACD854255F0A0A62DAA7D /* AppLog.swift */; };
+		D415DBDDE25A28937614B01F /* AllowWritingConfirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 404043778768BFF0CD268081 /* AllowWritingConfirmation.swift */; };
+		D5A23E41866C2AFFF55EDAAE /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E44CF3FB6688446C6D07BCE6 /* SidebarView.swift */; };
 		D60A9EADED46ECCD98425D0E /* LiveFormatEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A39044016995076DAB90F53 /* LiveFormatEnvironment.swift */; };
+		E821D2286390570252337521 /* PartitionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52B22FA008670DF3CE8C37F /* PartitionDetailView.swift */; };
 		F2E9E7093C63134CB71BE0CE /* NTFSVolume+ReadWrite.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1CE78FD83C2790D1867F6AF /* NTFSVolume+ReadWrite.swift */; };
 		FC65D83494D59ABE67C2B321 /* DiskInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = D497A6647E3D1551CDF0EC4D /* DiskInventory.swift */; };
 /* End PBXBuildFile section */
@@ -104,13 +111,16 @@
 		27C1A25664A3D53C049F2E2F /* FormatPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormatPlanner.swift; sourceTree = "<group>"; };
 		29D0D44AE0E0B79FD9A7910D /* MountPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MountPolicy.swift; sourceTree = "<group>"; };
 		31515132760377BC96B5741B /* FormatMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormatMessages.swift; sourceTree = "<group>"; };
+		3521D956FFA553C5068254BC /* FormatSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormatSheet.swift; sourceTree = "<group>"; };
 		3E4C5D693D10E15901BED8A6 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		404043778768BFF0CD268081 /* AllowWritingConfirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllowWritingConfirmation.swift; sourceTree = "<group>"; };
 		481D5FEBEE98B1BC8227B165 /* FormatRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormatRunnerTests.swift; sourceTree = "<group>"; };
 		4BD60B44A32BE2D5AB712A9B /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
 		510C89BA49A9EF5A36B48D87 /* NTFSForMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NTFSForMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		53BBF8CFF682971DCA20602B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		53F1337D82B88081886B0D90 /* StatusText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusText.swift; sourceTree = "<group>"; };
 		5425B6EBBD7EDC72E9916369 /* DiskModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskModel.swift; sourceTree = "<group>"; };
+		55383C3DDC8AFB36EABC4D03 /* DiskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskDetailView.swift; sourceTree = "<group>"; };
 		56DAD8FE64D69A167F4500F2 /* DiskTreeBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskTreeBuilderTests.swift; sourceTree = "<group>"; };
 		5A39044016995076DAB90F53 /* LiveFormatEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveFormatEnvironment.swift; sourceTree = "<group>"; };
 		5F7BFC9133217E76EA936995 /* NTFSVolume+Xattr.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NTFSVolume+Xattr.swift"; sourceTree = "<group>"; };
@@ -122,6 +132,7 @@
 		896015FE89BFF05D526362A0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		89DA9E4BE1C0F1873F4A0351 /* VolumeNameRule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeNameRule.swift; sourceTree = "<group>"; };
 		8D5653F5FF45E02C6E1A9C7F /* ErrnoMapping.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrnoMapping.swift; sourceTree = "<group>"; };
+		A52B22FA008670DF3CE8C37F /* PartitionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PartitionDetailView.swift; sourceTree = "<group>"; };
 		A5929B58E6CCF1651E339958 /* NTFSExtensionMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSExtensionMain.swift; sourceTree = "<group>"; };
 		A7C814D3D41ACE4A2AEA810A /* VolumeNameRuleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeNameRuleTests.swift; sourceTree = "<group>"; };
 		AC31409F633C639C76F2AC60 /* FormatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormatModel.swift; sourceTree = "<group>"; };
@@ -133,6 +144,7 @@
 		BA3CD2C8A24164BE3F5F6FA8 /* Notifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifier.swift; sourceTree = "<group>"; };
 		BDCE96FC4C227EC101F95FFB /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
 		C1C29FC469B533DBA1A30B5D /* NTFSForMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSForMacApp.swift; sourceTree = "<group>"; };
+		C490A36A8848A0D18D4E8BF2 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		C5C5720C2030DBA3BEB6B901 /* MountPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MountPolicyTests.swift; sourceTree = "<group>"; };
 		C6FA06A1D3F57B0578451189 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		CDD157A2D8050F8A3C3BF1AA /* NTFSExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NTFSExtension.entitlements; sourceTree = "<group>"; };
@@ -141,6 +153,8 @@
 		D497A6647E3D1551CDF0EC4D /* DiskInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskInventory.swift; sourceTree = "<group>"; };
 		DC5BBF20BD5D6EC688DA552A /* FSBlockDeviceAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSBlockDeviceAdapter.swift; sourceTree = "<group>"; };
 		DD71D7672AD549F52E483E33 /* DiskTreeBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskTreeBuilder.swift; sourceTree = "<group>"; };
+		E167F2ED070DAC98C04DE67D /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
+		E44CF3FB6688446C6D07BCE6 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		E791291E97E3E616E4A1A89F /* DiskInfoReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskInfoReader.swift; sourceTree = "<group>"; };
 		EA07CD8B87B5F9A8E83FDCD1 /* FSKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FSKit.framework; path = System/Library/Frameworks/FSKit.framework; sourceTree = SDKROOT; };
 		EEC206ACAC3745124F646B7B /* FormatRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormatRunner.swift; sourceTree = "<group>"; };
@@ -199,6 +213,19 @@
 				1E82241B85FA2577BE2C7E7F /* Frameworks */,
 				581BF3865656D9D9A5D9E93B /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		38A7FBB1951140F8610E35FD /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				C490A36A8848A0D18D4E8BF2 /* Components.swift */,
+				55383C3DDC8AFB36EABC4D03 /* DiskDetailView.swift */,
+				3521D956FFA553C5068254BC /* FormatSheet.swift */,
+				E167F2ED070DAC98C04DE67D /* MainWindowView.swift */,
+				A52B22FA008670DF3CE8C37F /* PartitionDetailView.swift */,
+				E44CF3FB6688446C6D07BCE6 /* SidebarView.swift */,
+			);
+			path = Main;
 			sourceTree = "<group>";
 		};
 		40B46F6BB81D43B4B496BF24 /* Support */ = {
@@ -306,12 +333,14 @@
 		C7318E081DE3D49A624B6AFD /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				404043778768BFF0CD268081 /* AllowWritingConfirmation.swift */,
 				7EFB185B4C07D3468995DAE1 /* DiskRowView.swift */,
 				D013B22C5C1D8E347B9B1A5C /* MenuContentView.swift */,
 				B4553E4B4FCAE427951A7B71 /* SettingsView.swift */,
 				7960144BF1EE5310C679D219 /* StatusItemController.swift */,
 				B56072589CD9D5143608846D /* WelcomeView.swift */,
 				FDFD749A4B9B1A12C2E7E3D7 /* WindowPresenter.swift */,
+				38A7FBB1951140F8610E35FD /* Main */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -478,8 +507,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D415DBDDE25A28937614B01F /* AllowWritingConfirmation.swift in Sources */,
 				CF296E88434033FDE632AB82 /* AppLog.swift in Sources */,
 				A2455424DF7B24B8AC4BFA0A /* AppModel.swift in Sources */,
+				CD9E1A395328A88D1158A8DE /* Components.swift in Sources */,
+				285F80403C20AA0588A1E4B5 /* DiskDetailView.swift in Sources */,
 				B4946D0E0C19C6995FC281F6 /* DiskInfoReader.swift in Sources */,
 				FC65D83494D59ABE67C2B321 /* DiskInventory.swift in Sources */,
 				CE522316DA08759799597D80 /* DiskModel.swift in Sources */,
@@ -491,15 +523,19 @@
 				52C83C235DBC332EE094BEF6 /* FormatPlanner.swift in Sources */,
 				76F020C21E324341CB5B7B1A /* FormatRunner.swift in Sources */,
 				58BAEFD6FDFEC4E20671EDCA /* FormatSafety.swift in Sources */,
+				1410F59EDB503027B22543DD /* FormatSheet.swift in Sources */,
 				A5A20EB90C140C652634B497 /* LaunchAtLogin.swift in Sources */,
 				D60A9EADED46ECCD98425D0E /* LiveFormatEnvironment.swift in Sources */,
+				8EB7944FB8CEC5C27409683C /* MainWindowView.swift in Sources */,
 				44FA1FDCE7B26526B7993D0C /* MenuContentView.swift in Sources */,
 				432F5610225DC005FF4BC89C /* MountController.swift in Sources */,
 				9DCB251355745A46C7155C41 /* MountPolicy.swift in Sources */,
 				ADE5FEFAA019B435258F24A2 /* NTFSDisk.swift in Sources */,
 				740634C20E060C4E74581D3E /* NTFSForMacApp.swift in Sources */,
 				336F584844A3A7F92B7409ED /* Notifier.swift in Sources */,
+				E821D2286390570252337521 /* PartitionDetailView.swift in Sources */,
 				13E226E2539DD40C14F6AEE2 /* SettingsView.swift in Sources */,
+				D5A23E41866C2AFFF55EDAAE /* SidebarView.swift in Sources */,
 				8782B188F481EFBC24731274 /* StatusItemController.swift in Sources */,
 				81E8DD3BB10DDA0C46DECBBE /* StatusText.swift in Sources */,
 				C222D3734DD298286360196A /* VolumeNameRule.swift in Sources */,
