@@ -7,6 +7,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-11-XX
+
+### Added
+
+- Main window in the style of Disk Utility, opened from **Open NTFS for Mac…** in the menu: every connected drive
+  with its partitions, details, a capacity bar and a partition map.
+- Mount, unmount, eject and Show in Finder for any drive, not only NTFS.
+- Format a partition as NTFS, exFAT, FAT32 or APFS, or erase a whole external drive with a new GPT or MBR partition
+  table. A summary shows exactly what will be erased and what won't, and the drive's name must be typed to confirm.
+  Formatting re-checks the drive right before every step and stops if anything changed.
+- Advanced NTFS options: cluster size and full (zero-filling) format.
+- Formatting a Mac partition (APFS or Mac OS Extended) as NTFS also changes its partition type, so Windows
+  recognizes it.
+
+### Changed
+
+- The menu bar panel is more compact and opens the main window.
+
+### Security
+
+- Internal drives, the drive macOS runs from and the drive the app runs from are protected: they are shown, but
+  can't be unmounted, ejected or formatted. Disk images can't be formatted either.
+- NTFS formatting runs a small helper with administrator rights, which you grant in the standard macOS password
+  dialog. Erasing a whole drive as NTFS first creates an exFAT partition, then asks for the password to turn it
+  into NTFS; if you cancel the dialog, the drive stays exFAT.
+
 ## [1.0.1] - 2026-11-03
 
 ### Changed
@@ -34,6 +60,7 @@ First public release.
 - English and Vietnamese user interface.
 - Drag-to-install DMG, and `scripts/build-local.sh` to build an ad hoc signed copy without an Apple Developer account.
 
-[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/dovancuongadhp/ntfs-for-mac/releases/tag/v1.0.0
