@@ -54,6 +54,12 @@ cleanup() {
         umount "$MNT" 2>/dev/null || true
     fi
     for dev in "${IMAGES[@]+"${IMAGES[@]}"}"; do
+        # The name may now belong to another disk if the image went away.
+        if ! attached_from_work "$dev"; then
+            echo "WARNING: /dev/$dev is no longer attached from $WORK; not detaching it" >&2
+            KEEP_WORK=true
+            continue
+        fi
         local detached=false
         for _ in 1 2 3 4 5; do
             if hdiutil detach "$dev" -quiet; then
@@ -101,20 +107,21 @@ new_image() { # name size layout fs
         KEEP_WORK=true
         fail "could not attach $image; check hdiutil info and detach it by hand if it is listed"
     }
+    # Attached but not yet in IMAGES: any failure until then leaves the files in place.
+    KEEP_WORK=true
     DEV="$(awk 'NR == 1 { sub("/dev/", "", $1); print $1 }' <<<"$attached")"
     if [[ ! "$DEV" =~ ^disk[0-9]+$ ]]; then
-        KEEP_WORK=true
         fail "could not find the device for $image; check hdiutil info and detach it by hand"
     fi
     # Not added to IMAGES unless it is a disk image, so cleanup never detaches a real disk.
     local description
-    description="$(diskutil info "$DEV")"
+    description="$(diskutil info "$DEV")" || fail "could not inspect /dev/$DEV; check hdiutil info and detach $image by hand"
     if ! grep -Eq '^ *(Protocol|Device / Media Name): +Disk Image *$' <<<"$description" \
         || ! attached_from_work "$DEV"; then
-        KEEP_WORK=true
         fail "/dev/$DEV does not look like $image; check hdiutil info and detach $image by hand"
     fi
     IMAGES+=("$DEV")
+    KEEP_WORK=false
 }
 
 # Refuses any device that isn't on one of this script's images.
@@ -223,7 +230,15 @@ for fs in "ExFAT:exfat" "MS-DOS FAT32:msdos" "APFS:apfs" "ExFAT:exfat"; do
     # By disk rather than /Volumes/NFMTEST, so ours() can check it; this also covers an APFS container on $P.
     ours "$GPT"
     diskutil unmountDisk "$GPT" >/dev/null
+    if [[ "$kind" == "apfs" ]]; then
+        # Windows doesn't mount NTFS from an APFS-typed partition.
+        expect_format 74 "$P" --label X --quick
+    fi
 done
+
+step "NTFS on the partition diskutil re-typed from APFS (as the app does)"
+expect_format 0 "$P" --label "Từ APFS" --quick
+check_ntfs "$P"
 
 step "Whole-disk NTFS on MBR (eraseDisk, then ntfs-format)"
 ours "$MBR"

@@ -23,7 +23,9 @@ BIN="$(swiftpm --show-bin-path)"
 
 mkdir -p "$HELPERS"
 for tool in ntfs-format ntfs-mkfs; do
-    cp -f "$BIN/$tool" "$HELPERS/$tool"
+    # A new file, not one rewritten in place: the kernel caches the signature of a signed binary.
+    rm -f "$HELPERS/$tool"
+    cp "$BIN/$tool" "$HELPERS/$tool"
     if [[ "${CODE_SIGNING_ALLOWED:-NO}" == "YES" && -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]]; then
         codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --options runtime --timestamp=none "$HELPERS/$tool"
     fi
