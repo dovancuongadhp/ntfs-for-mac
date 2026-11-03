@@ -3,6 +3,8 @@
 Đọc và ghi ổ Windows (NTFS) ngay trong Finder trên macOS — miễn phí, mã nguồn mở.
 Read and write Windows (NTFS) drives right in Finder on macOS — free and open source.
 
+**[⬇ Tải về / Download (DMG)](https://github.com/dovancuongadhp/ntfs-for-mac/releases/latest/download/NTFS-for-Mac.dmg)** · [Các phiên bản / Releases](https://github.com/dovancuongadhp/ntfs-for-mac/releases)
+
 [Tiếng Việt](#tiếng-việt) · [English](#english)
 
 ---
@@ -24,11 +26,14 @@ Read and write Windows (NTFS) drives right in Finder on macOS — free and open 
 
 ### Cài đặt
 
-1. Tải `NTFS-for-Mac-x.y.z.dmg` ở trang Releases, mở ra.
+1. [Tải `NTFS-for-Mac.dmg`](https://github.com/dovancuongadhp/ntfs-for-mac/releases/latest/download/NTFS-for-Mac.dmg), mở ra.
 2. **Kéo NTFS for Mac vào thư mục Applications.**
-3. Mở ứng dụng. Lần đầu, bấm **Mở Cài đặt hệ thống** rồi bật **NTFS for Mac** trong
+3. Mở ứng dụng. Bản hiện tại **chưa được Apple công chứng**, nên lần đầu macOS sẽ chặn: bấm **Xong**, vào
+   *Cài đặt hệ thống → Quyền riêng tư & Bảo mật*, kéo xuống và bấm **Vẫn mở**. (Hoặc chạy trong Terminal:
+   `xattr -dr com.apple.quarantine "/Applications/NTFS for Mac.app"`.)
+4. Lần đầu, bấm **Mở Cài đặt hệ thống** rồi bật **NTFS for Mac** trong
    *Cài đặt chung → Mục đăng nhập & tiện ích mở rộng → Tiện ích mở rộng hệ thống tệp*.
-4. Cắm ổ NTFS. Nếu ổ đã cắm từ trước, bấm **Gắn** trong menu của ứng dụng.
+5. Cắm ổ NTFS. Nếu ổ đã cắm từ trước, bấm **Gắn** trong menu của ứng dụng.
 
 ### Gỡ bỏ
 
@@ -67,11 +72,14 @@ log show --last 10m --predicate 'subsystem BEGINSWITH "com.docuong.ntfsformac"'
 
 ### Install
 
-1. Download `NTFS-for-Mac-x.y.z.dmg` from Releases and open it.
+1. [Download `NTFS-for-Mac.dmg`](https://github.com/dovancuongadhp/ntfs-for-mac/releases/latest/download/NTFS-for-Mac.dmg) and open it.
 2. **Drag NTFS for Mac into Applications.**
-3. Open the app. The first time, click **Open System Settings** and switch on **NTFS for Mac** under
+3. Open the app. The current build is **not notarized by Apple yet**, so macOS blocks the first launch: click **Done**,
+   go to *System Settings → Privacy & Security*, scroll down and click **Open Anyway**. (Or run in Terminal:
+   `xattr -dr com.apple.quarantine "/Applications/NTFS for Mac.app"`.)
+4. The first time, click **Open System Settings** and switch on **NTFS for Mac** under
    *General → Login Items & Extensions → File System Extensions*.
-4. Plug in an NTFS drive. If it was already connected, click **Mount** in the app's menu.
+5. Plug in an NTFS drive. If it was already connected, click **Mount** in the app's menu.
 
 ### Uninstall
 
