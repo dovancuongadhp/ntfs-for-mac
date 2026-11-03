@@ -56,7 +56,9 @@ Hiện dạng sheet trên cửa sổ chính:
 - Tiêu đề "Format “<tên>”?".
 - **Cảnh báo đỏ** ghi rõ: dung lượng dữ liệu sẽ mất (hoặc "Không xác định được dữ liệu — hãy coi như có dữ liệu quan trọng" nếu chưa gắn), mã phân vùng/ổ, dung lượng, ổ chứa nó, và những phân vùng **không** bị ảnh hưởng.
 - Trường: Tên, Định dạng; khi format cả ổ thêm Bảng phân vùng (GPT mặc định / MBR).
-- Mục "Nâng cao" thu gọn: kích thước cluster (mặc định Tự động); riêng NTFS có Format nhanh / Format đầy đủ (ghi số 0 toàn bộ).
+- Mục "Nâng cao" thu gọn, chỉ có khi chọn NTFS (`diskutil` không cho chỉnh các tùy chọn này với định dạng khác): kích thước cluster (mặc định Tự động), Format nhanh / Format đầy đủ (ghi số 0 toàn bộ).
+- Chọn một ổ con APFS rồi Format… sẽ format cả phân vùng chứa container APFS đó; cảnh báo liệt kê **mọi** ổ con APFS trong container sẽ bị xóa.
+- Ổ không có bảng phân vùng (cả ổ là một volume): format phân vùng chỉ cho exFAT / FAT32 / APFS; muốn NTFS thì format cả ổ.
 - Ô xác nhận: phải gõ đúng tên phân vùng (hoặc tên ổ khi format cả ổ) thì nút đỏ "Xóa và format" mới bật.
 - Khi đang chạy: hiện từng bước (Đang tháo…, Đang format…, Đang gắn…); không hủy được sau khi bắt đầu ghi.
 
@@ -65,7 +67,7 @@ Kiểm tra tên theo định dạng:
 | Định dạng | Giới hạn tên |
 |---|---|
 | FAT32 | ≤ 11 ký tự ASCII, tự viết hoa, không chứa `" * / : < > ? \ \|` |
-| exFAT | ≤ 15 ký tự |
+| exFAT | ≤ 11 ký tự (giới hạn của chuẩn exFAT) |
 | NTFS | ≤ 128 ký tự |
 | APFS | ≤ 255 byte UTF-8 |
 
@@ -145,7 +147,7 @@ Logic NTFS hiện có (`MountPolicy`, tự gắn, lý do chỉ đọc, `VolumePr
 
 ### 4.3 Công cụ `ntfs-format`
 
-Công cụ dòng lệnh mới đóng gói trong app (`Contents/Helpers/`), ký cùng app, xây từ mã `mkntfs` đã có trong Core. Chạy qua `do shell script … with administrator privileges` như cách mount hiện tại.
+Công cụ dòng lệnh Swift mới trong Core, đóng gói trong app (`Contents/Helpers/`) cùng `ntfs-mkfs` đã có, ký cùng app. Chạy qua `do shell script … with administrator privileges` như cách mount hiện tại.
 
 Vì chạy với quyền root, công cụ tự kiểm tra lại (phòng thủ nhiều lớp), mọi giá trị nhận từ tham số:
 
@@ -155,7 +157,8 @@ Vì chạy với quyền root, công cụ tự kiểm tra lại (phòng thủ nh
 
 Sau đó:
 
-- Chạy mkntfs lên phân vùng với vị trí bắt đầu (`-p`), kích thước sector (`-s`), tên (`-L`), cluster (`-c` nếu chọn), `-Q` nếu format nhanh.
+- Chạy `ntfs-mkfs` (mkntfs, đóng gói cạnh `ntfs-format`) lên thiết bị block `/dev/diskNsM` — **không** dùng `-F`, để mkntfs tự từ chối nếu phân vùng đang gắn — với vị trí bắt đầu (`-p`), kích thước sector (`-s`), geometry `-H 255 -S 63`, tên (`-L`), cluster (`-c` nếu chọn), `-Q` nếu format nhanh.
+- Mọi kiểm tra (kể cả mục MBR) chạy **trước** khi ghi bất cứ thứ gì. Phân vùng logic trong MBR (số > 4) bị từ chối.
 - Với ổ MBR: đổi mã loại phân vùng thành `0x07` (sau khi kiểm tra mục MBR khớp vị trí và dung lượng phân vùng).
 - Trả mã lỗi rõ ràng cho từng trường hợp để app hiển thị.
 
