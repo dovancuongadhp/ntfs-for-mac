@@ -13,6 +13,7 @@ struct DiskTreeBuilderTests {
         #expect(disk.mapPartitions.count == 3)
         #expect(disk.partitions[2].fileSystem == .ntfs)
         #expect(disk.partitions[1].fileSystem == .exfat)
+        #expect(disk.partitions[0].name == "EFI" && disk.partitions[0].isHidden)
     }
 
     @Test func onlyNTFSPartitionsBecomeNTFSDisks() throws {
@@ -45,10 +46,50 @@ struct DiskTreeBuilderTests {
         #expect(store.name == "Photos, Projects")
     }
 
+    @Test func storeOfOnlyHiddenVolumesKeepsItsOwnName() throws {
+        var infos = Fixture.usbAPFS
+        infos[3].apfsRoles = ["Preboot"]
+        infos[4].apfsRoles = ["Recovery"]
+        let disk = try #require(DiskTreeBuilder.build(infos).first)
+        #expect(disk.sidebarPartitions.isEmpty)
+        #expect(disk.mapPartitions.map(\.name) == ["disk8s1"])
+    }
+
     @Test func internalDiskHidesSystemHelperVolumes() throws {
         let disk = try #require(DiskTreeBuilder.build(Fixture.internalMac).first)
         #expect(disk.isInternal)
         #expect(disk.sidebarPartitions.map(\.name) == ["Macintosh HD", "Data"])
+        let store = try #require(disk.partitions.first { $0.bsdName == "disk0s2" })
+        #expect(store.isHidden)
+        let preboot = try #require(disk.partitions.first { $0.bsdName == "disk3s2" })
+        #expect(preboot.isHidden)
+    }
+
+    @Test func snapshotDevicesAreLeftOut() throws {
+        let tree = DiskTreeBuilder.build(Fixture.internalMac)
+        #expect(tree.map(\.bsdName) == ["disk0"])
+        #expect(!tree.flatMap(\.partitions).contains { $0.bsdName == "disk3s1s1" })
+        #expect(DiskTreeBuilder.physicalDisk(containing: "disk3s1s1", in: tree)?.bsdName == "disk0")
+    }
+
+    @Test func containerWithoutKnownStoreIsItsOwnDisk() throws {
+        let tree = DiskTreeBuilder.build(Fixture.orphanContainer + Fixture.usbGPT)
+        #expect(tree.map(\.bsdName) == ["disk4", "disk6"])
+        let disk = try #require(tree.first)
+        #expect(disk.isInternal && !disk.isEjectable)
+        #expect(disk.connection == "Apple Fabric")
+        #expect(disk.partitions.map(\.bsdName) == ["disk4s1", "disk4s2", "disk4s5"])
+        #expect(disk.sidebarPartitions.map(\.name) == ["Macintosh HD", "Data"])
+        #expect(DiskTreeBuilder.physicalDisk(containing: "disk4s1", in: tree)?.bsdName == "disk4")
+        #expect(DiskTreeBuilder.physicalDisk(containing: "disk4", in: tree)?.bsdName == "disk4")
+    }
+
+    @Test func containerWithUnmatchedStoreIsItsOwnDisk() {
+        var infos = Fixture.orphanContainer
+        infos[0].physicalStore = "disk99s2"
+        let tree = DiskTreeBuilder.build(infos)
+        #expect(tree.map(\.bsdName) == ["disk4"])
+        #expect(tree.first?.partitions.count == 3)
     }
 
     @Test func diskWithoutPartitionTableIsItsOwnPartition() throws {
@@ -68,6 +109,7 @@ struct DiskTreeBuilderTests {
         #expect(DiskTreeBuilder.physicalDisk(containing: "disk3s1s1", in: tree)?.bsdName == "disk0")
         #expect(DiskTreeBuilder.physicalDisk(containing: "disk6s3", in: tree)?.bsdName == "disk6")
         #expect(DiskTreeBuilder.physicalDisk(containing: "disk6", in: tree)?.bsdName == "disk6")
+        #expect(DiskTreeBuilder.physicalDisk(containing: "disk3", in: tree)?.bsdName == "disk0")
         #expect(DiskTreeBuilder.physicalDisk(containing: "disk42s1", in: tree) == nil)
     }
 

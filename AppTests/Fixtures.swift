@@ -69,11 +69,28 @@ enum Fixture {
             DiskInfo(bsdName: "disk3", wholeBSDName: "disk3", isWhole: true, isLeaf: false, size: 994_000_000_000,
                      content: DiskContent.apfsContainer, isInternal: true, deviceProtocol: "Apple Fabric", physicalStore: "disk0s2"),
             DiskInfo(bsdName: "disk3s1", wholeBSDName: "disk3", size: 994_000_000_000, volumeKind: "apfs",
+                     volumeName: "Macintosh HD", isInternal: true, deviceProtocol: "Apple Fabric", apfsRoles: ["System"]),
+            DiskInfo(bsdName: "disk3s1s1", wholeBSDName: "disk3", size: 994_000_000_000, volumeKind: "apfs",
                      volumeName: "Macintosh HD", mount: mount("/", type: "apfs"), isInternal: true,
-                     deviceProtocol: "Apple Fabric", apfsRoles: ["System"]),
+                     deviceProtocol: "Apple Fabric"),
             DiskInfo(bsdName: "disk3s2", wholeBSDName: "disk3", size: 994_000_000_000, volumeKind: "apfs",
                      volumeName: "Preboot", isInternal: true, deviceProtocol: "Apple Fabric", apfsRoles: ["Preboot"]),
             DiskInfo(bsdName: "disk3s5", wholeBSDName: "disk3", size: 994_000_000_000, volumeKind: "apfs",
+                     volumeName: "Data", mount: mount("/System/Volumes/Data", type: "apfs"), isInternal: true,
+                     deviceProtocol: "Apple Fabric", apfsRoles: ["Data"]),
+        ]
+    }
+
+    /// An APFS container whose physical store DiskArbitration doesn't report.
+    static var orphanContainer: [DiskInfo] {
+        [
+            DiskInfo(bsdName: "disk4", wholeBSDName: "disk4", isWhole: true, isLeaf: false, size: 500_000_000_000,
+                     blockSize: 4096, content: DiskContent.apfsContainer, isInternal: true, deviceProtocol: "Apple Fabric"),
+            DiskInfo(bsdName: "disk4s1", wholeBSDName: "disk4", size: 500_000_000_000, blockSize: 4096, volumeKind: "apfs",
+                     volumeName: "Macintosh HD", isInternal: true, deviceProtocol: "Apple Fabric", apfsRoles: ["System"]),
+            DiskInfo(bsdName: "disk4s2", wholeBSDName: "disk4", size: 500_000_000_000, blockSize: 4096, volumeKind: "apfs",
+                     volumeName: "Preboot", isInternal: true, deviceProtocol: "Apple Fabric", apfsRoles: ["Preboot"]),
+            DiskInfo(bsdName: "disk4s5", wholeBSDName: "disk4", size: 500_000_000_000, blockSize: 4096, volumeKind: "apfs",
                      volumeName: "Data", mount: mount("/System/Volumes/Data", type: "apfs"), isInternal: true,
                      deviceProtocol: "Apple Fabric", apfsRoles: ["Data"]),
         ]

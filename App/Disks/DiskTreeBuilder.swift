@@ -3,19 +3,27 @@ import Foundation
 /// Turns flat DiskArbitration records into physical disks with their partitions.
 enum DiskTreeBuilder {
     static func build(_ infos: [DiskInfo]) -> [PhysicalDisk] {
+        let infos = infos.filter { !isSnapshot($0.bsdName) }
         let containers = infos.filter { $0.isWhole && $0.content == DiskContent.apfsContainer }
-        return infos
-            .filter { $0.isWhole && $0.content != DiskContent.apfsContainer }
+        let wholes = infos.filter { $0.isWhole && $0.content != DiskContent.apfsContainer }
+        let wholeNames = Set(wholes.map(\.bsdName))
+        let partitionNames = Set(infos.filter { !$0.isWhole && wholeNames.contains($0.wholeBSDName) }.map(\.bsdName))
+        // A container whose store isn't among the partitions is listed as a disk of its own.
+        let orphans = containers.filter { !partitionNames.contains($0.physicalStore ?? "") }
+        return (wholes + orphans)
             .sorted { naturalOrder($0.bsdName, $1.bsdName) }
             .map { whole in physicalDisk(whole, infos: infos, containers: containers) }
     }
 
     /// The physical disk holding a partition or volume, also for snapshot
-    /// devices such as `disk3s1s1` that aren't in the tree themselves.
+    /// devices such as `disk3s1s1` that aren't in the tree themselves, and
+    /// for APFS container disks such as `disk3`.
     static func physicalDisk(containing bsdName: String, in tree: [PhysicalDisk]) -> PhysicalDisk? {
         var name = bsdName
         while true {
-            if let disk = tree.first(where: { $0.bsdName == name || $0.partitions.contains { $0.bsdName == name } }) {
+            if let disk = tree.first(where: { disk in
+                disk.bsdName == name || disk.partitions.contains { $0.bsdName == name || $0.wholeBSDName == name }
+            }) {
                 return disk
             }
             guard let suffix = name.range(of: "s[0-9]+$", options: .regularExpression) else { return nil }
@@ -29,6 +37,10 @@ enum DiskTreeBuilder {
             .filter { !$0.isWhole && $0.wholeBSDName == whole.bsdName }
             .sorted(by: diskOrder)
 
+        guard whole.content != DiskContent.apfsContainer else {
+            return disk(whole, scheme: scheme, partitions: children.map { partition($0, hidden: hasHiddenRole($0)) })
+        }
+
         var partitions: [Partition] = []
         if children.isEmpty, whole.isLeaf {
             partitions.append(partition(whole, hidden: false))
@@ -40,19 +52,20 @@ enum DiskTreeBuilder {
                 .sorted(by: diskOrder)
             var store = partition(child, hidden: !volumes.isEmpty || DiskContent.hidden.contains(child.content ?? ""))
             if !volumes.isEmpty {
-                store.name = volumes
-                    .filter { Set($0.apfsRoles).isDisjoint(with: DiskContent.hiddenRoles) }
-                    .map(\.displayName)
-                    .joined(separator: ", ")
+                let names = volumes.filter { !hasHiddenRole($0) }.map(\.displayName)
+                store.name = names.isEmpty ? child.displayName : names.joined(separator: ", ")
             }
             partitions.append(store)
             for volume in volumes {
-                var item = partition(volume, hidden: !Set(volume.apfsRoles).isDisjoint(with: DiskContent.hiddenRoles))
+                var item = partition(volume, hidden: hasHiddenRole(volume))
                 item.apfsStore = child.bsdName
                 partitions.append(item)
             }
         }
+        return disk(whole, scheme: scheme, partitions: partitions)
+    }
 
+    private static func disk(_ whole: DiskInfo, scheme: PartitionScheme, partitions: [Partition]) -> PhysicalDisk {
         let model = whole.deviceModel.flatMap { $0.isEmpty ? nil : $0 }
         return PhysicalDisk(
             bsdName: whole.bsdName,
@@ -89,6 +102,15 @@ enum DiskTreeBuilder {
             isTimeMachine: info.hasTimeMachineBackup || info.apfsRoles.contains("Backup"),
             apfsStore: nil
         )
+    }
+
+    private static func hasHiddenRole(_ info: DiskInfo) -> Bool {
+        !Set(info.apfsRoles).isDisjoint(with: DiskContent.hiddenRoles)
+    }
+
+    /// APFS snapshot devices (`disk3s1s1`), such as the sealed system snapshot macOS boots from.
+    private static func isSnapshot(_ bsdName: String) -> Bool {
+        bsdName.range(of: "^disk[0-9]+s[0-9]+s[0-9]+$", options: .regularExpression) != nil
     }
 
     private static func diskOrder(_ a: DiskInfo, _ b: DiskInfo) -> Bool {
