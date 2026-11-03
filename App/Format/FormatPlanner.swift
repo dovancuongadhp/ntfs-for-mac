@@ -33,7 +33,7 @@ enum FormatPlanner {
             steps.append(.diskutil(["eraseDisk", "APFS", options.name, "GPT", device.bsdName]))
         case .partition:
             steps += preparation.affected.filter { $0.mount != nil }.map { .unmount($0.bsdName, whole: false) }
-            if device.content?.uppercased() == DiskContent.apfsStore {
+            if DiskContent.isAPFSStore(device.content) {
                 // diskutil won't erase an APFS physical store. Deleting its container
                 // with a new name keeps the partition, as an HFS+ placeholder.
                 steps.append(.diskutil(["apfs", "deleteContainer", device.bsdName, "NFMTEMP"]))
@@ -65,6 +65,11 @@ enum FormatPlanner {
             }
         }
         return FormatJob(fingerprint: preparation.fingerprint, steps: steps)
+    }
+
+    /// The store whose APFS container the arguments delete, if they do.
+    static func deletedContainerStore(_ arguments: [String]) -> String? {
+        arguments.count == 4 && arguments.starts(with: ["apfs", "deleteContainer"]) ? arguments[2] : nil
     }
 
     private static func isBasicData(_ content: String?) -> Bool {

@@ -16,6 +16,10 @@ struct LiveFormatEnvironment: FormatEnvironment {
         inventory.childNames(ofWhole: bsdName)
     }
 
+    func apfsPhysicalStores(ofStore store: String) -> [String]? {
+        inventory.apfsPhysicalStores(ofStore: store)
+    }
+
     func unmount(_ bsdName: String, whole: Bool) async throws {
         try await mounter.unmount(bsdName: bsdName, whole: whole)
     }

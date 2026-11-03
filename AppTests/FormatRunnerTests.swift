@@ -27,6 +27,9 @@ final class FakeFormatEnvironment: FormatEnvironment {
 
     func freshInfo(_ bsdName: String) -> DiskInfo? { infos[bsdName] }
     func childNames(ofWhole bsdName: String) -> [String] { children[bsdName] ?? [] }
+    func apfsPhysicalStores(ofStore store: String) -> [String]? {
+        DiskTreeBuilder.physicalStores(ofStore: store, in: Array(infos.values))
+    }
 
     func unmount(_ bsdName: String, whole: Bool) async throws {
         log.append("unmount \(bsdName)" + (whole ? " whole" : ""))
@@ -371,6 +374,86 @@ struct FormatRunnerTests {
             try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
         }
         #expect(environment.log == ["unmount disk6 whole"])
+    }
+
+    // MARK: APFS containers on several partitions
+
+    @Test func containerSpreadOverTwoStoresIsNotDeleted() async {
+        let infos = Fixture.usbAPFS
+        let environment = FakeFormatEnvironment(infos)
+        environment.infos["disk9"]?.physicalStores = ["disk12s2", "disk8s1"]
+        await #expect(throws: FormatError.diskChanged) {
+            try await FormatRunner(environment: environment).run(self.apfsStoreJob(infos[1], in: infos)) { _ in }
+        }
+        #expect(environment.log == ["unmount disk9s1", "unmount disk9s2"])
+    }
+
+    @Test func storeWithoutAKnownContainerIsNotDeleted() async {
+        let infos = Fixture.usbAPFS
+        for stores in [[], ["disk8s1", ""]] as [[String]] {
+            let environment = FakeFormatEnvironment(infos)
+            environment.infos["disk9"]?.physicalStores = stores
+            await #expect(throws: FormatError.diskChanged) {
+                try await FormatRunner(environment: environment).run(self.apfsStoreJob(infos[1], in: infos)) { _ in }
+            }
+            #expect(!environment.log.contains { $0.hasPrefix("diskutil") })
+        }
+        let missing = FakeFormatEnvironment(infos)
+        missing.infos["disk9"] = nil
+        await #expect(throws: FormatError.diskChanged) {
+            try await FormatRunner(environment: missing).run(self.apfsStoreJob(infos[1], in: infos)) { _ in }
+        }
+        #expect(!missing.log.contains { $0.hasPrefix("diskutil") })
+    }
+
+    // MARK: Drive identity across erasing
+
+    @Test func driveReattachedAfterTheRetypeIsNotFormattedAsNTFS() async {
+        let infos = hfsPartition
+        let environment = FakeFormatEnvironment(infos)
+        environment.afterDiskutil = { [unowned environment] in
+            self.retype(environment, "disk6s3")
+            environment.infos["disk6"]?.registryID = 0x1_0000_0999
+        }
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive changed", partition: true)) {
+            try await FormatRunner(environment: environment).run(self.retypeJob(infos[3], in: infos)) { _ in }
+        }
+        #expect(!environment.log.contains("ntfs-format disk6s3"))
+    }
+
+    @Test func driveSwappedAfterEraseDiskIsNotFormattedAsNTFS() async {
+        let environment = FakeFormatEnvironment(Fixture.usbGPT)
+        environment.afterDiskutil = { [unowned environment] in
+            self.eraseDisk(environment)
+            environment.infos["disk6"]?.registryID = 0x1_0000_0999
+        }
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive changed")) {
+            try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
+        }
+        #expect(environment.log == ["unmount disk6 whole", "diskutil eraseDisk ExFAT NTFS GPT disk6"])
+    }
+
+    @Test func driveSwappedWhileUnmountingTheNewPartitionIsNotFormatted() async {
+        let environment = FakeFormatEnvironment(Fixture.usbGPT)
+        environment.afterDiskutil = { [unowned environment] in
+            self.eraseDisk(environment)
+            environment.afterUnmount = { environment.infos["disk6"]?.deviceModel = "Another Stick" }
+        }
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive changed")) {
+            try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
+        }
+        #expect(environment.log.last == "unmount disk6s2")
+        #expect(!environment.log.contains("ntfs-format disk6s2"))
+    }
+
+    @Test func newPartitionsAfterEraseDiskDontCountAsADriveChange() async throws {
+        let environment = FakeFormatEnvironment(Fixture.usbGPT)
+        environment.afterDiskutil = { [unowned environment] in
+            self.eraseDisk(environment)
+            environment.infos["disk6s1"]?.mediaUUID = "NEW-EFI"
+        }
+        try await FormatRunner(environment: environment).run(wholeDiskNTFSJob()) { _ in }
+        #expect(environment.log.last == "ntfs-format disk6s2")
     }
 }
 

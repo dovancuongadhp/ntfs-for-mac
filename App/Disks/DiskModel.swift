@@ -8,6 +8,10 @@ enum DiskContent {
     static let microsoftBasicData = "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7"
     static let virtualProtocol = "Virtual Interface"
 
+    static func isAPFSStore(_ content: String?) -> Bool {
+        content?.uppercased() == apfsStore || content == "Apple_APFS"
+    }
+
     /// Partitions that hold no user data and stay out of the sidebar.
     static let hidden: Set<String> = [
         "EFI", "C12A7328-F81F-11D2-BA4B-00A0C93EC93B",
@@ -50,6 +54,11 @@ struct DiskInfo: Equatable, Sendable {
     var deviceModel: String?
     /// For an APFS container's whole disk: the partition that stores it.
     var physicalStore: String?
+    /// For an APFS container's whole disk: every partition it is stored on.
+    /// More than one (a Fusion-style container) can't be formatted safely.
+    var physicalStores: [String] = []
+    /// IORegistry entry ID of the IOMedia object; a new one each time the drive is attached.
+    var registryID: UInt64?
     var apfsRoles: [String] = []
     var hasTimeMachineBackup = false
 
@@ -132,9 +141,12 @@ struct Partition: Identifiable, Equatable, Sendable {
     /// For an APFS volume: the partition holding its container. Formatting the
     /// volume formats that partition.
     var apfsStore: String?
+    /// For an APFS store or volume: how many partitions its container is
+    /// stored on, or `nil` if no container was found.
+    var containerStoreCount: Int?
 
     var isRecognized: Bool { volumeKind != nil }
-    var isAPFSStore: Bool { content == DiskContent.apfsStore || content == "Apple_APFS" }
+    var isAPFSStore: Bool { DiskContent.isAPFSStore(content) }
 
     /// The view the NTFS mount logic works with, for NTFS partitions.
     var ntfsDisk: NTFSDisk? {

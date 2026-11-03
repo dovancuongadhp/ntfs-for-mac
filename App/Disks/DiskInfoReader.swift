@@ -1,5 +1,6 @@
 import DiskArbitration
 import Foundation
+import IOKit
 import NTFSFormat
 
 /// Reads a DiskArbitration disk into a `DiskInfo`.
@@ -18,6 +19,7 @@ enum DiskInfoReader {
         let mediaPath = description[kDADiskDescriptionMediaPathKey as String] as? String
         let mount = (description[kDADiskDescriptionVolumePathKey as String] as? URL).flatMap(mountInfo)
         let roles = mediaPath.map { IOMedia.strings($0, "Role") } ?? []
+        let isContainer = isWhole && content == DiskContent.apfsContainer
 
         return DiskInfo(
             bsdName: bsdName,
@@ -43,7 +45,9 @@ enum DiskInfoReader {
             deviceProtocol: deviceProtocol,
             deviceModel: (description[kDADiskDescriptionDeviceModelKey as String] as? String)?
                 .trimmingCharacters(in: .whitespaces),
-            physicalStore: isWhole && content == DiskContent.apfsContainer ? mediaPath.flatMap(IOMedia.parentBSDName) : nil,
+            physicalStore: isContainer ? mediaPath.flatMap(IOMedia.parentBSDName) : nil,
+            physicalStores: isContainer ? mediaPath.map(IOMedia.ancestorBSDNames) ?? [] : [],
+            registryID: registryID(of: disk),
             apfsRoles: roles,
             hasTimeMachineBackup: mount.map {
                 FileManager.default.fileExists(atPath: $0.path.appending(path: "Backups.backupdb").path)
@@ -75,6 +79,15 @@ enum DiskInfoReader {
             String(decoding: raw.prefix { $0 != 0 }, as: UTF8.self)
         }
         return source.hasPrefix("/dev/") ? String(source.dropFirst(5)) : nil
+    }
+
+    /// Only valid while `disk` is alive.
+    private static func registryID(of disk: DADisk) -> UInt64? {
+        let media = DADiskCopyIOMedia(disk)
+        guard media != IO_OBJECT_NULL else { return nil }
+        defer { IOObjectRelease(media) }
+        var id: UInt64 = 0
+        return IORegistryEntryGetRegistryEntryID(media, &id) == KERN_SUCCESS ? id : nil
     }
 
     private static func number(_ value: Any?) -> UInt64? {

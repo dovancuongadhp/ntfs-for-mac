@@ -97,6 +97,15 @@ final class DiskInventory {
         DADiskCreateFromBSDName(kCFAllocatorDefault, session, bsdName).flatMap(DiskInfoReader.read)
     }
 
+    /// Every partition the APFS container stored on `store` spans, with the
+    /// containers read again now; `nil` unless exactly one is stored on it.
+    func apfsPhysicalStores(ofStore store: String) -> [String]? {
+        let containers = infos.values
+            .filter { $0.isWhole && $0.content == DiskContent.apfsContainer }
+            .compactMap { freshInfo($0.bsdName) }
+        return DiskTreeBuilder.physicalStores(ofStore: store, in: containers)
+    }
+
     /// Re-reads one disk, e.g. after mounting it.
     func refresh(bsdName: String) {
         if let disk = DADiskCreateFromBSDName(kCFAllocatorDefault, session, bsdName) {

@@ -39,6 +39,17 @@ enum DiskTreeBuilder {
         }
     }
 
+    /// Every partition the one APFS container stored on `store` spans, or
+    /// `nil` unless exactly one container is stored on it.
+    static func physicalStores(ofStore store: String, in infos: [DiskInfo]) -> [String]? {
+        let containers = infos.filter {
+            $0.isWhole && $0.content == DiskContent.apfsContainer
+                && ($0.physicalStore == store || $0.physicalStores.contains(store))
+        }
+        guard containers.count == 1 else { return nil }
+        return containers[0].physicalStores
+    }
+
     private static func physicalDisk(_ whole: DiskInfo, infos: [DiskInfo], containers: [DiskInfo]) -> PhysicalDisk {
         let scheme = PartitionScheme(content: whole.content)
         let children = infos
@@ -63,10 +74,15 @@ enum DiskTreeBuilder {
                 let names = volumes.filter { !hasHiddenRole($0) }.map(\.displayName)
                 store.name = names.isEmpty ? child.displayName : names.joined(separator: ", ")
             }
+            let storeCount = physicalStores(ofStore: child.bsdName, in: containers)?.count
+            if DiskContent.isAPFSStore(child.content) || !volumes.isEmpty {
+                store.containerStoreCount = storeCount
+            }
             partitions.append(store)
             for volume in volumes {
                 var item = partition(volume, hidden: hasHiddenRole(volume))
                 item.apfsStore = child.bsdName
+                item.containerStoreCount = storeCount
                 partitions.append(item)
             }
         }
@@ -108,7 +124,8 @@ enum DiskTreeBuilder {
             isHidden: hidden,
             apfsRoles: info.apfsRoles,
             isTimeMachine: info.hasTimeMachineBackup || info.apfsRoles.contains("Backup"),
-            apfsStore: nil
+            apfsStore: nil,
+            containerStoreCount: nil
         )
     }
 

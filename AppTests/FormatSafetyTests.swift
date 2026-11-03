@@ -44,6 +44,63 @@ struct FormatSafetyTests {
         #expect(preparation.block == .unsupported)
     }
 
+    @Test func containersOnOneStoreCanBeFormatted() throws {
+        let usb = try disk(Fixture.usbAPFS)
+        #expect(usb.partitions.map(\.containerStoreCount) == [1, 1, 1])
+        #expect(FormatSafety.blockReason(for: .partition("disk9s1"), on: usb, context: FormatContext()) == nil)
+        #expect(FormatSafety.blockReason(for: .disk("disk8"), on: usb, context: FormatContext()) == nil)
+    }
+
+    /// A Fusion-style container on disk8s1 and on disk12s2 of another drive.
+    private var twoStoreContainer: [DiskInfo] {
+        var infos = Fixture.usbAPFS
+        infos[2].physicalStores = ["disk12s2", "disk8s1"]
+        infos += [
+            DiskInfo(bsdName: "disk12", wholeBSDName: "disk12", isWhole: true, isLeaf: false, size: 64_000_000_000,
+                     content: "GUID_partition_scheme", isEjectable: true, deviceProtocol: "USB", deviceModel: "Stick"),
+            DiskInfo(bsdName: "disk12s1", wholeBSDName: "disk12", size: 209_715_200, offset: 20_480, partitionID: 1,
+                     content: "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", isEjectable: true, deviceProtocol: "USB"),
+            DiskInfo(bsdName: "disk12s2", wholeBSDName: "disk12", isLeaf: false, size: 63_000_000_000,
+                     offset: 209_735_680, partitionID: 2, content: DiskContent.apfsStore, isEjectable: true,
+                     deviceProtocol: "USB"),
+        ]
+        return infos
+    }
+
+    @Test func containersOnSeveralStoresCantBeFormatted() throws {
+        let tree = DiskTreeBuilder.build(twoStoreContainer)
+        let main = try #require(tree.first { $0.bsdName == "disk8" })
+        let secondary = try #require(tree.first { $0.bsdName == "disk12" })
+        #expect(main.partitions.map(\.containerStoreCount) == [2, 2, 2])
+        #expect(secondary.partitions.first { $0.bsdName == "disk12s2" }?.containerStoreCount == 2)
+        for (target, disk) in [(FormatTarget.partition("disk9s1"), main), (.partition("disk9s2"), main), (.disk("disk8"), main),
+                               (.partition("disk12s2"), secondary), (.disk("disk12"), secondary)] {
+            #expect(FormatSafety.blockReason(for: target, on: disk, context: FormatContext()) == .unsupported)
+        }
+    }
+
+    @Test func storeWithoutAContainerCantBeFormattedAlone() throws {
+        let infos = twoStoreContainer.filter { !$0.bsdName.hasPrefix("disk8") && !$0.bsdName.hasPrefix("disk9") }
+        let stick = try #require(DiskTreeBuilder.build(infos).first)
+        #expect(stick.partitions.first { $0.bsdName == "disk12s2" }?.containerStoreCount == nil)
+        #expect(FormatSafety.blockReason(for: .partition("disk12s2"), on: stick, context: FormatContext()) == .unsupported)
+        // Erasing the whole drive only erases what is on it.
+        #expect(FormatSafety.blockReason(for: .disk("disk12"), on: stick, context: FormatContext()) == nil)
+    }
+
+    @Test func physicalStoresNeedExactlyOneContainer() {
+        let infos = twoStoreContainer
+        #expect(DiskTreeBuilder.physicalStores(ofStore: "disk12s2", in: infos) == ["disk12s2", "disk8s1"])
+        #expect(DiskTreeBuilder.physicalStores(ofStore: "disk8s1", in: Fixture.usbAPFS) == ["disk8s1"])
+        #expect(DiskTreeBuilder.physicalStores(ofStore: "disk8s2", in: Fixture.usbAPFS) == nil)
+        var twice = Fixture.usbAPFS
+        var other = twice[2]
+        other.bsdName = "disk13"
+        other.wholeBSDName = "disk13"
+        twice.append(other)
+        #expect(DiskTreeBuilder.physicalStores(ofStore: "disk8s1", in: twice) == nil)
+    }
+
     @Test func superfloppyCanBeFormatted() throws {
         let card = try disk(Fixture.superfloppy)
         #expect(FormatSafety.blockReason(for: .partition("disk10"), on: card, context: FormatContext()) == nil)
@@ -224,6 +281,8 @@ struct FormatSafetyTests {
         #expect(changed(3) { $0.mediaUUID = "SOMETHING-ELSE" } != original)
         #expect(changed(0) { $0.deviceModel = "Another Stick" } != original)
         #expect(changed(0) { $0.mediaName = "Another Media" } != original)
+        #expect(changed(0) { $0.registryID = 0x1_0000_0999 } != original)
+        #expect(changed(0) { $0.size += 512 } != original)
         #expect(DiskFingerprint(info: info, whole: nil, children: []) != original)
 
         let whole = infos[0]
@@ -236,6 +295,24 @@ struct FormatSafetyTests {
         #expect(changedChild { $0.mediaUUID = "NEW-PARTITION" } != wholeOriginal)
         #expect(changedChild { $0.volumeUUID = "NEW-VOLUME" } != wholeOriginal)
         #expect(Fixture.fingerprint(whole, in: Array(infos.dropLast())) != wholeOriginal)
+    }
+
+    @Test func driveMatchIgnoresPartitionsButNotTheDrive() {
+        let infos = Fixture.usbGPT
+        let job = Fixture.fingerprint(infos[0], in: infos)
+        func drive(_ change: (inout DiskInfo) -> Void = { _ in }) -> DiskFingerprint {
+            var whole = infos[0]
+            change(&whole)
+            return DiskFingerprint(info: whole, whole: nil, children: [])
+        }
+        #expect(job.matchesDrive(drive()))
+        #expect(job.matchesDrive(drive { $0.mediaUUID = "NEW" }))
+        #expect(!job.matchesDrive(drive { $0.registryID = 0x1_0000_0999 }))
+        #expect(!job.matchesDrive(drive { $0.deviceModel = "Another Stick" }))
+        #expect(!job.matchesDrive(drive { $0.mediaName = "Another Media" }))
+        #expect(!job.matchesDrive(drive { $0.size += 512 }))
+        #expect(!job.matchesDrive(drive { $0.bsdName = "disk7"; $0.wholeBSDName = "disk7" }))
+        #expect(!job.matchesDrive(DiskFingerprint(info: infos[3], whole: infos[0], children: [])))
     }
 
     @Test func fingerprintIgnoresMountsAndContent() {

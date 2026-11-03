@@ -18,7 +18,7 @@ enum Fixture {
         [
             DiskInfo(bsdName: "disk6", wholeBSDName: "disk6", isWhole: true, isLeaf: false, size: 512_110_190_592,
                      content: "GUID_partition_scheme", mediaName: "T7 Media", isEjectable: true,
-                     deviceProtocol: "USB", deviceModel: "Samsung T7 Shield"),
+                     deviceProtocol: "USB", deviceModel: "Samsung T7 Shield", registryID: 0x1_0000_0601),
             DiskInfo(bsdName: "disk6s1", wholeBSDName: "disk6", size: 209_715_200, offset: 20_480, partitionID: 1,
                      content: "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", mediaName: "EFI System Partition",
                      volumeKind: "msdos", volumeName: "EFI", isEjectable: true, deviceProtocol: "USB"),
@@ -38,7 +38,7 @@ enum Fixture {
         [
             DiskInfo(bsdName: "disk7", wholeBSDName: "disk7", isWhole: true, isLeaf: false, size: 209_715_200,
                      content: "FDisk_partition_scheme", mediaName: "Kingston Media", isEjectable: true,
-                     deviceProtocol: "USB", deviceModel: "DataTraveler"),
+                     deviceProtocol: "USB", deviceModel: "DataTraveler", registryID: 0x1_0000_0701),
             DiskInfo(bsdName: "disk7s1", wholeBSDName: "disk7", size: 209_714_688, offset: 512, partitionID: 1,
                      content: "DOS_FAT_32", mediaName: "Untitled 1", volumeKind: "msdos", volumeName: "KINGSTON",
                      mount: mount("/Volumes/KINGSTON"), isEjectable: true, deviceProtocol: "USB"),
@@ -49,12 +49,13 @@ enum Fixture {
     static var usbAPFS: [DiskInfo] {
         [
             DiskInfo(bsdName: "disk8", wholeBSDName: "disk8", isWhole: true, isLeaf: false, size: 209_715_200,
-                     content: "GUID_partition_scheme", isEjectable: true, deviceProtocol: "USB", deviceModel: "Portable SSD"),
+                     content: "GUID_partition_scheme", isEjectable: true, deviceProtocol: "USB", deviceModel: "Portable SSD",
+                     registryID: 0x1_0000_0801),
             DiskInfo(bsdName: "disk8s1", wholeBSDName: "disk8", isLeaf: false, size: 209_674_240, offset: 20_480, partitionID: 1,
                      content: DiskContent.apfsStore, mediaUUID: "UUID-STORE", isEjectable: true, deviceProtocol: "USB"),
             DiskInfo(bsdName: "disk9", wholeBSDName: "disk9", isWhole: true, isLeaf: false, size: 209_674_240, blockSize: 4096,
                      content: DiskContent.apfsContainer, mediaName: "AppleAPFSMedia", isEjectable: true,
-                     deviceProtocol: "USB", physicalStore: "disk8s1"),
+                     deviceProtocol: "USB", physicalStore: "disk8s1", physicalStores: ["disk8s1"]),
             DiskInfo(bsdName: "disk9s1", wholeBSDName: "disk9", size: 209_674_240, blockSize: 4096,
                      content: "41504653-0000-11AA-AA11-00306543ECAC", mediaUUID: "UUID-V1", volumeKind: "apfs",
                      volumeName: "Photos", mount: mount("/Volumes/Photos", total: 1000, free: 300, type: "apfs"),
@@ -74,7 +75,8 @@ enum Fixture {
             DiskInfo(bsdName: "disk0s2", wholeBSDName: "disk0", isLeaf: false, size: 994_000_000_000, offset: 524_288_000,
                      partitionID: 2, content: DiskContent.apfsStore, isInternal: true, deviceProtocol: "Apple Fabric"),
             DiskInfo(bsdName: "disk3", wholeBSDName: "disk3", isWhole: true, isLeaf: false, size: 994_000_000_000,
-                     content: DiskContent.apfsContainer, isInternal: true, deviceProtocol: "Apple Fabric", physicalStore: "disk0s2"),
+                     content: DiskContent.apfsContainer, isInternal: true, deviceProtocol: "Apple Fabric", physicalStore: "disk0s2",
+                     physicalStores: ["disk0s2"]),
             DiskInfo(bsdName: "disk3s1", wholeBSDName: "disk3", size: 994_000_000_000, volumeKind: "apfs",
                      volumeName: "Macintosh HD", isInternal: true, deviceProtocol: "Apple Fabric", apfsRoles: ["System"]),
             DiskInfo(bsdName: "disk3s1s1", wholeBSDName: "disk3", size: 994_000_000_000, volumeKind: "apfs",
@@ -108,7 +110,8 @@ enum Fixture {
         [
             DiskInfo(bsdName: "disk10", wholeBSDName: "disk10", isWhole: true, isLeaf: true, size: 32_000_000_000,
                      content: "DOS_FAT_32", mediaUUID: "UUID-CARD", volumeKind: "msdos", volumeName: "CAMERA",
-                     mount: mount("/Volumes/CAMERA"), isEjectable: true, deviceProtocol: "Secure Digital", deviceModel: "SD Card Reader"),
+                     mount: mount("/Volumes/CAMERA"), isEjectable: true, deviceProtocol: "Secure Digital", deviceModel: "SD Card Reader",
+                     registryID: 0x1_0000_1001),
         ]
     }
 

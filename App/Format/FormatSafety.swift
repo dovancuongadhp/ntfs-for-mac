@@ -54,9 +54,14 @@ enum FormatSafety {
         guard hasKnownLayout(disk) else { return .unsupported }
         switch target {
         case .disk(let name):
-            return name == disk.bsdName ? nil : .unsupported
+            guard name == disk.bsdName else { return .unsupported }
+            // Erasing one store of a container spread over several destroys data on the others.
+            return disk.partitions.contains { ($0.containerStoreCount ?? 0) > 1 } ? .unsupported : nil
         case .partition(let name):
             guard let partition = disk.partitions.first(where: { $0.bsdName == name }), !partition.isHidden else {
+                return .unsupported
+            }
+            if partition.isAPFSStore || partition.apfsStore != nil, partition.containerStoreCount != 1 {
                 return .unsupported
             }
             return partition.isWritable ? nil : .readOnlyMedia

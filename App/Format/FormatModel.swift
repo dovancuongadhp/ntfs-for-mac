@@ -59,7 +59,7 @@ struct FormatOptions: Equatable, Sendable {
 /// partition, and formatting stops if any of it differs. Mount state and
 /// partition content are left out: unmounting and re-typing must not change it.
 /// Erasing can give a partition a new GUID, so after diskutil erased it only
-/// `matchesErased` holds.
+/// `matchesErased` holds; after `eraseDisk` only `matchesDrive`.
 struct DiskFingerprint: Equatable, Sendable {
     struct Child: Equatable, Sendable {
         var bsdName: String
@@ -75,6 +75,9 @@ struct DiskFingerprint: Equatable, Sendable {
     /// Of the whole drive, so an identical-looking replacement is noticed.
     var deviceModel: String?
     var mediaName: String?
+    var wholeSize: UInt64?
+    /// Changes whenever the drive is attached again, even under the same BSD name.
+    var wholeRegistryID: UInt64?
     /// For a whole disk: its partitions.
     var children: [Child]
 
@@ -90,6 +93,8 @@ struct DiskFingerprint: Equatable, Sendable {
         mediaUUID = info.mediaUUID
         deviceModel = whole?.deviceModel
         mediaName = whole?.mediaName
+        wholeSize = whole?.size
+        wholeRegistryID = whole?.registryID
         self.children = children.map { Child(bsdName: $0.bsdName, mediaUUID: $0.mediaUUID, volumeUUID: $0.volumeUUID) }
     }
 
@@ -118,6 +123,14 @@ struct DiskFingerprint: Equatable, Sendable {
         var current = current
         current.mediaUUID = mediaUUID
         return current == self
+    }
+
+    /// The same drive, still attached since the sheet opened, whatever its
+    /// partitions are now. `drive` is read from the whole disk alone.
+    func matchesDrive(_ drive: DiskFingerprint) -> Bool {
+        drive.bsdName == wholeBSDName && drive.wholeBSDName == wholeBSDName
+            && drive.wholeRegistryID == wholeRegistryID && drive.deviceModel == deviceModel
+            && drive.mediaName == mediaName && drive.wholeSize == wholeSize
     }
 }
 

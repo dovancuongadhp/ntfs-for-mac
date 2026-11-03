@@ -6,6 +6,9 @@ import NTFSFormat
 protocol FormatEnvironment {
     func freshInfo(_ bsdName: String) -> DiskInfo?
     func childNames(ofWhole bsdName: String) -> [String]
+    /// Every partition the APFS container stored on `store` spans, read again
+    /// now; `nil` unless exactly one container is stored on it.
+    func apfsPhysicalStores(ofStore store: String) -> [String]?
     func unmount(_ bsdName: String, whole: Bool) async throws
     func runDiskutil(_ arguments: [String]) async throws
     func runNTFSFormat(_ request: FormatRequest) async throws
@@ -54,6 +57,10 @@ final class FormatRunner {
         case .diskutil(let arguments):
             progress(.formatting)
             try checkFingerprint(job.fingerprint, erased: erased)
+            if let store = FormatPlanner.deletedContainerStore(arguments) {
+                // Deleting a container spread over other partitions would erase them too.
+                guard environment.apfsPhysicalStores(ofStore: store) == [store] else { throw FormatError.diskChanged }
+            }
             try await environment.runDiskutil(arguments)
         case .ntfsFormat(let request):
             progress(.formatting)
@@ -62,9 +69,12 @@ final class FormatRunner {
             try await environment.runNTFSFormat(request)
         case .ntfsFormatNewPartition(let whole, let label, let clusterSize, let quick):
             progress(.formatting)
+            // The partitions are new, so only the drive itself can be compared.
+            try checkDrive(job.fingerprint)
             let partition = try await newDataPartition(onWhole: whole)
             try await unmountNewPartition(partition.bsdName)
             guard let offset = partition.offset else { throw FormatError.unexpectedLayout }
+            try checkDrive(job.fingerprint)
             try await environment.runNTFSFormat(
                 FormatRequest(device: partition.bsdName, size: partition.size, offset: offset,
                               label: label, clusterSize: clusterSize, quick: quick))
@@ -80,6 +90,12 @@ final class FormatRunner {
         guard let current else { throw FormatError.diskChanged }
         let matches = erased ? fingerprint.matchesErased(current) : current == fingerprint
         guard matches else { throw FormatError.diskChanged }
+    }
+
+    private func checkDrive(_ fingerprint: DiskFingerprint) throws {
+        guard let info = environment.freshInfo(fingerprint.wholeBSDName), info.isWhole,
+              fingerprint.matchesDrive(DiskFingerprint(info: info, whole: nil, children: []))
+        else { throw FormatError.diskChanged }
     }
 
     private func unmount(_ name: String, whole: Bool) async throws {
