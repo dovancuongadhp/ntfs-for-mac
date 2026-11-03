@@ -1,18 +1,28 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ of %@ used" : {
+    "%lld" : {
+      "shouldTranslate" : false
+    },
+    "A drive is being formatted" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Đã dùng %1$@ trên %2$@"
+            "value" : "Một ổ đang được định dạng"
           }
         }
       }
     },
-    "%lld" : {
-      "shouldTranslate" : false
+    "A full format writes zeros over the whole partition and can take a long time." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Định dạng đầy đủ ghi số 0 lên toàn bộ phân vùng và có thể mất nhiều thời gian."
+          }
+        }
+      }
     },
     "A write to the drive failed, so writing was stopped to protect your data. Eject the drive and check the cable or the drive itself." : {
       "localizations" : {
@@ -34,12 +44,142 @@
         }
       }
     },
+    "Advanced" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nâng cao"
+          }
+        }
+      }
+    },
+    "All %@ of data on “%@” will be erased permanently." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toàn bộ %1$@ dữ liệu trên “%2$@” sẽ bị xóa vĩnh viễn."
+          }
+        }
+      }
+    },
+    "Allow Writing" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cho phép ghi"
+          }
+        }
+      }
+    },
     "Allow writing" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cho phép ghi"
+          }
+        }
+      }
+    },
+    "Allow Writing Anyway…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vẫn cho ghi…"
+          }
+        }
+      }
+    },
+    "Allow writing to “%@”?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cho phép ghi vào “%@”?"
+          }
+        }
+      }
+    },
+    "Another operation is running on this drive." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đang có thao tác khác chạy."
+          }
+        }
+      }
+    },
+    "Automatic" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tự động"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Huỷ"
+          }
+        }
+      }
+    },
+    "Capacity" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dung lượng"
+          }
+        }
+      }
+    },
+    "Checking the drive…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang kiểm tra ổ…"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đóng"
+          }
+        }
+      }
+    },
+    "Cluster size" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kích thước cluster"
+          }
+        }
+      }
+    },
+    "Connect a drive and it will appear here." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cắm một ổ vào máy, ổ sẽ hiện ở đây."
           }
         }
       }
@@ -60,6 +200,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cắm ổ đĩa"
+          }
+        }
+      }
+    },
+    "Connection" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kết nối"
+          }
+        }
+      }
+    },
+    "creating the NTFS file system failed" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tạo hệ thống tệp NTFS thất bại"
+          }
+        }
+      }
+    },
+    "Creating the NTFS file system failed. The partition may not be usable; format it again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo hệ thống file NTFS thất bại. Phân vùng có thể chưa dùng được; hãy định dạng lại."
+          }
+        }
+      }
+    },
+    "Device" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thiết bị"
+          }
+        }
+      }
+    },
+    "Disk images can't be formatted." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không định dạng ảnh đĩa."
           }
         }
       }
@@ -104,6 +294,16 @@
         }
       }
     },
+    "Driver" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Driver"
+          }
+        }
+      }
+    },
     "Drives stay read-only until you turn on NTFS for Mac in System Settings." : {
       "localizations" : {
         "vi" : {
@@ -134,12 +334,172 @@
         }
       }
     },
+    "Enter a name." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy nhập tên."
+          }
+        }
+      }
+    },
+    "Erase and Format" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa và định dạng"
+          }
+        }
+      }
+    },
+    "Erase and format" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa và định dạng"
+          }
+        }
+      }
+    },
+    "Erase “%@”?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa toàn bộ “%@”?"
+          }
+        }
+      }
+    },
+    "Erases: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sẽ bị xóa: %@"
+          }
+        }
+      }
+    },
+    "Everything on “%@” will be erased permanently." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mọi dữ liệu trên “%@” sẽ bị xóa vĩnh viễn."
+          }
+        }
+      }
+    },
+    "External" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ ngoài"
+          }
+        }
+      }
+    },
+    "External drive" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ ngoài"
+          }
+        }
+      }
+    },
+    "FAT32 names can only use English letters, digits and simple symbols." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên FAT32 chỉ được dùng chữ cái không dấu, chữ số và ký hiệu đơn giản."
+          }
+        }
+      }
+    },
     "File system extension" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tiện ích mở rộng hệ thống tệp"
+          }
+        }
+      }
+    },
+    "Format" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Định dạng"
+          }
+        }
+      }
+    },
+    "Format “%@”?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Định dạng “%@”?"
+          }
+        }
+      }
+    },
+    "Formatting failed: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Định dạng thất bại: %@"
+          }
+        }
+      }
+    },
+    "Formatting was cancelled. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã hủy định dạng. Không có gì bị xóa."
+          }
+        }
+      }
+    },
+    "Formatting…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang định dạng…"
+          }
+        }
+      }
+    },
+    "Format…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Định dạng…"
+          }
+        }
+      }
+    },
+    "Free %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trống %@"
           }
         }
       }
@@ -154,6 +514,86 @@
         }
       }
     },
+    "GUID Partition Map" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GUID (GPT)"
+          }
+        }
+      }
+    },
+    "Internal" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trong máy"
+          }
+        }
+      }
+    },
+    "Internal drive" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ trong máy"
+          }
+        }
+      }
+    },
+    "internal drives are protected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ổ trong máy được bảo vệ"
+          }
+        }
+      }
+    },
+    "Internal drives are protected and can't be formatted." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ trong máy được bảo vệ, không thể định dạng."
+          }
+        }
+      }
+    },
+    "Internal drives are protected. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ trong máy được bảo vệ. Không có gì bị xóa."
+          }
+        }
+      }
+    },
+    "Internal error: invalid format request." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lỗi nội bộ: yêu cầu định dạng không hợp lệ."
+          }
+        }
+      }
+    },
+    "invalid format request" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "yêu cầu định dạng không hợp lệ"
+          }
+        }
+      }
+    },
     "Language" : {
       "localizations" : {
         "vi" : {
@@ -164,12 +604,122 @@
         }
       }
     },
+    "macOS (read-only)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS (chỉ đọc)"
+          }
+        }
+      }
+    },
+    "Master Boot Record" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Master Boot Record (MBR)"
+          }
+        }
+      }
+    },
     "Mount" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gắn"
+          }
+        }
+      }
+    },
+    "Mounted at" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gắn tại"
+          }
+        }
+      }
+    },
+    "Mounting…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang gắn…"
+          }
+        }
+      }
+    },
+    "Name" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên"
+          }
+        }
+      }
+    },
+    "No Drives" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có ổ nào"
+          }
+        }
+      }
+    },
+    "None" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có"
+          }
+        }
+      }
+    },
+    "not a partition" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "không phải phân vùng"
+          }
+        }
+      }
+    },
+    "Not affected: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không bị ảnh hưởng: %@"
+          }
+        }
+      }
+    },
+    "Not detected yet" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa phát hiện"
+          }
+        }
+      }
+    },
+    "not ejected safely" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "chưa được đẩy ra an toàn"
           }
         }
       }
@@ -234,8 +784,25 @@
         }
       }
     },
-    "NTFS for Mac" : {
-      "shouldTranslate" : false
+    "NTFS for Mac is running from this drive." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NTFS for Mac đang chạy từ ổ này."
+          }
+        }
+      }
+    },
+    "NTFS for Mac needs administrator rights to format “%@” as NTFS." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NTFS for Mac cần quyền quản trị viên để định dạng “%@” thành NTFS."
+          }
+        }
+      }
     },
     "NTFS for Mac Settings" : {
       "localizations" : {
@@ -247,12 +814,32 @@
         }
       }
     },
+    "Only a partition can be formatted as NTFS this way. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉ có thể định dạng NTFS cho một phân vùng theo cách này. Không có gì bị xóa."
+          }
+        }
+      }
+    },
     "Open NTFS for Mac at login" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mở NTFS for Mac khi đăng nhập"
+          }
+        }
+      }
+    },
+    "Open NTFS for Mac…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở NTFS for Mac…"
           }
         }
       }
@@ -273,6 +860,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mở Cài đặt hệ thống → Cài đặt chung → Mục đăng nhập & tiện ích mở rộng → Tiện ích mở rộng hệ thống tệp, rồi bật NTFS for Mac."
+          }
+        }
+      }
+    },
+    "Partition %@ · %@ · on %@." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phân vùng %1$@ · %2$@ · trên %3$@."
+          }
+        }
+      }
+    },
+    "Partition map" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bản đồ phân vùng"
+          }
+        }
+      }
+    },
+    "Partition scheme" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảng phân vùng"
+          }
+        }
+      }
+    },
+    "Partitions" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Số phân vùng"
+          }
+        }
+      }
+    },
+    "Protected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Được bảo vệ"
+          }
+        }
+      }
+    },
+    "Quick format" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Định dạng nhanh"
           }
         }
       }
@@ -347,6 +994,26 @@
         }
       }
     },
+    "Scheme" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảng phân vùng"
+          }
+        }
+      }
+    },
+    "Select a drive or partition" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chọn một ổ hoặc phân vùng"
+          }
+        }
+      }
+    },
     "Settings…" : {
       "localizations" : {
         "vi" : {
@@ -387,6 +1054,46 @@
         }
       }
     },
+    "the administrator prompt was cancelled" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "đã hủy hộp thoại nhập mật khẩu quản trị viên"
+          }
+        }
+      }
+    },
+    "The amount of data couldn't be determined — assume it holds important files." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không xác định được dữ liệu — hãy coi như có dữ liệu quan trọng."
+          }
+        }
+      }
+    },
+    "the cluster size isn't valid for this drive" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "kích thước cluster không hợp lệ với ổ này"
+          }
+        }
+      }
+    },
+    "The cluster size isn't valid for this drive. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kích thước cluster không hợp lệ với ổ này. Không có gì bị xóa."
+          }
+        }
+      }
+    },
     "The disk could not be mounted." : {
       "localizations" : {
         "vi" : {
@@ -407,12 +1114,142 @@
         }
       }
     },
+    "the drive changed" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ổ đã thay đổi"
+          }
+        }
+      }
+    },
+    "The drive changed since this window opened. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đã thay đổi kể từ khi mở hộp thoại; không có gì bị xóa."
+          }
+        }
+      }
+    },
+    "the drive couldn't be read or written" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "không đọc hoặc ghi được ổ"
+          }
+        }
+      }
+    },
+    "The drive couldn't be read or written." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không đọc hoặc ghi được ổ."
+          }
+        }
+      }
+    },
+    "the drive holds macOS" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ổ chứa macOS"
+          }
+        }
+      }
+    },
+    "the drive is in use" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ổ đang được dùng"
+          }
+        }
+      }
+    },
+    "The drive is in use. Quit the apps using it and try again. (%@)" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đang được dùng. Hãy đóng các ứng dụng đang dùng ổ rồi thử lại. (%@)"
+          }
+        }
+      }
+    },
+    "The drive is still in use. Quit the apps using it and try again. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ vẫn đang được dùng. Hãy đóng các ứng dụng đang dùng ổ rồi thử lại. Không có gì bị xóa."
+          }
+        }
+      }
+    },
+    "the drive is write-protected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ổ đang được chống ghi"
+          }
+        }
+      }
+    },
+    "The drive is write-protected." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đang được chống ghi."
+          }
+        }
+      }
+    },
     "The drive is write-protected. Check its lock switch, if it has one." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ổ đang được chống ghi. Hãy kiểm tra công tắc khóa trên ổ (nếu có)."
+          }
+        }
+      }
+    },
+    "The drive is write-protected. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đang được chống ghi. Không có gì bị xóa."
+          }
+        }
+      }
+    },
+    "The drive was erased and formatted as exFAT, but NTFS formatting didn't finish (%@). Format it again as NTFS." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đã được xóa và định dạng exFAT, nhưng bước định dạng NTFS chưa hoàn tất (%@). Hãy định dạng lại thành NTFS."
+          }
+        }
+      }
+    },
+    "The drive's partition table looks different than expected, so NTFS for Mac stopped." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bảng phân vùng của ổ khác với dự kiến nên NTFS for Mac đã dừng lại."
           }
         }
       }
@@ -427,12 +1264,72 @@
         }
       }
     },
+    "The name can have at most %lld characters." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên chỉ được tối đa %lld ký tự."
+          }
+        }
+      }
+    },
+    "The name can't contain “%@”." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên không được chứa “%@”."
+          }
+        }
+      }
+    },
+    "the name isn't valid for NTFS" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tên không hợp lệ với NTFS"
+          }
+        }
+      }
+    },
+    "The name isn't valid for NTFS. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên không hợp lệ với NTFS. Không có gì bị xóa."
+          }
+        }
+      }
+    },
     "The new language is used the next time NTFS for Mac opens." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ngôn ngữ mới sẽ được dùng từ lần mở NTFS for Mac tiếp theo."
+          }
+        }
+      }
+    },
+    "The new partition could not be found. The drive may not be usable; format it again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tìm thấy phân vùng mới. Ổ có thể chưa dùng được; hãy định dạng lại."
+          }
+        }
+      }
+    },
+    "the new partition wasn't found" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "không tìm thấy phân vùng mới"
           }
         }
       }
@@ -447,12 +1344,172 @@
         }
       }
     },
+    "the partition is no longer connected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "phân vùng không còn kết nối"
+          }
+        }
+      }
+    },
+    "The partition is no longer connected. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phân vùng không còn kết nối. Không có gì bị xóa."
+          }
+        }
+      }
+    },
+    "the partition table looks different than expected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "bảng phân vùng khác với dự kiến"
+          }
+        }
+      }
+    },
+    "These APFS volumes will also be erased: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các ổ APFS sau cũng sẽ bị xóa: %@"
+          }
+        }
+      }
+    },
+    "This drive holds macOS and can't be formatted." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ này chứa macOS, không thể định dạng."
+          }
+        }
+      }
+    },
+    "This drive holds macOS. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ này chứa macOS. Không có gì bị xóa."
+          }
+        }
+      }
+    },
+    "This drive holds Time Machine backups." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ này chứa bản sao lưu Time Machine."
+          }
+        }
+      }
+    },
+    "This drive is no longer available." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ này không còn kết nối."
+          }
+        }
+      }
+    },
+    "This drive wasn't ejected safely, or Windows didn't shut down cleanly. Connect it to Windows and shut down normally, or choose Allow Writing Anyway." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ này chưa được đẩy ra an toàn, hoặc Windows chưa tắt đúng cách. Cắm vào Windows rồi tắt máy bình thường, hoặc chọn Vẫn cho ghi."
+          }
+        }
+      }
+    },
+    "This drive wasn't ejected safely, or Windows didn't shut down cleanly. To write to it, NTFS for Mac clears the NTFS journal, and changes Windows hadn't finished saving may be lost.\n\nIf the drive belongs to a Windows PC that is hibernating or uses Fast Startup, shut that PC down fully instead." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ này chưa được đẩy ra an toàn, hoặc Windows chưa tắt đúng cách. Để ghi được, NTFS for Mac sẽ xoá nhật ký NTFS, và những thay đổi Windows chưa kịp lưu có thể bị mất.\n\nNếu ổ thuộc một máy Windows đang ngủ đông hoặc bật Fast Startup, hãy tắt hẳn máy đó thay vì làm cách này."
+          }
+        }
+      }
+    },
+    "This format isn't available for this drive." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Định dạng này không dùng được cho ổ này."
+          }
+        }
+      }
+    },
+    "this kind of partition can't be formatted as NTFS" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "loại phân vùng này không định dạng NTFS được"
+          }
+        }
+      }
+    },
+    "This kind of partition can't be formatted as NTFS. Nothing was erased." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loại phân vùng này không định dạng NTFS được. Không có gì bị xóa."
+          }
+        }
+      }
+    },
+    "This partition can't be formatted." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phân vùng này không thể định dạng."
+          }
+        }
+      }
+    },
     "To uninstall, quit the app and move it to the Trash." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Muốn gỡ bỏ, hãy thoát ứng dụng rồi kéo nó vào Thùng rác."
+          }
+        }
+      }
+    },
+    "Total %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tổng %@"
+          }
+        }
+      }
+    },
+    "Turn off to always mount this drive read-only." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tắt để luôn gắn ổ này ở chế độ chỉ đọc."
           }
         }
       }
@@ -497,12 +1554,62 @@
         }
       }
     },
+    "Type “%@” to confirm" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gõ “%@” để xác nhận"
+          }
+        }
+      }
+    },
+    "Unmount" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tháo"
+          }
+        }
+      }
+    },
+    "Unmounting…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang tháo…"
+          }
+        }
+      }
+    },
+    "Untitled" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không tên"
+          }
+        }
+      }
+    },
     "Use Eject in Finder or in the menu bar so all changes are written to the drive." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dùng nút Đẩy ra trong Finder hoặc trên thanh menu để mọi thay đổi được ghi hết vào ổ."
+          }
+        }
+      }
+    },
+    "Used %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã dùng %@"
           }
         }
       }
@@ -517,12 +1624,32 @@
         }
       }
     },
+    "Wait until formatting finishes before quitting NTFS for Mac." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy chờ định dạng xong rồi mới thoát NTFS for Mac."
+          }
+        }
+      }
+    },
     "Welcome to NTFS for Mac" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chào mừng bạn đến với NTFS for Mac"
+          }
+        }
+      }
+    },
+    "Whole drive %@ · %@ · every partition and volume on it." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toàn bộ ổ %1$@ · %2$@ · mọi phân vùng và ổ con trên đó."
           }
         }
       }
@@ -577,92 +1704,32 @@
         }
       }
     },
+    "You'll be asked for an administrator password to finish formatting as NTFS. If you cancel it, the drive stays exFAT." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn sẽ được yêu cầu nhập mật khẩu quản trị viên để hoàn tất định dạng NTFS. Nếu bạn hủy, ổ vẫn giữ định dạng exFAT."
+          }
+        }
+      }
+    },
+    "You'll be asked for an administrator password." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bạn sẽ được yêu cầu nhập mật khẩu quản trị viên."
+          }
+        }
+      }
+    },
     "“%@”: %@" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%1$@”: %2$@"
-          }
-        }
-      }
-    },
-    "Not detected yet" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chưa phát hiện"
-          }
-        }
-      }
-    },
-    "not ejected safely" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "chưa được đẩy ra an toàn"
-          }
-        }
-      }
-    },
-    "This drive wasn't ejected safely, or Windows didn't shut down cleanly. Connect it to Windows and shut down normally, or choose Allow Writing Anyway." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ổ này chưa được đẩy ra an toàn, hoặc Windows chưa tắt đúng cách. Cắm vào Windows rồi tắt máy bình thường, hoặc chọn Vẫn cho ghi."
-          }
-        }
-      }
-    },
-    "Allow Writing Anyway…" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vẫn cho ghi…"
-          }
-        }
-      }
-    },
-    "Allow writing to “%@”?" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cho phép ghi vào “%@”?"
-          }
-        }
-      }
-    },
-    "This drive wasn't ejected safely, or Windows didn't shut down cleanly. To write to it, NTFS for Mac clears the NTFS journal, and changes Windows hadn't finished saving may be lost.\n\nIf the drive belongs to a Windows PC that is hibernating or uses Fast Startup, shut that PC down fully instead." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ổ này chưa được đẩy ra an toàn, hoặc Windows chưa tắt đúng cách. Để ghi được, NTFS for Mac sẽ xoá nhật ký NTFS, và những thay đổi Windows chưa kịp lưu có thể bị mất.\n\nNếu ổ thuộc một máy Windows đang ngủ đông hoặc bật Fast Startup, hãy tắt hẳn máy đó thay vì làm cách này."
-          }
-        }
-      }
-    },
-    "Allow Writing" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cho phép ghi"
-          }
-        }
-      }
-    },
-    "Cancel" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Huỷ"
           }
         }
       }
