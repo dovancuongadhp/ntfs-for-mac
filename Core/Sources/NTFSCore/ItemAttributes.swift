@@ -81,6 +81,12 @@ public struct DirectoryEntry: Sendable, Equatable {
     public var name: String
     public var id: ItemID
     public var type: ItemType
+
+    public init(name: String, id: ItemID, type: ItemType) {
+        self.name = name
+        self.id = id
+        self.type = type
+    }
 }
 
 public struct VolumeStatistics: Sendable, Equatable {

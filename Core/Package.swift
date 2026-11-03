@@ -6,7 +6,7 @@ let vendorCSettings: [CSetting] = [
     .define("HAVE_CONFIG_H"),
     .headerSearchPath("config"),
     .headerSearchPath("ntfs-3g"),
-    .unsafeFlags(["-w"]),
+    .unsafeFlags(["-w", "-UDEBUG"]),
 ]
 
 let package = Package(

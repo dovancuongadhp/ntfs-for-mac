@@ -514,8 +514,12 @@ int nb_read_directory(nb_volume *v, uint64_t dir_id, void *context,
 		ntfs_inode_close(dir_ni);
 		return -ENOTDIR;
 	}
+	/* In ignore-case mode ntfs_readdir() reports lowercased names; list
+	 * the names as stored and keep lookups case-insensitive. */
+	NVolSetCaseSensitive(v->vol);
 	if (ntfs_readdir(dir_ni, &pos, &rc, readdir_filler))
 		res = fail();
+	NVolClearCaseSensitive(v->vol);
 	close_inode(dir_ni, &res);
 	return res;
 }
