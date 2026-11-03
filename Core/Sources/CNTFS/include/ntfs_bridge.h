@@ -71,6 +71,9 @@ typedef struct nb_attributes {
 	struct timespec modify_time;
 	struct timespec change_time;
 	struct timespec birth_time;
+	/* The data can be read and written directly on the device through
+	 * extents from nb_blockmap. */
+	uint32_t mappable;
 } nb_attributes;
 
 typedef struct nb_statistics {
@@ -132,6 +135,29 @@ int nb_truncate(nb_volume *volume, uint64_t id, uint64_t size);
 /* Finishes pending work on a file (compresses the last chunk of a
  * compressed file). Call when the last writer closes the file. */
 int nb_close_file(nb_volume *volume, uint64_t id);
+
+/*
+ * Kernel-offloaded I/O: the kernel transfers file data itself, using the
+ * extents the file system hands out.
+ *
+ * nb_blockmap reports the extents covering [offset, offset + length) through
+ * fn, in order. A negative physical offset means the range reads as zeros.
+ * For writes it first allocates clusters for the whole range; the data then
+ * only counts as written once nb_complete_write records it. Returning
+ * non-zero from fn stops the mapping early (the caller asks again for the
+ * rest). Returns -EOPNOTSUPP for files that can't be mapped.
+ */
+typedef int (*nb_extent_fn)(void *context, uint64_t logical,
+		int64_t physical, uint64_t length);
+
+int nb_blockmap(nb_volume *volume, uint64_t id, uint64_t offset,
+		uint64_t length, int for_write, uint32_t block_size,
+		nb_extent_fn fn, void *context);
+int nb_complete_write(nb_volume *volume, uint64_t id, uint64_t offset,
+		uint64_t length);
+/* The kernel failed to write a range handed out by nb_blockmap. */
+int nb_abort_write(nb_volume *volume, uint64_t id, uint64_t offset,
+		uint64_t length);
 
 /* Metadata. Pass NULL to leave a time unchanged. */
 int nb_set_times(nb_volume *volume, uint64_t id,

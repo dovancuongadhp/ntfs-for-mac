@@ -49,6 +49,8 @@ public struct ItemAttributes: Sendable, Equatable {
     public var modifyTime: timespec
     public var changeTime: timespec
     public var birthTime: timespec
+    /// The kernel can transfer the data directly, using extents from `blockmap`.
+    public var isMappable: Bool
 
     init(_ raw: nb_attributes) {
         id = raw.id
@@ -61,12 +63,13 @@ public struct ItemAttributes: Sendable, Equatable {
         modifyTime = raw.modify_time
         changeTime = raw.change_time
         birthTime = raw.birth_time
+        isMappable = raw.mappable != 0
     }
 
     public static func == (lhs: ItemAttributes, rhs: ItemAttributes) -> Bool {
         lhs.id == rhs.id && lhs.type == rhs.type && lhs.flags == rhs.flags
             && lhs.size == rhs.size && lhs.allocatedSize == rhs.allocatedSize
-            && lhs.linkCount == rhs.linkCount
+            && lhs.linkCount == rhs.linkCount && lhs.isMappable == rhs.isMappable
             && lhs.accessTime.tv_sec == rhs.accessTime.tv_sec
             && lhs.accessTime.tv_nsec == rhs.accessTime.tv_nsec
             && lhs.modifyTime.tv_sec == rhs.modifyTime.tv_sec

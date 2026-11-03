@@ -35,6 +35,13 @@ struct nb_volume {
 	nb_device_state device;
 	char *mount_point;
 	uint64_t serial;
+	/* Per file, the end of the highest range handed to the kernel for
+	 * writing that may still be in flight above initialized_size. */
+	struct nb_pending_write {
+		MFT_REF ref;
+		s64 end;
+	} *pending;
+	size_t pending_count;
 };
 
 static const char rename_suffix[] = ".ntfs-for-mac-";
@@ -321,6 +328,7 @@ int nb_unmount(nb_volume *v)
 	if (ntfs_umount(v->vol, FALSE))
 		res = fail();
 	free(v->mount_point);
+	free(v->pending);
 	free(v);
 	return res;
 }
@@ -424,6 +432,29 @@ static char *symlink_target(nb_volume *v, ntfs_inode *ni)
 	return ntfs_make_symlink(ni, v->mount_point);
 }
 
+/*
+ * Compressed and encrypted data can't be handed to the kernel. On a
+ * read-only volume, resident data can't be moved out of the MFT record and
+ * the partly initialized block at initialized_size can't be zeroed.
+ */
+static int is_mappable(ntfs_inode *ni)
+{
+	ntfs_attr *na;
+	int mappable;
+
+	if (ni->flags & FILE_ATTR_REPARSE_POINT)
+		return 0;
+	na = ntfs_attr_open(ni, AT_DATA, AT_UNNAMED, 0);
+	if (!na)
+		return 0;
+	mappable = !(na->data_flags & (ATTR_COMPRESSION_MASK | ATTR_IS_ENCRYPTED));
+	if (NVolReadOnly(ni->vol) && (!NAttrNonResident(na)
+			|| na->initialized_size < na->data_size))
+		mappable = 0;
+	ntfs_attr_close(na);
+	return mappable;
+}
+
 static void fill_attributes(nb_volume *v, ntfs_inode *ni, nb_attributes *out)
 {
 	char *target;
@@ -453,6 +484,7 @@ static void fill_attributes(nb_volume *v, ntfs_inode *ni, nb_attributes *out)
 		out->type = NB_TYPE_FILE;
 		out->size = (uint64_t)ni->data_size;
 		out->alloc_size = (uint64_t)((ni->allocated_size + 511) & ~511);
+		out->mappable = (uint32_t)is_mappable(ni);
 	}
 	out->access_time = ntfs2timespec(ni->last_access_time);
 	out->modify_time = ntfs2timespec(ni->last_data_change_time);
@@ -863,6 +895,68 @@ int nb_read_link(nb_volume *v, uint64_t id, char *buffer, uint32_t buffer_size)
 
 /* ---------------------------------------------------------------- data */
 
+static MFT_REF file_ref(ntfs_inode *ni)
+{
+	return MK_MREF(ni->mft_no, le16_to_cpu(ni->mrec->sequence_number));
+}
+
+static struct nb_pending_write *find_pending_write(nb_volume *v,
+		ntfs_inode *ni)
+{
+	MFT_REF ref = file_ref(ni);
+	size_t i;
+
+	for (i = 0; i < v->pending_count; i++)
+		if (v->pending[i].ref == ref)
+			return &v->pending[i];
+	return NULL;
+}
+
+static s64 pending_write_end(nb_volume *v, ntfs_inode *ni)
+{
+	struct nb_pending_write *p = find_pending_write(v, ni);
+
+	return p ? p->end : 0;
+}
+
+static int set_pending_write_end(nb_volume *v, ntfs_inode *ni, s64 end)
+{
+	struct nb_pending_write *p = find_pending_write(v, ni);
+	struct nb_pending_write *grown;
+
+	if (p) {
+		p->end = end;
+		return 0;
+	}
+	grown = realloc(v->pending, (v->pending_count + 1) * sizeof(*grown));
+	if (!grown) {
+		errno = ENOMEM;
+		return -1;
+	}
+	v->pending = grown;
+	v->pending[v->pending_count].ref = file_ref(ni);
+	v->pending[v->pending_count].end = end;
+	v->pending_count++;
+	return 0;
+}
+
+static void drop_pending_write(nb_volume *v, ntfs_inode *ni)
+{
+	struct nb_pending_write *p = find_pending_write(v, ni);
+
+	if (p)
+		*p = v->pending[--v->pending_count];
+}
+
+/* Writes in flight past a new end of file are dead. */
+static void clamp_pending_write(nb_volume *v, ntfs_inode *ni, s64 size)
+{
+	struct nb_pending_write *p = find_pending_write(v, ni);
+
+	if (p && p->end > size)
+		p->end = size;
+}
+
 static ntfs_attr *open_data(ntfs_inode *ni)
 {
 	if (ni->flags & FILE_ATTR_REPARSE_POINT) {
@@ -988,6 +1082,7 @@ int nb_truncate(nb_volume *v, uint64_t id, uint64_t size)
 		res = fail();
 	}
 	ntfs_attr_close(na);
+	clamp_pending_write(v, ni, (s64)size);
 	if (res == 0) {
 		if (old_size != (s64)size)
 			set_archive(ni);
@@ -1017,6 +1112,426 @@ int nb_close_file(nb_volume *v, uint64_t id)
 				res = fail();
 			ntfs_attr_close(na);
 		}
+	}
+	close_inode(ni, &res);
+	return res;
+}
+
+/* ------------------------------------------------- kernel-offloaded I/O */
+
+/*
+ * Adapted from NTFSKit (https://github.com/whereteam/ntfskit, GPL-2.0).
+ *
+ * Writes: nb_blockmap allocates solid clusters for the range without
+ * writing data, and leaves initialized_size behind; nb_complete_write moves
+ * it forward once the kernel's write has landed. Bytes between
+ * initialized_size and a newly mapped range are zeroed at map time, but
+ * never [initialized_size, pending end): those ranges are already handed
+ * out and may still be in flight, and completions arrive out of order.
+ */
+
+static const char zeros[65536];
+
+/* Zeroes [from, to) directly on the attribute's clusters, leaving
+ * initialized_size alone (ntfs_attr_pwrite would zero-fill from it). */
+static int zero_clusters(ntfs_volume *vol, ntfs_attr *na, s64 from, s64 to)
+{
+	s64 csize = vol->cluster_size;
+	runlist_element *rl;
+
+	for (rl = na->rl; rl && rl->length; rl++) {
+		s64 start, end, pos;
+
+		if (rl->lcn < 0)
+			continue;
+		start = rl->vcn * csize > from ? rl->vcn * csize : from;
+		end = (rl->vcn + rl->length) * csize < to
+			? (rl->vcn + rl->length) * csize : to;
+		for (pos = start; pos < end; ) {
+			s64 chunk = end - pos < (s64)sizeof(zeros)
+				? end - pos : (s64)sizeof(zeros);
+
+			if (ntfs_pwrite(vol->dev, rl->lcn * csize
+					+ (pos - rl->vcn * csize), chunk, zeros)
+					!= chunk)
+				return -1;
+			pos += chunk;
+		}
+	}
+	return 0;
+}
+
+/* Zero-fills [from, to) through libntfs-3g, which allocates holes and moves
+ * initialized_size past the range. */
+static int zero_fill(ntfs_attr *na, s64 from, s64 to)
+{
+	while (from < to) {
+		s64 chunk = to - from < (s64)sizeof(zeros)
+			? to - from : (s64)sizeof(zeros);
+
+		if (ntfs_attr_pwrite(na, from, chunk, zeros) != chunk)
+			return -1;
+		from += chunk;
+	}
+	return 0;
+}
+
+/* Writes initialized_size straight into the attribute record. */
+static int set_initialized_size(ntfs_attr *na, s64 size)
+{
+	ntfs_attr_search_ctx *ctx = ntfs_attr_get_search_ctx(na->ni, NULL);
+
+	if (!ctx)
+		return -1;
+	if (ntfs_attr_lookup(na->type, na->name, na->name_len, CASE_SENSITIVE,
+			0, NULL, 0, ctx)) {
+		ntfs_attr_put_search_ctx(ctx);
+		return -1;
+	}
+	ctx->attr->initialized_size = cpu_to_sle64(size);
+	na->initialized_size = size;
+	ntfs_inode_mark_dirty(ctx->ntfs_ino);
+	ntfs_attr_put_search_ctx(ctx);
+	return 0;
+}
+
+/* Rejects on-disk runlists whose arithmetic would overflow, that point
+ * outside the volume, or that skip VCNs. */
+static int bad_runlist(ntfs_volume *vol, const runlist_element *rl)
+{
+	s64 csize = vol->cluster_size;
+	s64 next_vcn = -1;
+
+	for (; rl && rl->length; rl++) {
+		if (rl->lcn < LCN_HOLE || rl->length <= 0 || rl->vcn < 0
+		    || rl->vcn > INT64_MAX / csize
+		    || rl->length > INT64_MAX / csize - rl->vcn)
+			return 1;
+		if (rl->lcn >= 0 && (rl->lcn >= vol->nr_clusters
+		    || rl->length > vol->nr_clusters - rl->lcn))
+			return 1;
+		if (next_vcn >= 0 && rl->vcn != next_vcn)
+			return 1;
+		next_vcn = rl->vcn + rl->length;
+	}
+	return 0;
+}
+
+static int map_runlist(ntfs_volume *vol, ntfs_attr *na)
+{
+	if (ntfs_attr_map_whole_runlist(na))
+		return -1;
+	if (bad_runlist(vol, na->rl)) {
+		errno = EIO;
+		return -1;
+	}
+	return 0;
+}
+
+/* Gives holes inside [offset, end) real clusters. */
+static int fill_holes(nb_volume *v, ntfs_inode *ni, ntfs_attr *na,
+		s64 offset, s64 end)
+{
+	s64 csize = v->vol->cluster_size;
+	s64 pending = pending_write_end(v, ni);
+
+	for (;;) {
+		s64 start = -1, stop = -1;
+		runlist_element *rl;
+
+		for (rl = na->rl; rl && rl->length; rl++) {
+			s64 s, e;
+
+			if (rl->lcn != LCN_HOLE)
+				continue;
+			s = rl->vcn * csize > offset ? rl->vcn * csize : offset;
+			e = (rl->vcn + rl->length) * csize < end
+				? (rl->vcn + rl->length) * csize : end;
+			if (e > s) {
+				start = s;
+				stop = e;
+				break;
+			}
+		}
+		if (start < 0)
+			return 0;
+		/* Filling past initialized_size zeroes from it, which must not
+		 * reach ranges still in flight. */
+		if (pending > na->initialized_size && start > na->initialized_size)
+			na->initialized_size = pending;
+		/* Filling reallocates the runlist: map it again and rescan. */
+		if (zero_fill(na, start, stop) || map_runlist(v->vol, na))
+			return -1;
+	}
+}
+
+static int map_extents(nb_volume *v, ntfs_attr *na, s64 offset, s64 end,
+		s64 readable_end, nb_extent_fn fn, void *context, s64 *covered,
+		int *stopped)
+{
+	s64 csize = v->vol->cluster_size;
+	runlist_element *rl;
+
+	*covered = offset;
+	*stopped = 0;
+	for (rl = na->rl; rl && rl->length && !*stopped; rl++) {
+		s64 run_start = rl->vcn * csize;
+		s64 run_end = run_start + rl->length * csize;
+		s64 phys = rl->lcn >= 0 ? rl->lcn * csize : -1;
+		s64 start = run_start > offset ? run_start : offset;
+		s64 stop = run_end < end ? run_end : end;
+
+		if (stop <= start)
+			continue;
+		if (phys >= 0 && start < readable_end && stop > readable_end) {
+			/* Data below initialized_size, zeros above. */
+			if (fn(context, (uint64_t)start, phys + (start - run_start),
+					(uint64_t)(readable_end - start))) {
+				*covered = readable_end;
+				*stopped = 1;
+				break;
+			}
+			start = readable_end;
+		}
+		if (phys < 0 || start >= readable_end)
+			*stopped = fn(context, (uint64_t)start, -1,
+					(uint64_t)(stop - start)) != 0;
+		else
+			*stopped = fn(context, (uint64_t)start,
+					phys + (start - run_start),
+					(uint64_t)(stop - start)) != 0;
+		*covered = stop;
+	}
+	return 0;
+}
+
+int nb_blockmap(nb_volume *v, uint64_t id, uint64_t offset, uint64_t length,
+		int for_write, uint32_t block_size, nb_extent_fn fn, void *context)
+{
+	ntfs_volume *vol = v->vol;
+	s64 start = (s64)offset, end, readable_end = INT64_MAX;
+	s64 bs = block_size >= 512 ? block_size : 512;
+	s64 initialized = -1, covered;
+	ntfs_inode *ni;
+	ntfs_attr *na;
+	int res = 0, stopped;
+
+	if (length == 0)
+		return 0;
+	if (offset > INT64_MAX || length > (uint64_t)(INT64_MAX - (s64)offset))
+		return -EINVAL;
+	end = start + (s64)length;
+	if (vol->cluster_size % bs)
+		return -EOPNOTSUPP;
+	if (for_write && NVolReadOnly(vol))
+		return -EROFS;
+	ni = open_inode(v, id);
+	if (!ni)
+		return fail();
+	na = open_data(ni);
+	if (!na) {
+		res = fail();
+		goto out;
+	}
+	if (na->data_flags & (ATTR_COMPRESSION_MASK | ATTR_IS_ENCRYPTED)) {
+		res = -EOPNOTSUPP;
+		goto close_attr;
+	}
+	/* Small files live inside the MFT record; give them clusters. */
+	if (!NAttrNonResident(na)) {
+		if (NVolReadOnly(vol)) {
+			res = -EOPNOTSUPP;
+			goto close_attr;
+		}
+		if (ntfs_attr_force_non_resident(na)) {
+			res = fail();
+			goto close_attr;
+		}
+	}
+	if (for_write && end > na->data_size
+	    && ntfs_attr_truncate_solid(na, end)) {
+		res = fail();
+		goto close_attr;
+	}
+	if (map_runlist(vol, na)) {
+		res = fail();
+		goto close_attr;
+	}
+
+	if (for_write) {
+		s64 pending = pending_write_end(v, ni);
+
+		/* Bytes between the written part and this range must read as
+		 * zeros once later completions cover them. */
+		if (pending <= na->initialized_size) {
+			if (zero_fill(na, na->initialized_size, start)
+			    || map_runlist(vol, na)) {
+				res = fail();
+				goto close_attr;
+			}
+		} else if (start > pending
+			   && zero_clusters(vol, na, pending, start)) {
+			res = fail();
+			goto close_attr;
+		}
+		initialized = na->initialized_size;
+		if (fill_holes(v, ni, na, start, end)) {
+			res = fail();
+			goto close_attr;
+		}
+		/* Filling holes moved initialized_size over ranges that haven't
+		 * landed; completions move it forward again. */
+		if (na->initialized_size > initialized
+		    && set_initialized_size(na, initialized)) {
+			res = fail();
+			goto close_attr;
+		}
+	} else {
+		/* Past initialized_size the data reads as zeros. Extents are
+		 * block-aligned, so zero the rest of the last block on disk. */
+		readable_end = na->initialized_size;
+		if (readable_end % bs) {
+			s64 block_end = readable_end + (bs - readable_end % bs);
+
+			if (block_end > na->data_size)
+				block_end = na->data_size;
+			if (block_end > readable_end
+			    && pending_write_end(v, ni) <= readable_end) {
+				if (NVolReadOnly(vol)) {
+					res = -EOPNOTSUPP;
+					goto close_attr;
+				}
+				if (zero_fill(na, readable_end, block_end)
+				    || map_runlist(vol, na)) {
+					res = fail();
+					goto close_attr;
+				}
+			}
+			readable_end = ((na->initialized_size + bs - 1) / bs) * bs;
+		}
+	}
+
+	map_extents(v, na, start, end, readable_end, fn, context, &covered,
+			&stopped);
+	if (!stopped && covered < end) {
+		/* Writes need clusters for the whole range; reads past the last
+		 * run are zeros. */
+		if (for_write)
+			res = -EIO;
+		else
+			fn(context, (uint64_t)covered, -1,
+					(uint64_t)(end - covered));
+	}
+	if (res == 0 && for_write) {
+		s64 mapped_end = stopped ? covered : end;
+
+		if (mapped_end > pending_write_end(v, ni)
+		    && mapped_end > na->initialized_size
+		    && set_pending_write_end(v, ni, mapped_end))
+			res = fail();
+	}
+close_attr:
+	if (initialized >= 0 && na->initialized_size > initialized)
+		(void)set_initialized_size(na, initialized);
+	ntfs_attr_close(na);
+	/* The runlist must be on disk before the kernel writes the clusters. */
+	if (ntfs_inode_sync(ni))
+		keep_error(&res);
+out:
+	close_inode(ni, &res);
+	return res;
+}
+
+int nb_complete_write(nb_volume *v, uint64_t id, uint64_t offset,
+		uint64_t length)
+{
+	ntfs_inode *ni;
+	ntfs_attr *na;
+	s64 start = (s64)offset, target, floor;
+	int res = 0;
+
+	if (length == 0)
+		return 0;
+	if (offset > INT64_MAX || length > (uint64_t)(INT64_MAX - (s64)offset))
+		return -EINVAL;
+	ni = open_inode(v, id);
+	if (!ni)
+		return fail();
+	na = open_data(ni);
+	if (!na) {
+		res = fail();
+		goto out;
+	}
+	/* Truncated below the range while the write was in flight. */
+	if (start >= na->data_size)
+		goto close_attr;
+	target = start + (s64)length;
+	if (target > na->data_size)
+		target = na->data_size;
+	if (NAttrNonResident(na)) {
+		/* A completion without a blockmap: nothing zeroed the gap. */
+		floor = na->initialized_size;
+		if (pending_write_end(v, ni) > floor)
+			floor = pending_write_end(v, ni);
+		if (start > floor && (map_runlist(v->vol, na)
+		    || zero_clusters(v->vol, na, floor, start))) {
+			res = fail();
+			goto close_attr;
+		}
+		if (na->initialized_size < target
+		    && set_initialized_size(na, target)) {
+			res = fail();
+			goto close_attr;
+		}
+	}
+	if (na->initialized_size >= pending_write_end(v, ni))
+		drop_pending_write(v, ni);
+	ntfs_inode_update_times(ni, NTFS_UPDATE_MCTIME);
+	set_archive(ni);
+close_attr:
+	ntfs_attr_close(na);
+	if (ntfs_inode_sync(ni))
+		keep_error(&res);
+out:
+	close_inode(ni, &res);
+	return res;
+}
+
+int nb_abort_write(nb_volume *v, uint64_t id, uint64_t offset,
+		uint64_t length)
+{
+	struct nb_pending_write *p;
+	ntfs_inode *ni;
+	ntfs_attr *na;
+	s64 start = (s64)offset, end;
+	int res = 0;
+
+	if (offset > INT64_MAX || length > (uint64_t)(INT64_MAX - (s64)offset))
+		return -EINVAL;
+	end = start + (s64)length;
+	ni = open_inode(v, id);
+	if (!ni)
+		return fail();
+	p = find_pending_write(v, ni);
+	if (p && start < p->end) {
+		na = ntfs_attr_open(ni, AT_DATA, AT_UNNAMED, 0);
+		if (end >= p->end) {
+			/* The top range failed: later maps zero it again. */
+			p->end = start;
+			if (!na || p->end <= na->initialized_size)
+				drop_pending_write(v, ni);
+		} else if (na && NAttrNonResident(na)) {
+			/* A lower range failed while higher ones may land: zero
+			 * it, or a later completion would expose stale clusters. */
+			s64 from = start > na->initialized_size
+				? start : na->initialized_size;
+
+			if (from < end && (map_runlist(v->vol, na)
+			    || zero_clusters(v->vol, na, from, end)))
+				res = fail();
+		}
+		if (na)
+			ntfs_attr_close(na);
 	}
 	close_inode(ni, &res);
 	return res;

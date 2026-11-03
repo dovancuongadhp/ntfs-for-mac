@@ -5,16 +5,22 @@ import NTFSCore
 ///
 /// FSKit calls in from many threads at once; every call into libntfs-3g goes
 /// through `lock`, which also guards the item and directory caches.
-final class NTFSVolume: FSVolume, @unchecked Sendable {
+///
+/// File data goes through the extension; `NTFSOffloadedVolume` lets the
+/// kernel transfer it instead where the device allows.
+class NTFSVolume: FSVolume, @unchecked Sendable {
     private let lock = NSLock()
     let handle: NTFSVolumeHandle
+    /// Guarded by `lock`, like the handle that uses it.
+    let device: FSBlockDeviceAdapter
     private(set) var root: NTFSItem
     private var items: [ItemID: NTFSItem] = [:]
     private var snapshots: [ItemID: DirectorySnapshot] = [:]
     private var nextVerifier: UInt64 = 1
 
-    init(handle: NTFSVolumeHandle, uuid: UUID) {
+    init(handle: NTFSVolumeHandle, device: FSBlockDeviceAdapter, uuid: UUID) {
         self.handle = handle
+        self.device = device
         root = NTFSItem(id: .root, parent: .root)
         let label = handle.label
         super.init(
@@ -130,7 +136,9 @@ final class NTFSVolume: FSVolume, @unchecked Sendable {
         result.changeTime = attributes.changeTime
         result.birthTime = attributes.birthTime
         result.supportsLimitedXAttrs = false
-        result.inhibitKernelOffloadedIO = false
+        // Only consulted on an `NTFSOffloadedVolume`; other files go through
+        // `read` and `write`.
+        result.inhibitKernelOffloadedIO = attributes.type == .file && !attributes.isMappable
         return result
     }
 

@@ -41,6 +41,7 @@
 		C1578629690ED27FA7868CF9 /* FSBlockDeviceAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5BBF20BD5D6EC688DA552A /* FSBlockDeviceAdapter.swift */; };
 		CF296E88434033FDE632AB82 /* AppLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E3ACD854255F0A0A62DAA7D /* AppLog.swift */; };
 		F2E9E7093C63134CB71BE0CE /* NTFSVolume+ReadWrite.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1CE78FD83C2790D1867F6AF /* NTFSVolume+ReadWrite.swift */; };
+		F3EDC4D901214028C94169BB /* NTFSOffloadedVolume.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAED87EF3812D04D91D71D73 /* NTFSOffloadedVolume.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -107,6 +108,7 @@
 		C1C29FC469B533DBA1A30B5D /* NTFSForMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSForMacApp.swift; sourceTree = "<group>"; };
 		C5C5720C2030DBA3BEB6B901 /* MountPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MountPolicyTests.swift; sourceTree = "<group>"; };
 		C6FA06A1D3F57B0578451189 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		CAED87EF3812D04D91D71D73 /* NTFSOffloadedVolume.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSOffloadedVolume.swift; sourceTree = "<group>"; };
 		CDD157A2D8050F8A3C3BF1AA /* NTFSExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NTFSExtension.entitlements; sourceTree = "<group>"; };
 		D013B22C5C1D8E347B9B1A5C /* MenuContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuContentView.swift; sourceTree = "<group>"; };
 		D0245E5B9DA672D8A44B77B7 /* NTFSForMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NTFSForMac.entitlements; sourceTree = "<group>"; };
@@ -215,6 +217,7 @@
 				A5929B58E6CCF1651E339958 /* NTFSExtensionMain.swift */,
 				15071AB9EFF277E01AC8899C /* NTFSFileSystem.swift */,
 				B8A73EBEEB1488DF2E2DF7D1 /* NTFSItem.swift */,
+				CAED87EF3812D04D91D71D73 /* NTFSOffloadedVolume.swift */,
 				0942A4EAAAA02062814B7446 /* NTFSVolume.swift */,
 				F3093C3CB59870E472CD6316 /* NTFSVolume+Operations.swift */,
 				F1CE78FD83C2790D1867F6AF /* NTFSVolume+ReadWrite.swift */,
@@ -434,6 +437,7 @@
 				4EBBC8D0398BACACFD67F40C /* NTFSExtensionMain.swift in Sources */,
 				877FE0433EC5F2BB784DAACD /* NTFSFileSystem.swift in Sources */,
 				3925A4B1966CE528CC35FAAB /* NTFSItem.swift in Sources */,
+				F3EDC4D901214028C94169BB /* NTFSOffloadedVolume.swift in Sources */,
 				006F37E15905B032E52D35F4 /* NTFSVolume+Operations.swift in Sources */,
 				F2E9E7093C63134CB71BE0CE /* NTFSVolume+ReadWrite.swift in Sources */,
 				4E192C4761A10CAEC7BA74E1 /* NTFSVolume+Xattr.swift in Sources */,

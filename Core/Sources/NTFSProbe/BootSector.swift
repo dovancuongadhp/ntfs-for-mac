@@ -30,6 +30,20 @@ public enum BootSector {
         return .ntfs(serialNumber: serial)
     }
 
+    /// The cluster size of an NTFS boot sector, or nil for anything else.
+    public static func clusterSize(_ sector: some Collection<UInt8>) -> UInt64? {
+        guard case .ntfs = classify(sector) else { return nil }
+        let bytes = Array(sector.prefix(size))
+        let bytesPerSector = UInt64(bytes[0x0B]) | UInt64(bytes[0x0C]) << 8
+        let sectorsPerCluster = bytes[0x0D]
+        // Values above 0x80 are a negated power of two of the cluster size in bytes.
+        if sectorsPerCluster > 0x80 {
+            let shift = 256 - Int(sectorsPerCluster)
+            return shift < 32 ? UInt64(1) << shift : nil
+        }
+        return bytesPerSector * UInt64(sectorsPerCluster)
+    }
+
     private static func isPlausibleNTFS(_ bytes: [UInt8]) -> Bool {
         let bytesPerSector = UInt16(bytes[0x0B]) | UInt16(bytes[0x0C]) << 8
         let sectorsPerCluster = bytes[0x0D]

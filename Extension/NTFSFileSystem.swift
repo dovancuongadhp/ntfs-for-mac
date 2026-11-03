@@ -55,8 +55,8 @@ final class NTFSFileSystem: FSUnaryFileSystem, FSUnaryFileSystemOperations,
         }
         let readOnly = MountOptions.requestsReadOnly(options.taskOptions)
         let handle: NTFSVolumeHandle
+        let device = FSBlockDeviceAdapter(resource)
         do throws(NTFSMountError) {
-            let device = FSBlockDeviceAdapter(resource)
             // FSKit may load a read-only resource first; only the writable load can reset.
             if !readOnly, device.isWritable, JournalResetRequest.isRequested(for: resource.bsdName) {
                 try NTFSVolumeHandle.resetJournal(device: device)
@@ -77,7 +77,11 @@ final class NTFSFileSystem: FSUnaryFileSystem, FSUnaryFileSystemOperations,
             }
         }
 
-        let volume = NTFSVolume(handle: handle, uuid: UUID(ntfsSerialNumber: handle.serialNumber))
+        let uuid = UUID(ntfsSerialNumber: handle.serialNumber)
+        let volume = device.supportsOffloadedIO
+            ? NTFSOffloadedVolume(handle: handle, device: device, resource: resource, uuid: uuid)
+            : NTFSVolume(handle: handle, device: device, uuid: uuid)
+        extensionLog.notice("\(resource.bsdName, privacy: .public): kernel-offloaded I/O \(device.supportsOffloadedIO ? "on" : "off", privacy: .public)")
         lock.withLock { self.volume = volume }
         containerStatus = .ready
         reply(volume, nil)

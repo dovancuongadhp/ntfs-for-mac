@@ -33,7 +33,7 @@
 		<key>FSSupportsBlockResources</key>
 		<true/>
 		<key>FSSupportsKernelOffloadedIO</key>
-		<false/>
+		<true/>
 		<key>FSSupportsServerURLs</key>
 		<false/>
 		<key>FSVolumeAlwaysIgnoreOwnership</key>
