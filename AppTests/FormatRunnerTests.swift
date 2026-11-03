@@ -192,6 +192,108 @@ struct FormatRunnerTests {
         }
     }
 
+    /// An HFS+ partition re-typed to Basic Data by an exFAT placeholder, then formatted as NTFS.
+    private func retypeJob(_ device: DiskInfo, in infos: [DiskInfo]) -> FormatJob {
+        let request = FormatRequest(
+            device: device.bsdName, size: device.size, offset: device.offset!, label: "Data", clusterSize: nil, quick: true)
+        return job([
+            .unmount(device.bsdName, whole: false),
+            .diskutil(["eraseVolume", "ExFAT", "NTFS", device.bsdName]),
+            .unmountErased(device.bsdName),
+            .ntfsFormat(request),
+        ], device: device, in: infos)
+    }
+
+    private var hfsPartition: [DiskInfo] {
+        var infos = Fixture.usbGPT
+        infos[3].content = "48465300-0000-11AA-AA11-00306543ECAC"
+        infos[3].volumeKind = "hfs"
+        return infos
+    }
+
+    /// What eraseVolume leaves: the same partition, now Basic Data with a mounted exFAT placeholder.
+    private func retype(_ environment: FakeFormatEnvironment, _ name: String) {
+        environment.infos[name]?.content = DiskContent.microsoftBasicData
+        environment.infos[name]?.volumeKind = "exfat"
+        environment.infos[name]?.volumeName = "NTFS"
+        environment.infos[name]?.mount = Fixture.mount("/Volumes/NTFS")
+    }
+
+    @Test func retypesAPartitionBeforeFormattingItAsNTFS() async throws {
+        let infos = hfsPartition
+        let environment = FakeFormatEnvironment(infos)
+        environment.afterDiskutil = { [unowned environment] in self.retype(environment, "disk6s3") }
+        var stages: [FormatStage] = []
+        try await FormatRunner(environment: environment).run(retypeJob(infos[3], in: infos)) { stages.append($0) }
+        #expect(environment.log == [
+            "unmount disk6s3",
+            "diskutil eraseVolume ExFAT NTFS disk6s3",
+            "unmount disk6s3",
+            "ntfs-format disk6s3",
+        ])
+        #expect(stages == [.checking, .unmounting, .formatting, .unmounting, .formatting, .finishing])
+    }
+
+    @Test func retypedPartitionUnmountIsRetried() async throws {
+        let infos = hfsPartition
+        let environment = FakeFormatEnvironment(infos)
+        environment.afterDiskutil = { [unowned environment] in
+            self.retype(environment, "disk6s3")
+            environment.failingUnmounts = 2
+        }
+        try await FormatRunner(environment: environment).run(retypeJob(infos[3], in: infos)) { _ in }
+        #expect(environment.log.filter { $0 == "unmount disk6s3" }.count == 4)
+        #expect(environment.pauses == [.seconds(1), .seconds(1)])
+        #expect(environment.log.last == "ntfs-format disk6s3")
+    }
+
+    @Test func failuresAfterRetypingSayThePartitionWasErased() async {
+        let infos = hfsPartition
+        let environment = FakeFormatEnvironment(infos)
+        environment.afterDiskutil = { [unowned environment] in self.retype(environment, "disk6s3") }
+        environment.ntfsError = FormatError.cancelled
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the administrator prompt was cancelled")) {
+            try await FormatRunner(environment: environment).run(self.retypeJob(infos[3], in: infos)) { _ in }
+        }
+
+        let busy = FakeFormatEnvironment(infos)
+        busy.afterDiskutil = { [unowned busy] in
+            self.retype(busy, "disk6s3")
+            busy.unmountError = DiskOperationError(message: "in use")
+        }
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive is in use")) {
+            try await FormatRunner(environment: busy).run(self.retypeJob(infos[3], in: infos)) { _ in }
+        }
+        #expect(!busy.log.contains("ntfs-format disk6s3"))
+    }
+
+    @Test func retypesAnAPFSStoreBeforeFormattingItAsNTFS() async throws {
+        let infos = Fixture.usbAPFS
+        let store = infos[1]
+        let environment = FakeFormatEnvironment(infos)
+        // The container goes away and the store becomes an exFAT partition.
+        environment.afterDiskutil = { [unowned environment] in
+            for name in ["disk9", "disk9s1", "disk9s2"] { environment.infos[name] = nil }
+            self.retype(environment, "disk8s1")
+        }
+        let request = FormatRequest(
+            device: "disk8s1", size: store.size, offset: store.offset!, label: "Data", clusterSize: nil, quick: true)
+        try await FormatRunner(environment: environment).run(job([
+            .unmount("disk9s1", whole: false),
+            .unmount("disk9s2", whole: false),
+            .diskutil(["eraseVolume", "ExFAT", "NTFS", "disk8s1"]),
+            .unmountErased("disk8s1"),
+            .ntfsFormat(request),
+        ], device: store, in: infos)) { _ in }
+        #expect(environment.log == [
+            "unmount disk9s1",
+            "unmount disk9s2",
+            "diskutil eraseVolume ExFAT NTFS disk8s1",
+            "unmount disk8s1",
+            "ntfs-format disk8s1",
+        ])
+    }
+
     @Test func stopsWhenTheDriveChangesBeforeErasing() async {
         let environment = FakeFormatEnvironment(Fixture.usbGPT)
         environment.afterUnmount = { [unowned environment] in environment.infos["disk6s3"]?.size += 512 }

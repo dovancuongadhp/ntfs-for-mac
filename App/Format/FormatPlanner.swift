@@ -4,6 +4,9 @@ import NTFSFormat
 enum FormatStep: Equatable, Sendable {
     /// Unmount without forcing; `whole` unmounts every volume on the disk.
     case unmount(String, whole: Bool)
+    /// Unmount a partition that `diskutil` just formatted and mounted,
+    /// retrying while macOS still holds it.
+    case unmountErased(String)
     /// Arguments for `/usr/sbin/diskutil`.
     case diskutil([String])
     /// Run `ntfs-format` with administrator rights.
@@ -33,6 +36,12 @@ enum FormatPlanner {
             if let diskutilName = options.fileSystem.diskutilName {
                 steps.append(.diskutil(["eraseVolume", diskutilName, options.name, device.bsdName]))
             } else {
+                if preparation.disk.scheme == .gpt, !isBasicData(device.content) {
+                    // Windows only mounts NTFS from Basic Data partitions; an exFAT
+                    // placeholder makes diskutil re-type the partition.
+                    steps.append(.diskutil(["eraseVolume", "ExFAT", "NTFS", device.bsdName]))
+                    steps.append(.unmountErased(device.bsdName))
+                }
                 steps.append(.ntfsFormat(FormatRequest(
                     device: device.bsdName, size: device.size, offset: device.offset ?? 0,
                     label: options.name, clusterSize: options.clusterSize, quick: options.quick)))
@@ -51,5 +60,9 @@ enum FormatPlanner {
             }
         }
         return FormatJob(fingerprint: preparation.fingerprint, steps: steps)
+    }
+
+    private static func isBasicData(_ content: String?) -> Bool {
+        content?.uppercased() == DiskContent.microsoftBasicData
     }
 }

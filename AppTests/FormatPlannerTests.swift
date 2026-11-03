@@ -30,6 +30,62 @@ struct FormatPlannerTests {
         ])
     }
 
+    @Test func basicDataPartitionIsFormattedInPlace() throws {
+        var infos = Fixture.usbGPT
+        infos[3].content = DiskContent.microsoftBasicData.lowercased()
+        let job = FormatPlanner.job(
+            for: try preparation(.partition("disk6s3"), infos, device: infos[3]),
+            options: FormatOptions(name: "Data", fileSystem: .ntfs))
+        #expect(job.steps == [
+            .unmount("disk6s3", whole: false),
+            .ntfsFormat(FormatRequest(device: "disk6s3", size: 411_600_000_000, offset: 100_609_735_680,
+                                      label: "Data", clusterSize: nil, quick: true)),
+        ])
+    }
+
+    @Test func hfsPartitionIsRetypedBeforeNTFS() throws {
+        var infos = Fixture.usbGPT
+        infos[3].content = "48465300-0000-11AA-AA11-00306543ECAC"
+        infos[3].volumeKind = "hfs"
+        let job = FormatPlanner.job(
+            for: try preparation(.partition("disk6s3"), infos, device: infos[3]),
+            options: FormatOptions(name: "Windows", fileSystem: .ntfs))
+        #expect(job.steps == [
+            .unmount("disk6s3", whole: false),
+            .diskutil(["eraseVolume", "ExFAT", "NTFS", "disk6s3"]),
+            .unmountErased("disk6s3"),
+            .ntfsFormat(FormatRequest(device: "disk6s3", size: 411_600_000_000, offset: 100_609_735_680,
+                                      label: "Windows", clusterSize: nil, quick: true)),
+        ])
+    }
+
+    @Test func apfsVolumeToNTFSRetypesItsStore() throws {
+        let store = Fixture.usbAPFS[1]
+        let job = FormatPlanner.job(
+            for: try preparation(.partition("disk9s1"), Fixture.usbAPFS, device: store),
+            options: FormatOptions(name: "Windows", fileSystem: .ntfs, clusterSize: 4096))
+        #expect(job.steps == [
+            .unmount("disk9s1", whole: false),
+            .unmount("disk9s2", whole: false),
+            .diskutil(["eraseVolume", "ExFAT", "NTFS", "disk8s1"]),
+            .unmountErased("disk8s1"),
+            .ntfsFormat(FormatRequest(device: "disk8s1", size: store.size, offset: store.offset!,
+                                      label: "Windows", clusterSize: 4096, quick: true)),
+        ])
+    }
+
+    @Test func mbrPartitionIsNotRetypedByDiskutil() throws {
+        let partition = Fixture.mbrFAT[1]
+        let job = FormatPlanner.job(
+            for: try preparation(.partition("disk7s1"), Fixture.mbrFAT, device: partition),
+            options: FormatOptions(name: "Windows", fileSystem: .ntfs))
+        #expect(job.steps == [
+            .unmount("disk7s1", whole: false),
+            .ntfsFormat(FormatRequest(device: "disk7s1", size: partition.size, offset: partition.offset!,
+                                      label: "Windows", clusterSize: nil, quick: true)),
+        ])
+    }
+
     @Test func unmountedPartitionsAreNotUnmounted() throws {
         var infos = Fixture.usbGPT
         infos[3].mount = nil

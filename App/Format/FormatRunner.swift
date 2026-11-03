@@ -48,6 +48,9 @@ final class FormatRunner {
         case .unmount(let name, let whole):
             progress(.unmounting)
             try await unmount(name, whole: whole)
+        case .unmountErased(let name):
+            progress(.unmounting)
+            try await unmountNewPartition(name)
         case .diskutil(let arguments):
             progress(.formatting)
             if !erased {
@@ -90,7 +93,7 @@ final class FormatRunner {
         }
     }
 
-    /// macOS mounts the new partition and Spotlight or Finder may hold it for a moment.
+    /// macOS mounts a partition diskutil just formatted, and Spotlight or Finder may hold it for a moment.
     private func unmountNewPartition(_ name: String) async throws {
         var attempt = 1
         while true {
