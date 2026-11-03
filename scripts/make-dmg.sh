@@ -25,9 +25,19 @@ fi
 mkdir -p build "$(dirname "$DMG")"
 WORK="$(mktemp -d build/dmg.XXXXXX)"
 DEVICE=""
+# Never forced; Finder or Spotlight may hold the volume for a moment.
+detach() { # device
+    for _ in 1 2 3 4 5; do
+        hdiutil detach "$1" -quiet && return 0
+        sleep 2
+    done
+    return 1
+}
 cleanup() {
-    if [[ -n "$DEVICE" ]]; then
-        hdiutil detach "$DEVICE" -force -quiet || true
+    if [[ -n "$DEVICE" ]] && ! detach "$DEVICE"; then
+        echo "warning: could not detach $DEVICE; detach it with: hdiutil detach $DEVICE" >&2
+        echo "warning: left $WORK in place" >&2
+        return
     fi
     rm -rf "$WORK"
 }
@@ -78,7 +88,7 @@ fi
 chmod -Rf go-w "$MOUNT_POINT" || true
 rm -rf "$MOUNT_POINT/.fseventsd"
 sync
-hdiutil detach "$DEVICE" -quiet || { sleep 2; hdiutil detach "$DEVICE" -force -quiet; }
+detach "$DEVICE" || { echo "error: could not detach $DEVICE; quit the apps using \"$VOLUME_NAME\"" >&2; exit 1; }
 DEVICE=""
 
 hdiutil convert -quiet "$WORK/rw.dmg" -format ULFO -ov -o "$DMG"

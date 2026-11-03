@@ -44,6 +44,7 @@ WORK="$(cd "$WORK" && pwd -P)"
 MNT="$WORK/mnt"
 IMAGES=()
 DEV=""
+uuid_before=none
 # Set when an image may still be attached, so cleanup keeps the files behind it.
 KEEP_WORK=false
 
@@ -233,10 +234,18 @@ for fs in "ExFAT:exfat" "MS-DOS FAT32:msdos" "APFS:apfs" "ExFAT:exfat"; do
     if [[ "$kind" == "apfs" ]]; then
         # Windows doesn't mount NTFS from an APFS-typed partition.
         expect_format 74 "$P" --label X --quick
+        # The GPT partition GUID the app fingerprints when its format sheet opens.
+        uuid_before="$(info "$P" DiskUUID 2>/dev/null || echo none)"
     fi
 done
 
 step "NTFS on the partition diskutil re-typed from APFS (as the app does)"
+uuid_after="$(info "$P" DiskUUID 2>/dev/null || echo none)"
+echo "    partition GUID while APFS: $uuid_before"
+echo "    partition GUID re-typed:   $uuid_after"
+if [[ "$uuid_before" != "$uuid_after" ]]; then
+    echo "WARN: eraseVolume changed the partition GUID of $P; the app then stops safely before ntfs-format (the drive changed) and leaves the partition exFAT" >&2
+fi
 expect_format 0 "$P" --label "Từ APFS" --quick
 check_ntfs "$P"
 
