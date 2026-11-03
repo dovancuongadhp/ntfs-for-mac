@@ -10,7 +10,9 @@ cd "$(dirname "$0")/.."
 
 FS_TYPE="ntfsrw"
 # Resolved, because mount(8) reports /tmp as /private/tmp.
-WORK="$(cd "$(mktemp -d /tmp/ntfs-itest.XXXXXX)" && pwd -P)"
+WORK="$(mktemp -d /tmp/ntfs-itest.XXXXXX)"
+WORK="$(cd "$WORK" && pwd -P)"
+[[ "$WORK" == /private/tmp/ntfs-itest.* ]] || { echo "bad work dir: $WORK" >&2; exit 1; }
 IMAGE="$WORK/volume.img"
 MNT="$WORK/mnt"
 DEVICE=""
@@ -32,7 +34,9 @@ cleanup() {
     if [[ -n "$DEVICE" ]]; then
         hdiutil detach "$DEVICE" -force -quiet || true
     fi
-    rm -rf "$WORK"
+    if [[ "$WORK" == /private/tmp/ntfs-itest.* ]]; then
+        rm -rf "$WORK"
+    fi
 }
 trap cleanup EXIT
 

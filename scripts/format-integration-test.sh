@@ -22,8 +22,12 @@ if [[ $EUID -ne 0 ]]; then
         osascript -e 'quit app "NTFS for Mac"'
     fi
     status=0
-    osascript -e "do shell script \"BIN='$BIN' '$PWD/scripts/format-integration-test.sh' > '$LOG' 2>&1\" with administrator privileges" \
-        >/dev/null || status=$?
+    osascript - "$BIN" "$PWD/scripts/format-integration-test.sh" "$LOG" >/dev/null <<'APPLESCRIPT' || status=$?
+on run argv
+    set command to "BIN=" & quoted form of item 1 of argv & " " & quoted form of item 2 of argv
+    do shell script command & " > " & quoted form of item 3 of argv & " 2>&1" with administrator privileges
+end run
+APPLESCRIPT
     cat "$LOG"
     rm -f "$LOG"
     if $APP_WAS_RUNNING; then
@@ -34,16 +38,21 @@ fi
 
 : "${BIN:?run this script without sudo}"
 FORMAT="$BIN/ntfs-format"
-WORK="$(cd "$(mktemp -d /tmp/ntfs-ftest.XXXXXX)" && pwd -P)"
+WORK="$(mktemp -d /tmp/ntfs-ftest.XXXXXX)"
+WORK="$(cd "$WORK" && pwd -P)"
+[[ "$WORK" == /private/tmp/ntfs-ftest.* ]] || { echo "bad work dir: $WORK" >&2; exit 1; }
 MNT="$WORK/mnt"
 IMAGES=()
 DEV=""
+# Set when an image may still be attached, so cleanup keeps the files behind it.
+KEEP_WORK=false
+
+mounted_at() { grep -q " on $1 " <<<"$(mount)"; }
 
 cleanup() {
-    if mount | grep -q " on $MNT "; then
+    if mounted_at "$MNT"; then
         umount "$MNT" 2>/dev/null || true
     fi
-    local stuck=false
     for dev in "${IMAGES[@]+"${IMAGES[@]}"}"; do
         local detached=false
         for _ in 1 2 3 4 5; do
@@ -55,13 +64,12 @@ cleanup() {
         done
         if ! $detached; then
             echo "WARNING: could not detach /dev/$dev; detach it with: hdiutil detach $dev" >&2
-            stuck=true
+            KEEP_WORK=true
         fi
     done
-    # An attached image still uses its file, so keep it for a manual detach.
-    if $stuck; then
+    if $KEEP_WORK; then
         echo "WARNING: left $WORK in place" >&2
-    else
+    elif [[ "$WORK" == /private/tmp/ntfs-ftest.* ]]; then
         rm -rf "$WORK"
     fi
 }
@@ -70,27 +78,55 @@ trap cleanup EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 step() { echo "--> $*"; }
 
+# Succeeds if hdiutil reports /dev/<whole disk> as attached from an image in $WORK.
+attached_from_work() { # whole disk
+    local plist image entry i j
+    plist="$(hdiutil info -plist)" || return 1
+    for ((i = 0; ; i++)); do
+        image="$(plutil -extract "images.$i.image-path" raw -o - - <<<"$plist" 2>/dev/null)" || return 1
+        [[ "$image" == "$WORK"/*.dmg ]] || continue
+        for ((j = 0; ; j++)); do
+            entry="$(plutil -extract "images.$i.system-entities.$j.dev-entry" raw -o - - <<<"$plist" 2>/dev/null)" || break
+            [[ "$entry" == "/dev/$1" ]] && return 0
+        done
+    done
+}
+
 # Creates and attaches an image; sets DEV to its whole-disk node, e.g. disk12.
 new_image() { # name size layout fs
     local image="$WORK/$1.dmg"
     hdiutil create -quiet -size "$2" -layout "$3" -fs "$4" -volname "$1" "$image"
-    DEV="$(hdiutil attach -nomount "$image" | awk 'NR == 1 { sub("/dev/", "", $1); print $1 }')"
-    [[ "$DEV" =~ ^disk[0-9]+$ ]] || fail "could not attach $image"
+    local attached
+    attached="$(hdiutil attach -nomount "$image")" || {
+        KEEP_WORK=true
+        fail "could not attach $image; check hdiutil info and detach it by hand if it is listed"
+    }
+    DEV="$(awk 'NR == 1 { sub("/dev/", "", $1); print $1 }' <<<"$attached")"
+    if [[ ! "$DEV" =~ ^disk[0-9]+$ ]]; then
+        KEEP_WORK=true
+        fail "could not find the device for $image; check hdiutil info and detach it by hand"
+    fi
     # Not added to IMAGES unless it is a disk image, so cleanup never detaches a real disk.
     local description
     description="$(diskutil info "$DEV")"
-    grep -Eq '^ *(Protocol|Device / Media Name): +Disk Image *$' <<<"$description" \
-        || fail "/dev/$DEV is not a disk image; detach $image by hand"
+    if ! grep -Eq '^ *(Protocol|Device / Media Name): +Disk Image *$' <<<"$description" \
+        || ! attached_from_work "$DEV"; then
+        KEEP_WORK=true
+        fail "/dev/$DEV does not look like $image; check hdiutil info and detach $image by hand"
+    fi
     IMAGES+=("$DEV")
 }
 
 # Refuses any device that isn't on one of this script's images.
 ours() {
+    [[ "$1" =~ ^disk[0-9]+(s[0-9]+)?$ ]] || fail "refusing to touch $1: not a disk name"
     local whole="${1%%s[0-9]*}"
-    for dev in "${IMAGES[@]}"; do
-        [[ "$dev" == "$whole" ]] && return 0
+    local known=false
+    for dev in "${IMAGES[@]+"${IMAGES[@]}"}"; do
+        [[ "$dev" == "$whole" ]] && known=true
     done
-    fail "refusing to touch $1: not a scratch image"
+    $known || fail "refusing to touch $1: not a scratch image"
+    attached_from_work "$whole" || fail "refusing to touch $1: /dev/$whole is no longer attached from $WORK"
 }
 
 info() { diskutil info -plist "/dev/$1" | plutil -extract "$2" raw -o - -; }
@@ -115,10 +151,16 @@ expect_format() { # expected-status device args...
 }
 
 check_ntfs() { # partition
+    # DiskArbitration may still be probing the new file system and mount it.
+    sleep 2
+    if grep -q "^/dev/$1 on " <<<"$(mount)"; then
+        ours "$1"
+        diskutil unmount "/dev/$1" >/dev/null || fail "could not unmount the auto-mounted $1"
+    fi
     ours "$1"
     mkdir -p "$MNT"
     mount -F -t ntfsrw "/dev/$1" "$MNT" || fail "$1 did not mount as NTFS"
-    mount | grep " on $MNT " | grep -q "(ntfsrw" || fail "$1 is not mounted by ntfsrw"
+    grep " on $MNT " <<<"$(mount)" | grep -q "(ntfsrw" || fail "$1 is not mounted by ntfsrw"
     head -c $((3 * 1024 * 1024 + 5)) /dev/urandom > "$WORK/data.bin"
     cp "$WORK/data.bin" "$MNT/data.bin"
     umount "$MNT"
@@ -160,9 +202,11 @@ check_ntfs "$P"
 step "NTFS on MBR, full format, 8 KB clusters"
 new_image MBRF 128m MBRSPUD MS-DOS
 MBR="$DEV"
-[[ "$(mbr_type "$MBR")" != "07" ]] || fail "the MBR image already has type 07"
+mbr="$(mbr_type "$MBR")"
+[[ "$mbr" != "07" ]] || fail "the MBR image already has type 07"
 expect_format 0 "${MBR}s1" --label MBRNTFS --cluster 8192
-[[ "$(mbr_type "$MBR")" == "07" ]] || fail "MBR type was not set to NTFS"
+mbr="$(mbr_type "$MBR")"
+[[ "$mbr" == "07" ]] || fail "MBR type was not set to NTFS (type $mbr)"
 check_ntfs "${MBR}s1"
 
 step "diskutil partition formats: exFAT, FAT32, APFS, then APFS store back to exFAT"
@@ -187,12 +231,22 @@ diskutil eraseDisk ExFAT NTFS MBR "$MBR" >/dev/null || fail "eraseDisk failed"
 ours "${MBR}s1"
 diskutil unmount "/dev/${MBR}s1" >/dev/null
 expect_format 0 "${MBR}s1" --label "Whole Disk" --quick
-[[ "$(mbr_type "$MBR")" == "07" ]] || fail "MBR type is not NTFS after a whole-disk format"
+mbr="$(mbr_type "$MBR")"
+[[ "$mbr" == "07" ]] || fail "MBR type is not NTFS after a whole-disk format (type $mbr)"
 check_ntfs "${MBR}s1"
 
 step "Whole-disk exFAT on GPT"
 ours "$GPT"
 diskutil eraseDisk ExFAT NFMTEST GPT "$GPT" >/dev/null || fail "eraseDisk GPT failed"
+# A small disk may or may not get an EFI partition first.
+data=""
+for part in "${GPT}s1" "${GPT}s2"; do
+    [[ -e "/dev/$part" ]] || continue
+    if [[ "$(info "$part" FilesystemType 2>/dev/null || true)" == "exfat" ]]; then
+        data="$part"
+    fi
+done
+[[ -n "$data" ]] || fail "eraseDisk GPT left no exFAT partition on $GPT"
 ours "$GPT"
 diskutil unmountDisk "$GPT" >/dev/null
 
