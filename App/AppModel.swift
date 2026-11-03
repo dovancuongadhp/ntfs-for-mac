@@ -88,6 +88,9 @@ final class AppModel {
                 try await operation()
             } catch {
                 appLog.error("\(disk.bsdName, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                if error.localizedDescription.contains("is disabled") {
+                    self.extensionStatus.noteExtensionDisabled()
+                }
                 self.lastError = String(localized: "“\(disk.name)”: \(error.localizedDescription)")
             }
             self.busy.remove(disk.bsdName)
@@ -96,6 +99,9 @@ final class AppModel {
     }
 
     private func diskChanged(_ disk: NTFSDisk) {
+        if disk.isMountedByExtension {
+            extensionStatus.noteExtensionMounted()
+        }
         if disk.isMountedByExtension, disk.mount?.isReadOnly == true, reasons[disk.bsdName] == nil,
            let pending = pendingReason, Date().timeIntervalSince(pending.date) < 60 {
             reasons[disk.bsdName] = pending.reason

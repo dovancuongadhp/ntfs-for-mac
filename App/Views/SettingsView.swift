@@ -34,6 +34,7 @@ struct SettingsView: View {
                     switch model.extensionStatus.isEnabled {
                     case true?: Text("Turned on")
                     case false?: Text("Turned off")
+                    case nil where model.extensionStatus.hasChecked: Text("Not detected yet")
                     case nil: ProgressView().controlSize(.small)
                     }
                 }

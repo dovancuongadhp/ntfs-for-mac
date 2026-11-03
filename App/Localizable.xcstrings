@@ -606,6 +606,16 @@
           }
         }
       }
+    },
+    "Not detected yet" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa phát hiện"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

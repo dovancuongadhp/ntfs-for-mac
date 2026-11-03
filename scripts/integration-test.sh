@@ -15,7 +15,17 @@ IMAGE="$WORK/volume.img"
 MNT="$WORK/mnt"
 DEVICE=""
 
+# The menu bar app would race this script to mount the scratch image.
+APP_WAS_RUNNING=false
+if pgrep -xq "NTFS for Mac"; then
+    APP_WAS_RUNNING=true
+    osascript -e 'quit app "NTFS for Mac"'
+fi
+
 cleanup() {
+    if $APP_WAS_RUNNING; then
+        open -g -a "NTFS for Mac" || true
+    fi
     if mount | grep -q " on $MNT "; then
         umount "$MNT" 2>/dev/null || diskutil unmount force "$MNT" >/dev/null 2>&1 || true
     fi
