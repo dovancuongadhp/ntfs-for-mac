@@ -63,9 +63,12 @@ struct MenuContentView: View {
         }
         .padding(14)
         .frame(width: 340)
-        .onAppear {
-            model.extensionStatus.refresh()
-            model.inventory.refreshUsage()
+        .onAppear { model.extensionStatus.refresh() }
+        .task {
+            while !Task.isCancelled {
+                model.inventory.refreshUsage()
+                try? await Task.sleep(for: .seconds(2))
+            }
         }
     }
 }

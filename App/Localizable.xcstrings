@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ of %@ used" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã dùng %1$@ trên %2$@"
+          }
+        }
+      }
+    },
     "A drive is being formatted" : {
       "localizations" : {
         "vi" : {
