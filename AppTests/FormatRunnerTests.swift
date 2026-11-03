@@ -252,7 +252,7 @@ struct FormatRunnerTests {
         let environment = FakeFormatEnvironment(infos)
         environment.afterDiskutil = { [unowned environment] in self.retype(environment, "disk6s3") }
         environment.ntfsError = FormatError.cancelled
-        await #expect(throws: FormatError.ntfsFailedAfterErase("the administrator prompt was cancelled")) {
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the administrator prompt was cancelled", partition: true)) {
             try await FormatRunner(environment: environment).run(self.retypeJob(infos[3], in: infos)) { _ in }
         }
 
@@ -261,10 +261,43 @@ struct FormatRunnerTests {
             self.retype(busy, "disk6s3")
             busy.unmountError = DiskOperationError(message: "in use")
         }
-        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive is in use")) {
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive is in use", partition: true)) {
             try await FormatRunner(environment: busy).run(self.retypeJob(infos[3], in: infos)) { _ in }
         }
         #expect(!busy.log.contains("ntfs-format disk6s3"))
+    }
+
+    @Test func driveSwappedDuringTheRetypeIsNotFormattedAsNTFS() async {
+        let infos = hfsPartition
+        let environment = FakeFormatEnvironment(infos)
+        environment.afterDiskutil = { [unowned environment] in
+            self.retype(environment, "disk6s3")
+            environment.infos["disk6"]?.deviceModel = "Another Stick"
+        }
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive changed", partition: true)) {
+            try await FormatRunner(environment: environment).run(self.retypeJob(infos[3], in: infos)) { _ in }
+        }
+        #expect(environment.log == [
+            "unmount disk6s3",
+            "diskutil eraseVolume ExFAT NTFS disk6s3",
+            "unmount disk6s3",
+        ])
+    }
+
+    @Test func retypeKeepsTheFingerprintSoNTFSRuns() async throws {
+        let infos = hfsPartition
+        let job = retypeJob(infos[3], in: infos)
+        let environment = FakeFormatEnvironment(infos)
+        var fingerprintAfterRetype: DiskFingerprint?
+        environment.afterDiskutil = { [unowned environment] in
+            self.retype(environment, "disk6s3")
+            environment.infos["disk6s3"]?.volumeUUID = "NEW-EXFAT-VOLUME"
+            fingerprintAfterRetype = DiskFingerprint.read(
+                "disk6s3", freshInfo: { environment.freshInfo($0) }, childNames: { environment.childNames(ofWhole: $0) })
+        }
+        try await FormatRunner(environment: environment).run(job) { _ in }
+        #expect(fingerprintAfterRetype == job.fingerprint)
+        #expect(environment.log.last == "ntfs-format disk6s3")
     }
 
     @Test func retypesAnAPFSStoreBeforeFormattingItAsNTFS() async throws {

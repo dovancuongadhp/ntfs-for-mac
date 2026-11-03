@@ -32,7 +32,7 @@ final class FormatRunner {
                 try await run(step, job: job, erased: erased, progress: progress)
             } catch {
                 guard erased else { throw error }
-                throw FormatError.ntfsFailedAfterErase(Self.detail(of: error))
+                throw FormatError.ntfsFailedAfterErase(Self.detail(of: error), partition: job.fingerprint.isPartition)
             }
             if case .diskutil = step {
                 erased = true
@@ -59,9 +59,8 @@ final class FormatRunner {
             try await environment.runDiskutil(arguments)
         case .ntfsFormat(let request):
             progress(.formatting)
-            if !erased {
-                try checkFingerprint(job.fingerprint)
-            }
+            // Also after diskutil re-typed the partition: it must still be the confirmed one.
+            try checkFingerprint(job.fingerprint)
             try await environment.runNTFSFormat(request)
         case .ntfsFormatNewPartition(let whole, let label, let clusterSize, let quick):
             progress(.formatting)

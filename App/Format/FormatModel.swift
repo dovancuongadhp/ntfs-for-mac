@@ -54,9 +54,10 @@ struct FormatOptions: Equatable, Sendable {
     var quick = true
 }
 
-/// What identifies the device the user confirmed. Formatting stops if any of
-/// it differs when the work starts. Mount state and partition content are
-/// left out: unmounting and re-typing the partition must not change it.
+/// What identifies the device the user confirmed. It is checked before every
+/// write to a known device, including ntfs-format after diskutil re-typed the
+/// partition, and formatting stops if any of it differs. Mount state and
+/// partition content are left out: unmounting and re-typing must not change it.
 struct DiskFingerprint: Equatable, Sendable {
     struct Child: Equatable, Sendable {
         var bsdName: String
@@ -74,6 +75,8 @@ struct DiskFingerprint: Equatable, Sendable {
     var mediaName: String?
     /// For a whole disk: its partitions.
     var children: [Child]
+
+    var isPartition: Bool { bsdName != wholeBSDName }
 
     /// `whole` is the drive holding `info`, or `info` itself for a whole disk.
     init(info: DiskInfo, whole: DiskInfo?, children: [DiskInfo]) {
@@ -119,7 +122,8 @@ enum FormatError: LocalizedError, Equatable {
     case unexpectedLayout
     case tool(FormatToolError)
     case failed(String)
-    case ntfsFailedAfterErase(String)
+    /// `partition`: only that partition was erased, not the whole drive.
+    case ntfsFailedAfterErase(String, partition: Bool = false)
     case blocked(String)
 
     var errorDescription: String? {
@@ -136,7 +140,9 @@ enum FormatError: LocalizedError, Equatable {
             error.message
         case .failed(let detail):
             String(localized: "Formatting failed: \(detail)")
-        case .ntfsFailedAfterErase(let detail):
+        case .ntfsFailedAfterErase(let detail, partition: true):
+            String(localized: "The partition was erased and formatted as exFAT, but NTFS formatting didn't finish (\(detail)). Format it again as NTFS.")
+        case .ntfsFailedAfterErase(let detail, partition: false):
             String(localized: "The drive was erased and formatted as exFAT, but NTFS formatting didn't finish (\(detail)). Format it again as NTFS.")
         case .blocked(let reason):
             reason

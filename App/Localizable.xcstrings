@@ -1374,6 +1374,16 @@
         }
       }
     },
+    "The partition was erased and formatted as exFAT, but NTFS formatting didn't finish (%@). Format it again as NTFS." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phân vùng đã bị xóa và định dạng thành exFAT, nhưng định dạng NTFS chưa hoàn tất (%@). Hãy định dạng lại thành NTFS."
+          }
+        }
+      }
+    },
     "the partition table looks different than expected" : {
       "localizations" : {
         "vi" : {

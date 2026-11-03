@@ -51,7 +51,7 @@ extension FormatError {
         case .cancelled: String(localized: "the administrator prompt was cancelled")
         case .unexpectedLayout: String(localized: "the new partition wasn't found")
         case .tool(let error): error.shortMessage
-        case .failed(let detail), .ntfsFailedAfterErase(let detail), .blocked(let detail): detail
+        case .failed(let detail), .ntfsFailedAfterErase(let detail, _), .blocked(let detail): detail
         }
     }
 }
