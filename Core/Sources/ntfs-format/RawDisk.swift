@@ -2,34 +2,41 @@ import Foundation
 import NTFSFormat
 
 /// The first block of a whole disk, read and written through its raw device.
-final class RawDisk {
-    private let descriptor: Int32
-    private let blockSize: Int
+///
+/// Every call opens and closes the device itself. Nothing may stay open while
+/// mkntfs runs: a whole disk held open read-write makes macOS withdraw its
+/// partition devices, and mkntfs then can't find the partition.
+enum RawDisk {
+    static func readFirstBlock(of wholeDevice: String, blockSize: Int) throws -> [UInt8] {
+        let descriptor = try open(wholeDevice, O_RDONLY)
+        defer { close(descriptor) }
+        return try read(descriptor, count: blockSize)
+    }
 
-    /// Opens read-write up front, so a busy disk is refused before anything is formatted.
-    init(wholeDevice: String, blockSize: Int) throws {
-        descriptor = open("/dev/r" + wholeDevice, O_RDWR)
+    /// Writes `block` only if the disk still holds `expected`, so a table that
+    /// changed since it was checked is never overwritten.
+    static func replaceFirstBlock(of wholeDevice: String, expected: [UInt8], with block: [UInt8]) throws {
+        guard block.count == expected.count else { throw FormatToolError.ioError }
+        let descriptor = try open(wholeDevice, O_RDWR)
+        defer { close(descriptor) }
+        guard try read(descriptor, count: expected.count) == expected else { throw FormatToolError.badPartitionTable }
+        guard pwrite(descriptor, block, block.count, 0) == block.count, fsync(descriptor) == 0 else {
+            throw FormatToolError.ioError
+        }
+    }
+
+    private static func open(_ wholeDevice: String, _ flags: Int32) throws -> Int32 {
+        let descriptor = Foundation.open("/dev/r" + wholeDevice, flags)
         guard descriptor >= 0 else {
             FileHandle.standardError.write(Data("ntfs-format: open /dev/r\(wholeDevice): \(String(cString: strerror(errno)))\n".utf8))
             throw FormatToolError.ioError
         }
-        self.blockSize = blockSize
+        return descriptor
     }
 
-    deinit {
-        close(descriptor)
-    }
-
-    func readFirstBlock() throws -> [UInt8] {
-        var block = [UInt8](repeating: 0, count: blockSize)
-        guard pread(descriptor, &block, blockSize, 0) == blockSize else { throw FormatToolError.ioError }
+    private static func read(_ descriptor: Int32, count: Int) throws -> [UInt8] {
+        var block = [UInt8](repeating: 0, count: count)
+        guard pread(descriptor, &block, count, 0) == count else { throw FormatToolError.ioError }
         return block
-    }
-
-    func writeFirstBlock(_ block: [UInt8]) throws {
-        guard block.count == blockSize,
-              pwrite(descriptor, block, blockSize, 0) == blockSize,
-              fsync(descriptor) == 0
-        else { throw FormatToolError.ioError }
     }
 }

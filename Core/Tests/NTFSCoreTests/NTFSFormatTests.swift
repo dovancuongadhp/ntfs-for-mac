@@ -49,6 +49,14 @@ struct FormatGuardTests {
         whole.device = "disk6"
         expect(.notAPartition, request: whole)
         expect(.notAPartition) { $0.isWhole = true }
+        expect(.changed) { $0.wholeDevice = "disk7" }
+        expect(.changed) { $0.wholeDevice = "disk61" }
+        var empty = request
+        empty.size = 0
+        expect(.changed, request: empty) { $0.size = 0 }
+        var atStart = request
+        atStart.offset = 0
+        expect(.unsupportedPartition, request: atStart) { $0.offset = 0 }
         expect(.internalDisk) { $0.isInternal = true }
         expect(.systemDisk) { $0.hostsSystem = true }
         expect(.readOnly) { $0.isWritable = false }

@@ -1,8 +1,9 @@
 /// The `mkntfs` command line for a request.
 public enum MkntfsCommand {
-    /// Runs on the block device without `-F`, so mkntfs itself refuses a
-    /// mounted partition. Geometry and start sector go in the boot sector,
-    /// where Windows expects them.
+    /// Runs on the block device without `-F`. mkntfs can't tell whether a
+    /// partition is mounted on macOS, so `FormatGuard` checks that before it
+    /// runs. Geometry and start sector go in the boot sector, where Windows
+    /// expects them.
     public static func arguments(_ request: FormatRequest, sectorSize: UInt64) -> [String] {
         let startSector = request.offset / sectorSize
         var arguments = [

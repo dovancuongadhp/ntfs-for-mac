@@ -10,24 +10,22 @@ func formatPartition() throws {
     let facts = try DeviceInspector.facts(for: request.device)
     try FormatGuard.check(request, facts: facts)
 
-    var table: (disk: RawDisk, original: [UInt8], typeField: Int)?
+    var table: (original: [UInt8], typeField: Int)?
     if facts.scheme == FormatGuard.mbrScheme, let index = facts.partitionID {
-        let disk = try RawDisk(wholeDevice: facts.wholeDevice, blockSize: Int(facts.blockSize))
-        let block = try disk.readFirstBlock()
+        let block = try RawDisk.readFirstBlock(of: facts.wholeDevice, blockSize: Int(facts.blockSize))
         let typeField = try MBR.typeFieldOffset(
             in: block, index: index, start: request.offset, size: request.size, blockSize: facts.blockSize)
         if block[typeField] != MBR.ntfsType {
-            table = (disk, block, typeField)
+            table = (block, typeField)
         }
     }
 
     try runMkntfs(MkntfsCommand.arguments(request, sectorSize: facts.blockSize))
 
     if let table {
-        var block = try table.disk.readFirstBlock()
-        guard block == table.original else { throw FormatToolError.badPartitionTable }
+        var block = table.original
         block[table.typeField] = MBR.ntfsType
-        try table.disk.writeFirstBlock(block)
+        try RawDisk.replaceFirstBlock(of: facts.wholeDevice, expected: table.original, with: block)
     }
 }
 

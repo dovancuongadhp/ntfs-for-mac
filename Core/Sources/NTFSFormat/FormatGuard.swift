@@ -68,9 +68,12 @@ public enum FormatGuard {
         guard !facts.hostsSystem else { throw FormatToolError.systemDisk }
         guard facts.isWritable else { throw FormatToolError.readOnly }
         guard !facts.isMounted else { throw FormatToolError.mounted }
-        guard facts.size == request.size, facts.offset == request.offset,
+        guard request.device.hasPrefix(facts.wholeDevice + "s"),
+              request.size > 0, facts.size == request.size, facts.offset == request.offset,
               facts.blockSize > 0, request.offset % facts.blockSize == 0
         else { throw FormatToolError.changed }
+        // A partition starting in the first block would overwrite the partition table.
+        guard request.offset >= facts.blockSize else { throw FormatToolError.unsupportedPartition }
 
         let label = request.label
         guard !label.isEmpty, label.utf16.count <= maxLabelLength,
