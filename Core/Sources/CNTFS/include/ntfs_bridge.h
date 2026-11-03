@@ -94,6 +94,11 @@ void nb_set_log_handler(nb_log_fn handler);
 int nb_mount(const nb_device_callbacks *device, int read_only,
 		nb_volume **out_volume, nb_readonly_reason *out_reason);
 int nb_unmount(nb_volume *volume);
+/*
+ * Empties an unclean $LogFile so the volume can be mounted read-write.
+ * Refuses volumes that are hibernated (-EPERM) or flagged for chkdsk (-EBUSY).
+ */
+int nb_reset_journal(const nb_device_callbacks *device);
 int nb_is_read_only(nb_volume *volume);
 void nb_force_read_only(nb_volume *volume);
 int nb_sync(nb_volume *volume);

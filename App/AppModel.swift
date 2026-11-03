@@ -63,6 +63,16 @@ final class AppModel {
         }
     }
 
+    /// Remounts a drive left read-only by an unclean journal, discarding the journal.
+    func allowWritingAnyway(_ disk: NTFSDisk) {
+        reasons[disk.bsdName] = nil
+        handled.insert(disk.bsdName)
+        perform(on: disk) { [mounter] in
+            try await mounter.mountWithExtension(
+                bsdName: disk.bsdName, volumeName: disk.name, readOnly: false, resetJournal: true)
+        }
+    }
+
     func eject(_ disk: NTFSDisk) {
         perform(on: disk) { [mounter] in
             try await mounter.eject(bsdName: disk.bsdName)

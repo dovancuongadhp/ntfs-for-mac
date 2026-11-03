@@ -527,16 +527,6 @@
         }
       }
     },
-    "Windows didn't shut down cleanly" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Windows chưa tắt đúng cách"
-          }
-        }
-      }
-    },
     "Windows flagged this drive for a disk check. Run “chkdsk /f” on it in Windows, then reconnect it." : {
       "localizations" : {
         "vi" : {
@@ -553,16 +543,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Windows đang ngủ đông"
-          }
-        }
-      }
-    },
-    "Windows still has unsaved changes on this drive. Connect it to Windows and shut down normally, then reconnect it." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Windows vẫn còn thay đổi chưa ghi xong trên ổ này. Hãy cắm ổ vào Windows, tắt máy bình thường rồi cắm lại."
           }
         }
       }
@@ -613,6 +593,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chưa phát hiện"
+          }
+        }
+      }
+    },
+    "not ejected safely" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "chưa được đẩy ra an toàn"
+          }
+        }
+      }
+    },
+    "This drive wasn't ejected safely, or Windows didn't shut down cleanly. Connect it to Windows and shut down normally, or choose Allow Writing Anyway." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ này chưa được đẩy ra an toàn, hoặc Windows chưa tắt đúng cách. Cắm vào Windows rồi tắt máy bình thường, hoặc chọn Vẫn cho ghi."
+          }
+        }
+      }
+    },
+    "Allow Writing Anyway…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vẫn cho ghi…"
+          }
+        }
+      }
+    },
+    "Allow writing to “%@”?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cho phép ghi vào “%@”?"
+          }
+        }
+      }
+    },
+    "This drive wasn't ejected safely, or Windows didn't shut down cleanly. To write to it, NTFS for Mac clears the NTFS journal, and changes Windows hadn't finished saving may be lost.\n\nIf the drive belongs to a Windows PC that is hibernating or uses Fast Startup, shut that PC down fully instead." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ này chưa được đẩy ra an toàn, hoặc Windows chưa tắt đúng cách. Để ghi được, NTFS for Mac sẽ xoá nhật ký NTFS, và những thay đổi Windows chưa kịp lưu có thể bị mất.\n\nNếu ổ thuộc một máy Windows đang ngủ đông hoặc bật Fast Startup, hãy tắt hẳn máy đó thay vì làm cách này."
+          }
+        }
+      }
+    },
+    "Allow Writing" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cho phép ghi"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Huỷ"
           }
         }
       }

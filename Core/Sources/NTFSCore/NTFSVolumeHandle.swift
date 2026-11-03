@@ -46,6 +46,28 @@ public final class NTFSVolumeHandle: @unchecked Sendable {
         }
     }
 
+    /// Discards an unclean journal (left by unplugging without ejecting, or by
+    /// Windows not shutting down cleanly) so the next mount can be read-write.
+    /// Pending journal transactions are lost; hibernated volumes and volumes
+    /// flagged for chkdsk are refused.
+    public static func resetJournal(device: BlockDevice) throws(NTFSMountError) {
+        try probe(device)
+        let box = DeviceBox(device: device)
+        var callbacks = nb_device_callbacks(
+            context: Unmanaged.passUnretained(box).toOpaque(),
+            size: device.size,
+            sector_size: device.sectorSize,
+            writable: device.isWritable ? 1 : 0,
+            read: deviceRead,
+            write: deviceWrite,
+            sync: deviceSync
+        )
+        let result = withExtendedLifetime(box) { nb_reset_journal(&callbacks) }
+        guard result == 0 else {
+            throw .failed(NTFSError(code: -result))
+        }
+    }
+
     private static func probe(_ device: BlockDevice) throws(NTFSMountError) {
         let length = max(Int(device.sectorSize), BootSector.size)
         var sector = [UInt8](repeating: 0, count: length)

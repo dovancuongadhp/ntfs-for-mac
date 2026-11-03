@@ -19,6 +19,20 @@ struct MountOptionsTests {
     }
 }
 
+struct JournalResetRequestTests {
+    @Test func visibleOnlyWhileHeld() {
+        let bsdName = "test\(UInt32.random(in: 0...UInt32.max))"
+        #expect(!JournalResetRequest.isRequested(for: bsdName))
+        do {
+            let request = JournalResetRequest(bsdName: bsdName)
+            #expect(JournalResetRequest.isRequested(for: bsdName))
+            #expect(!JournalResetRequest.isRequested(for: bsdName + "x"))
+            request.cancel()
+        }
+        #expect(!JournalResetRequest.isRequested(for: bsdName))
+    }
+}
+
 struct VolumeUUIDTests {
     @Test func stableAndDistinct() {
         let a = UUID(ntfsSerialNumber: 0x1234_5678_9ABC_DEF0)

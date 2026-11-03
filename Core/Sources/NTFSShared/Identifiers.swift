@@ -10,4 +10,5 @@ public enum Identifiers {
     /// `statfs` type of volumes mounted by Apple's built-in read-only driver.
     public static let systemDriverTypeName = "ntfs"
     public static let readOnlyNotificationPrefix = "com.docuong.ntfsformac.readonly."
+    public static let resetJournalNotificationPrefix = "com.docuong.ntfsformac.resetjournal."
 }

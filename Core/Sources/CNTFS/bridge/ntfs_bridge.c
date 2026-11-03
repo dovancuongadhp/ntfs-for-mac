@@ -264,6 +264,54 @@ int nb_mount(const nb_device_callbacks *device, int read_only,
 	return 0;
 }
 
+int nb_reset_journal(const nb_device_callbacks *device)
+{
+	nb_volume v = { 0 };
+	ntfs_volume *vol;
+	int res;
+
+	if (!device || !device->read || !device->write || device->sector_size == 0
+	    || device->size < 512)
+		return -EINVAL;
+	if (!device->writable)
+		return -EROFS;
+	v.device.callbacks = *device;
+
+	errno = 0;
+	vol = mount_with(&v, NTFS_MNT_RDONLY);
+	if (!vol)
+		return fail();
+	if (vol->flags & VOLUME_IS_DIRTY) {
+		ntfs_umount(vol, FALSE);
+		return -EBUSY;
+	}
+	ntfs_umount(vol, FALSE);
+
+	vol = mount_with(&v, NTFS_MNT_MAY_RDONLY);
+	if (!vol)
+		return fail();
+	if (!NVolReadOnly(vol)) {
+		ntfs_umount(vol, FALSE);
+		return 0;
+	}
+	/* Windows' memory image still references this volume: never discard it. */
+	if (ntfs_volume_check_hiberfile(vol, 0) < 0 && errno == EPERM) {
+		ntfs_umount(vol, FALSE);
+		return -EPERM;
+	}
+	/*
+	 * The fallback left the device open read-write, so the journal can be
+	 * emptied in place, as ntfs-3g's "recover" option does. Unlike that
+	 * option, this also covers the version 2.0 restart pages left behind
+	 * when a drive is unplugged without ejecting.
+	 */
+	NVolClearReadOnly(vol);
+	res = ntfs_logfile_reset(vol) ? fail() : 0;
+	if (ntfs_umount(vol, FALSE) && res == 0)
+		res = fail();
+	return res;
+}
+
 int nb_unmount(nb_volume *v)
 {
 	int res = 0;

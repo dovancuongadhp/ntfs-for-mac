@@ -53,6 +53,40 @@ enum TestImage {
         }
     }
 
+    /// Overwrites the first page of $LogFile (record 2) with zeros: neither
+    /// empty nor a valid restart page, so libntfs-3g treats the journal as unclean.
+    static func corruptJournal(_ url: URL) throws {
+        let handle = try FileHandle(forUpdating: url)
+        defer { try? handle.close() }
+        let boot = try read(handle, at: 0, count: 512)
+        let clusterSize = UInt64(boot.u16(0x0B)) * UInt64(boot[0x0D])
+        let clustersPerRecord = Int8(bitPattern: boot[0x40])
+        let recordSize = clustersPerRecord < 0
+            ? UInt64(1) << UInt64(-Int(clustersPerRecord))
+            : UInt64(clustersPerRecord) * clusterSize
+        let record = try read(handle, at: boot.u64(0x30) * clusterSize + 2 * recordSize, count: Int(recordSize))
+
+        var attribute = Int(record.u16(0x14))
+        while attribute + 8 < record.count {
+            let type = record.u32(attribute)
+            let length = Int(record.u32(attribute + 4))
+            guard type != 0xFFFF_FFFF, length > 0 else { break }
+            if type == 0x80, record[attribute + 8] == 1 {
+                let runs = attribute + Int(record.u16(attribute + 0x20))
+                let lengthBytes = Int(record[runs] & 0x0F)
+                let offsetBytes = Int(record[runs] >> 4)
+                let lcn = (0..<offsetBytes).reduce(UInt64(0)) {
+                    $0 | UInt64(record[runs + 1 + lengthBytes + $1]) << (8 * UInt64($1))
+                }
+                handle.seek(toFileOffset: lcn * clusterSize)
+                handle.write(Data(count: 4096))
+                return
+            }
+            attribute += length
+        }
+        throw NTFSError.notFound
+    }
+
     private static func setDirtyFlag(_ handle: FileHandle, recordOffset volumeRecordOffset: UInt64, recordSize: UInt64) throws {
         var record = try read(handle, at: volumeRecordOffset, count: Int(recordSize))
 

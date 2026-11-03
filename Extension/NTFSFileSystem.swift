@@ -56,6 +56,10 @@ final class NTFSFileSystem: FSUnaryFileSystem, FSUnaryFileSystemOperations,
         let readOnly = MountOptions.requestsReadOnly(options.taskOptions)
         let handle: NTFSVolumeHandle
         do throws(NTFSMountError) {
+            if !readOnly, JournalResetRequest.isRequested(for: resource.bsdName) {
+                try NTFSVolumeHandle.resetJournal(device: FSBlockDeviceAdapter(resource))
+                extensionLog.notice("Reset the journal of \(resource.bsdName, privacy: .public)")
+            }
             handle = try NTFSVolumeHandle(device: FSBlockDeviceAdapter(resource), readOnly: readOnly)
         } catch {
             extensionLog.error("Cannot load \(resource.bsdName, privacy: .public): \(String(describing: error), privacy: .public)")

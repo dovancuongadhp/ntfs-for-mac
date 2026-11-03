@@ -7,7 +7,7 @@ extension ReadOnlyReason {
         switch self {
         case .requested: String(localized: "writing turned off")
         case .hibernated: String(localized: "Windows is hibernated")
-        case .uncleanJournal: String(localized: "Windows didn't shut down cleanly")
+        case .uncleanJournal: String(localized: "not ejected safely")
         case .dirty: String(localized: "disk needs checking")
         case .ioError: String(localized: "write error")
         case .deviceReadOnly: String(localized: "disk is write-protected")
@@ -22,7 +22,7 @@ extension ReadOnlyReason {
         case .hibernated:
             String(localized: "Windows was hibernated or Fast Startup is on. Start Windows and choose Shut Down while holding Shift, or turn off Fast Startup, then reconnect the drive.")
         case .uncleanJournal:
-            String(localized: "Windows still has unsaved changes on this drive. Connect it to Windows and shut down normally, then reconnect it.")
+            String(localized: "This drive wasn't ejected safely, or Windows didn't shut down cleanly. Connect it to Windows and shut down normally, or choose Allow Writing Anyway.")
         case .dirty:
             String(localized: "Windows flagged this drive for a disk check. Run “chkdsk /f” on it in Windows, then reconnect it.")
         case .ioError:

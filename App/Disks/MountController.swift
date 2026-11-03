@@ -18,7 +18,10 @@ final class MountController {
 
     /// Mounts the partition with the NTFS for Mac extension, replacing any
     /// existing mount (including macOS's read-only one).
-    func mountWithExtension(bsdName: String, volumeName: String, readOnly: Bool) async throws {
+    /// With `resetJournal`, the extension discards an unclean journal first.
+    func mountWithExtension(bsdName: String, volumeName: String, readOnly: Bool, resetJournal: Bool = false) async throws {
+        let request = resetJournal ? JournalResetRequest(bsdName: bsdName) : nil
+        defer { request?.cancel() }
         let disk = try diskObject(bsdName)
         if mountPath(disk) != nil {
             try await unmount(disk, options: DADiskUnmountOptions(kDADiskUnmountOptionDefault))
