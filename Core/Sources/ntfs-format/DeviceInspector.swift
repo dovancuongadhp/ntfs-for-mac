@@ -32,6 +32,7 @@ enum DeviceInspector {
             isWritable: description[kDADiskDescriptionMediaWritableKey as String] as? Bool ?? false,
             scheme: wholeDescription[kDADiskDescriptionMediaContentKey as String] as? String,
             partitionID: mediaPath.flatMap { IOMedia.number($0, "Partition ID") }.map(Int.init),
+            partitionType: description[kDADiskDescriptionMediaContentKey as String] as? String,
             // If the startup disk can't be determined, treat every disk as the startup disk.
             hostsSystem: boot.map { $0 == wholeName } ?? true
         )

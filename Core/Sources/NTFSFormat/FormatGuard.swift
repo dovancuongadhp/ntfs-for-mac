@@ -32,13 +32,15 @@ public struct DeviceFacts: Equatable, Sendable {
     /// Content of the whole disk, e.g. `GUID_partition_scheme`.
     public var scheme: String?
     public var partitionID: Int?
+    /// Content of the partition; on GPT its partition type GUID.
+    public var partitionType: String?
     /// The whole disk holds the startup volume (directly or as an APFS store).
     public var hostsSystem: Bool
 
     public init(
         isWhole: Bool = false, wholeDevice: String, size: UInt64, offset: UInt64?, blockSize: UInt64 = 512,
         isInternal: Bool = false, isMounted: Bool = false, isWritable: Bool = true,
-        scheme: String?, partitionID: Int?, hostsSystem: Bool = false
+        scheme: String?, partitionID: Int?, partitionType: String? = nil, hostsSystem: Bool = false
     ) {
         self.isWhole = isWhole
         self.wholeDevice = wholeDevice
@@ -50,6 +52,7 @@ public struct DeviceFacts: Equatable, Sendable {
         self.isWritable = isWritable
         self.scheme = scheme
         self.partitionID = partitionID
+        self.partitionType = partitionType
         self.hostsSystem = hostsSystem
     }
 }
@@ -58,6 +61,8 @@ public struct DeviceFacts: Equatable, Sendable {
 public enum FormatGuard {
     public static let gptScheme = "GUID_partition_scheme"
     public static let mbrScheme = "FDisk_partition_scheme"
+    /// The GPT partition type Windows mounts NTFS from.
+    public static let basicDataType = "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7"
     public static let maxLabelLength = 128
 
     public static func check(_ request: FormatRequest, facts: DeviceFacts) throws {
@@ -88,7 +93,8 @@ public enum FormatGuard {
 
         switch facts.scheme {
         case gptScheme?:
-            break
+            // The app re-types other partitions to Basic Data before asking for NTFS.
+            guard facts.partitionType?.uppercased() == basicDataType else { throw FormatToolError.unsupportedPartition }
         case mbrScheme?:
             // Logical partitions live in extended boot records, which this tool doesn't edit.
             guard let id = facts.partitionID, (1...4).contains(id) else { throw FormatToolError.unsupportedPartition }

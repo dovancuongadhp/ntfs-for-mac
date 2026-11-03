@@ -38,14 +38,35 @@ struct FormatRequestTests {
 
 struct FormatGuardTests {
     private let request = FormatRequest(device: "disk6s2", size: 1_048_576_000, offset: 1_048_576, label: "Data", clusterSize: nil, quick: true)
-    private let facts = DeviceFacts(wholeDevice: "disk6", size: 1_048_576_000, offset: 1_048_576, scheme: FormatGuard.gptScheme, partitionID: 2)
+    private let facts = DeviceFacts(
+        wholeDevice: "disk6", size: 1_048_576_000, offset: 1_048_576, scheme: FormatGuard.gptScheme, partitionID: 2,
+        partitionType: FormatGuard.basicDataType)
 
     @Test func acceptsAMatchingExternalPartition() throws {
         try FormatGuard.check(request, facts: facts)
+        var lowercase = facts
+        lowercase.partitionType = FormatGuard.basicDataType.lowercased()
+        try FormatGuard.check(request, facts: lowercase)
         var mbr = facts
         mbr.scheme = FormatGuard.mbrScheme
         mbr.partitionID = 1
+        mbr.partitionType = "DOS_FAT_32"
         try FormatGuard.check(request, facts: mbr)
+    }
+
+    @Test func refusesGPTPartitionsWindowsWouldNotMount() {
+        let types: [String?] = [
+            "7C3457EF-0000-11AA-AA11-00306543ECAC", // APFS store
+            "48465300-0000-11AA-AA11-00306543ECAC", // HFS+
+            "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", // EFI
+            "Apple_APFS",
+            nil,
+        ]
+        for type in types {
+            var other = facts
+            other.partitionType = type
+            #expect(throws: FormatToolError.unsupportedPartition) { try FormatGuard.check(request, facts: other) }
+        }
     }
 
     @Test func refusesUnsafeTargets() {
