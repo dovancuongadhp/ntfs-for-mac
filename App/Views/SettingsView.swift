@@ -59,6 +59,15 @@ struct SettingsView: View {
 
             Section("About") {
                 LabeledContent("Version", value: Bundle.main.versionString)
+                LabeledContent("Author", value: "Đỗ Văn Cường")
+                LabeledContent("Source code") {
+                    Link("github.com/dovancuongadhp/ntfs-for-mac",
+                         destination: URL(string: "https://github.com/dovancuongadhp/ntfs-for-mac")!)
+                }
+                LabeledContent("Found a bug?") {
+                    Link("Report an issue",
+                         destination: URL(string: "https://github.com/dovancuongadhp/ntfs-for-mac/issues/new")!)
+                }
                 Text("Free and open source under the GNU General Public License v2 or later. NTFS support is provided by ntfs-3g.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

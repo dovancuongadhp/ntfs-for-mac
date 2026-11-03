@@ -121,6 +121,16 @@
         }
       }
     },
+    "Author" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tác giả"
+          }
+        }
+      }
+    },
     "Automatic" : {
       "localizations" : {
         "vi" : {
@@ -491,6 +501,16 @@
         }
       }
     },
+    "Found a bug?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gặp lỗi?"
+          }
+        }
+      }
+    },
     "Free %@" : {
       "localizations" : {
         "vi" : {
@@ -510,6 +530,9 @@
           }
         }
       }
+    },
+    "github.com/dovancuongadhp/ntfs-for-mac" : {
+      "shouldTranslate" : false
     },
     "GUID Partition Map" : {
       "localizations" : {
@@ -961,6 +984,16 @@
         }
       }
     },
+    "Report an issue" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Báo lỗi"
+          }
+        }
+      }
+    },
     "Same as system" : {
       "localizations" : {
         "vi" : {
@@ -1017,6 +1050,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hiện trong Finder"
+          }
+        }
+      }
+    },
+    "Source code" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mã nguồn"
           }
         }
       }
