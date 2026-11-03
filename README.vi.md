@@ -225,7 +225,15 @@ quảng cáo, không thu thập dữ liệu.
 
 Phiên bản được đánh số `chính.phụ.sửa-lỗi`. Giống macOS, mỗi phiên bản chính có thêm một tên riêng, ở đây là tên
 một loài hoa bằng tiếng Anh và không bao giờ dùng lại. Các bản cập nhật phụ (thêm tính năng) và sửa lỗi giữ tên của
-phiên bản chính.
+phiên bản chính. Mỗi bản phát hành ghi đủ số phiên bản kèm tên, để 2.0.0 và 2.0.1 không bao giờ bị nhầm:
+
+| | Quy ước | Ví dụ |
+| --- | --- | --- |
+| Tên bản phát hành | NTFS for Mac *phiên bản* *Tên* | NTFS for Mac 2.0.1 Lotus |
+| Tag Git | v*phiên bản* | v2.0.1 |
+| Nhánh phát hành | release-*phiên bản*-*tên* | release-2.0.1-lotus |
+
+Phiên bản chưa có tên thì bỏ phần tên: NTFS for Mac 1.0.1, nhánh `release-1.0.1`.
 
 | Phiên bản | Tên | Điểm nổi bật |
 | --- | --- | --- |
