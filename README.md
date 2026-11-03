@@ -115,7 +115,7 @@ Replacing the app with a differently signed copy unregisters the extension until
 | --- | --- |
 | `swift test --package-path Core` | Unit tests for the NTFS core (libntfs-3g bridge), using generated disk images |
 | `xcodebuild -scheme NTFSForMac CODE_SIGNING_ALLOWED=NO test` | App unit tests |
-| `scripts/build-local.sh` | Ad hoc signed Release build and DMG, no developer account needed |
+| `scripts/build-local.sh` | Release build and DMG for your own Mac: signed with your free "Apple Development" certificate if present, else ad hoc |
 | `scripts/integration-test.sh` | Mounts a scratch NTFS image through the installed extension and checks data survives a remount |
 | `scripts/make-dmg.sh [app] [dmg]` | Packages an app into a drag-to-install DMG (defaults to the unsigned Release build) |
 | `scripts/release.sh` | Archive, Developer ID signing, notarization, stapling and the final DMG |
