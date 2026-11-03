@@ -15,9 +15,7 @@ struct PartitionDetailView: View {
                 }
                 InfoGrid(rows: rows)
                 if let ntfs = partition.ntfsDisk {
-                    NTFSOptionsView(
-                        model: model, disk: ntfs,
-                        isLocked: model.isProtected(disk) || model.formatting.contains(disk.bsdName))
+                    NTFSOptionsView(model: model, disk: ntfs, isLocked: model.formatting.contains(disk.bsdName))
                 }
             }
             .padding(24)
@@ -91,7 +89,7 @@ struct PartitionDetailView: View {
 struct NTFSOptionsView: View {
     let model: AppModel
     let disk: NTFSDisk
-    /// The drive is protected or being formatted, so its settings can't change now.
+    /// The drive is being formatted, so its settings can't change now.
     var isLocked = false
 
     private var isBusy: Bool { isLocked || model.busy.contains(disk.bsdName) }

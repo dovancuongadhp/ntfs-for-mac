@@ -6,8 +6,8 @@ struct FormatSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var preparation: FormatPreparation?
-    @State private var name = ""
-    @State private var fileSystem: FormatFileSystem = .ntfs
+    @State private var name: String
+    @State private var fileSystem: FormatFileSystem
     @State private var scheme: PartitionScheme = .gpt
     @State private var clusterSize = 0
     @State private var quick = true
@@ -24,6 +24,15 @@ struct FormatSheet: View {
 
     private static let clusterSizes = [4096, 8192, 16384, 32768, 65536]
 
+    init(model: AppModel, target: FormatTarget) {
+        self.model = model
+        self.target = target
+        let prepared = model.prepareFormat(target)
+        _preparation = State(initialValue: prepared)
+        _name = State(initialValue: prepared?.suggestedName ?? "")
+        _fileSystem = State(initialValue: prepared?.fileSystems.first ?? .exfat)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             if let preparation {
@@ -39,7 +48,6 @@ struct FormatSheet: View {
         .padding(22)
         .frame(width: 460)
         .interactiveDismissDisabled(isRunning)
-        .onAppear(perform: prepare)
         .onChange(of: fileSystem) { _, newValue in
             if newValue == .apfs { scheme = .gpt }
         }
@@ -96,7 +104,7 @@ struct FormatSheet: View {
                 }
             }
         }
-        .disabled(isRunning || phase == .finished)
+        .disabled(phase != .editing)
 
         if fileSystem == .ntfs {
             DisclosureGroup("Advanced", isExpanded: $showsAdvanced) {
@@ -116,17 +124,17 @@ struct FormatSheet: View {
                 }
                 .padding(.top, 6)
             }
-            .disabled(isRunning || phase == .finished)
+            .disabled(phase != .editing)
         }
 
-        if case .failure(let error) = nameCheck, !name.isEmpty {
+        if case .failure(let error) = nameCheck, phase == .editing {
             Text(error.message).font(.caption).foregroundStyle(.red)
         }
 
         VStack(alignment: .leading, spacing: 4) {
             Text("Type “\(preparation.displayName)” to confirm").font(.callout)
             TextField(preparation.displayName, text: $confirmation)
-                .disabled(isRunning || phase == .finished)
+                .disabled(phase != .editing)
         }
 
         switch phase {
@@ -147,9 +155,12 @@ struct FormatSheet: View {
 
         HStack {
             Spacer()
-            if phase == .finished {
+            switch phase {
+            case .finished:
                 Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
-            } else {
+            case .failed:
+                Button("Close") { dismiss() }.keyboardShortcut(.cancelAction)
+            case .editing, .running:
                 Button("Cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
                     .disabled(isRunning)
@@ -174,13 +185,6 @@ struct FormatSheet: View {
               case .success = nameCheck
         else { return false }
         return confirmation.trimmingCharacters(in: .whitespaces) == preparation.displayName
-    }
-
-    private func prepare() {
-        guard preparation == nil, let prepared = model.prepareFormat(target) else { return }
-        preparation = prepared
-        name = prepared.suggestedName
-        fileSystem = prepared.fileSystems.first ?? .exfat
     }
 
     private func start(_ preparation: FormatPreparation) {
@@ -210,6 +214,9 @@ private struct WarningBox: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(headline).bold()
             Text(detail)
+            if preparation.target.isDisk, !preparation.affected.isEmpty {
+                Text("Erases: \(preparation.affected.map(\.name).joined(separator: ", "))")
+            }
             if !preparation.unaffected.isEmpty {
                 Text("Not affected: \(preparation.unaffected.map(\.name).joined(separator: ", "))")
                     .foregroundStyle(.secondary)

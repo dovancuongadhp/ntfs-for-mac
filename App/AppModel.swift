@@ -140,9 +140,10 @@ final class AppModel {
             allowsVirtualDisks: DiskInventory.showsVirtualDisks)
     }
 
-    /// Internal and macOS drives: shown, but never unmounted, ejected or formatted.
+    /// Internal and macOS drives, and the drive the app runs from: shown, but
+    /// never unmounted, ejected or formatted.
     func isProtected(_ disk: PhysicalDisk) -> Bool {
-        disk.isInternal || inventory.systemDiskNames.contains(disk.bsdName)
+        disk.isInternal || inventory.systemDiskNames.contains(disk.bsdName) || inventory.appDiskName == disk.bsdName
     }
 
     func canUnmount(_ partition: Partition, on disk: PhysicalDisk) -> Bool {

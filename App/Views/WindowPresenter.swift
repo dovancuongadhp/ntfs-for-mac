@@ -58,13 +58,25 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         guard sender === mainWindow, model.isFormatting else { return true }
-        NSSound.beep()
+        Self.showFormattingInProgress()
         return false
     }
 
+    /// Dropping the window tears down its views, so they stop refreshing while
+    /// it's closed; the frame is restored from the autosave name.
     func windowWillClose(_ notification: Notification) {
         guard (notification.object as? NSWindow) === mainWindow else { return }
+        mainWindow = nil
         NSApp.setActivationPolicy(.accessory)
+    }
+
+    /// Explains why the app won't quit, or the main window won't close, mid-format.
+    static func showFormattingInProgress() {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "A drive is being formatted")
+        alert.informativeText = String(localized: "Wait until formatting finishes before quitting NTFS for Mac.")
+        NSApp.activate()
+        alert.runModal()
     }
 
     private func present(_ existing: NSWindow?, title: String, @ViewBuilder content: () -> some View) -> NSWindow {

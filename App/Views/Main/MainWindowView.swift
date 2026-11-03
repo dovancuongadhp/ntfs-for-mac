@@ -52,7 +52,8 @@ struct MainWindowView: View {
                         .disabled(!model.canUnmount(found.partition, on: found.disk))
                 } else {
                     Button("Mount", systemImage: "arrow.up.circle") { model.mount(found.partition) }
-                        .disabled(!found.partition.isRecognized || model.isProtected(found.disk)
+                        .disabled(!found.partition.isRecognized
+                                  || (model.isProtected(found.disk) && found.partition.ntfsDisk == nil)
                                   || model.busy.contains(found.partition.bsdName)
                                   || model.formatting.contains(found.disk.bsdName))
                 }

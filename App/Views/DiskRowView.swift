@@ -68,15 +68,21 @@ struct DiskRowView: View {
             } else if disk.isRecognized {
                 Button("Mount") { model.mount(disk) }
             }
-            Button {
-                model.eject(disk)
-            } label: {
-                Image(systemName: "eject.fill")
+            if !isOnProtectedDisk {
+                Button {
+                    model.eject(disk)
+                } label: {
+                    Image(systemName: "eject.fill")
+                }
+                .help("Eject")
+                .accessibilityLabel("Eject")
             }
-            .help("Eject")
-            .accessibilityLabel("Eject")
         }
         .buttonStyle(.borderless)
+    }
+
+    private var isOnProtectedDisk: Bool {
+        model.inventory.partition(named: disk.bsdName).map { model.isProtected($0.disk) } ?? false
     }
 }
 

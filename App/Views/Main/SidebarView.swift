@@ -83,7 +83,7 @@ private struct PartitionSidebarRow: View {
                 .lineLimit(1)
                 .opacity(partition.mount == nil ? 0.6 : 1)
             Spacer()
-            if model.busy.contains(partition.bsdName) {
+            if model.busy.contains(partition.bsdName) || model.isBeingFormatted(partition.bsdName) {
                 ProgressView().controlSize(.small)
             }
             Text(partition.fileSystem.label)
