@@ -300,6 +300,7 @@ installed apps. Replacing the app with a differently signed copy unregisters the
 | `scripts/format-integration-test.sh` | Formats scratch disk images only (never a real drive) with the built helper and `diskutil`, and checks the results |
 | `scripts/make-dmg.sh [app] [dmg]` | Packages an app into a drag-to-install DMG (defaults to the unsigned Release build) |
 | `scripts/release.sh` | Archive, Developer ID signing, notarization, stapling and the final DMG |
+| `scripts/unregister-build-copies.sh` | Removes the copies under `build/` from System Settings' extension list (each build adds one). The two scripts above run it; run it yourself after Xcode builds or tests |
 | `swift scripts/make-icon.swift` | Regenerates the app icon |
 
 ### Project layout
