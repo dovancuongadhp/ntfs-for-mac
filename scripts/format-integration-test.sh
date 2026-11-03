@@ -173,9 +173,11 @@ check_ntfs() { # partition
     ours "$1"
     # The user mounts it, so give them this scratch partition and the mount point.
     chown "$USER_UID" "/dev/$1" "/dev/r$1"
-    chmod 755 "$WORK"
+    # Traversable but not listable by others; the user reads data.bin (644) by its path.
+    chmod 711 "$WORK"
     mkdir -p "$MNT"
     chown "$USER_UID" "$MNT"
+    chmod 755 "$MNT"
     as_user mount -F -t ntfsrw "/dev/$1" "$MNT" || fail "$1 did not mount as NTFS"
     grep " on $MNT " <<<"$(mount)" | grep -q "(ntfsrw" || fail "$1 is not mounted by ntfsrw"
     head -c $((3 * 1024 * 1024 + 5)) /dev/urandom > "$WORK/data.bin"
