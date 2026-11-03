@@ -84,8 +84,8 @@ Applications; to uninstall, drag it to the Trash.
    ```sh
    xattr -dr com.apple.quarantine "/Applications/NTFS for Mac.app"
    ```
-4. **Turn on the file system extension.** The welcome window has an **Open System Settings** button that takes
-   you to **General → Login Items & Extensions → File System Extensions**. Switch on **NTFS for Mac**.
+4. **Turn on the file system extension.** On first launch the app opens on its **Settings** page, which has an
+   **Open System Settings** button that takes you to **General → Login Items & Extensions → File System Extensions**. Switch on **NTFS for Mac**.
 5. **Plug in your NTFS drive.** It appears in Finder, ready to write. If the drive was already connected,
    click **Mount** next to it in the menu bar.
 
@@ -107,8 +107,8 @@ your NTFS drives. Each row shows:
 | **Mount** | Mount a drive that is connected but not mounted |
 | Eject button | Safely eject the drive |
 
-From the menu you can also open the [main window](#drive-manager-and-formatting) with **Open NTFS for Mac…**, and
-**Settings…**, where you can:
+From the menu you can also open the [main window](#drive-manager-and-formatting) with **Open NTFS for Mac…**.
+**Settings…** opens the window on its **Settings** page (also at the bottom of the sidebar), where you can:
 
 - start NTFS for Mac automatically when you log in,
 - choose the language (Same as system, English, Tiếng Việt),
@@ -293,7 +293,7 @@ installed apps. Replacing the app with a differently signed copy unregisters the
 
 | Path | Contents |
 | --- | --- |
-| `App/` | Menu bar app and drive manager: disk inventory (DiskArbitration), mounting, formatting, per-drive settings, main, welcome and settings windows |
+| `App/` | Menu bar app and drive manager: disk inventory (DiskArbitration), mounting, formatting, per-drive settings, the main window and its settings page |
 | `Extension/` | FSKit file system extension (`ntfsrw`) |
 | `Core/` | Swift package: vendored ntfs-3g (`CNTFS`), a typed Swift API over it (`NTFSCore`), boot-sector probing (`NTFSProbe`), the NTFS formatting helper (`NTFSFormat`, `ntfs-format`) and identifiers shared by the app and extension (`NTFSShared`) |
 | `AppTests/` | App unit tests |

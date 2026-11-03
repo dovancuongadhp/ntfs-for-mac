@@ -2,15 +2,24 @@ import SwiftUI
 
 struct MainWindowView: View {
     let model: AppModel
-    @State private var selection: SidebarSelection?
+    @Bindable var navigation: MainNavigation
     @State private var formatTarget: FormatTarget?
+
+    private var selection: SidebarSelection? {
+        get { navigation.selection }
+        nonmutating set { navigation.selection = newValue }
+    }
 
     var body: some View {
         NavigationSplitView {
-            SidebarView(model: model, selection: $selection)
+            SidebarView(model: model, selection: $navigation.selection)
                 .navigationSplitViewColumnWidth(min: 220, ideal: 250)
         } detail: {
             VStack(spacing: 0) {
+                if model.extensionStatus.isEnabled == false, selection != .settings {
+                    ExtensionDisabledBanner(model: model)
+                        .padding([.horizontal, .top], 12)
+                }
                 if let error = model.lastError {
                     ErrorBanner(message: error) { model.dismissError() }
                 }
@@ -23,6 +32,9 @@ struct MainWindowView: View {
         }
         .frame(minWidth: 780, minHeight: 500)
         .onAppear(perform: selectDefault)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            model.extensionStatus.refresh()
+        }
         .onChange(of: model.inventory.tree) { _, _ in keepSelectionValid() }
         .task {
             while !Task.isCancelled {
@@ -34,7 +46,9 @@ struct MainWindowView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if let found = selectedPartition {
+        if selection == .settings {
+            SettingsView(model: model)
+        } else if let found = selectedPartition {
             PartitionDetailView(model: model, partition: found.partition, disk: found.disk)
         } else if case .disk = selection, let disk = selectedDisk {
             DiskDetailView(model: model, disk: disk)
@@ -46,30 +60,37 @@ struct MainWindowView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
-            if let found = selectedPartition {
-                if found.partition.mount != nil {
-                    Button("Unmount", systemImage: "eject.circle") { model.unmount(found.partition) }
-                        .disabled(!model.canUnmount(found.partition, on: found.disk))
-                } else {
-                    Button("Mount", systemImage: "arrow.up.circle") { model.mount(found.partition) }
-                        .disabled(!found.partition.isRecognized
-                                  || (model.isProtected(found.disk) && found.partition.ntfsDisk == nil)
-                                  || model.busy.contains(found.partition.bsdName)
-                                  || model.formatting.contains(found.disk.bsdName))
-                }
+            if selection != .settings {
+                driveActions
             }
-            Button("Eject", systemImage: "eject") {
-                if let disk = selectedDisk { model.eject(disk) }
-            }
-            .disabled(!(selectedDisk.map { model.canEject($0) } ?? false))
-            Button("Show in Finder", systemImage: "folder") {
-                if let partition = selectedPartition?.partition { model.reveal(partition) }
-            }
-            .disabled(selectedPartition?.partition.mount == nil)
-            Button("Format…", systemImage: "eraser") { formatTarget = currentFormatTarget }
-                .disabled(currentFormatTarget == nil || formatBlock != nil)
-                .help(formatBlock?.message ?? String(localized: "Erase and format"))
         }
+    }
+
+    @ViewBuilder
+    private var driveActions: some View {
+        if let found = selectedPartition {
+            if found.partition.mount != nil {
+                Button("Unmount", systemImage: "eject.circle") { model.unmount(found.partition) }
+                    .disabled(!model.canUnmount(found.partition, on: found.disk))
+            } else {
+                Button("Mount", systemImage: "arrow.up.circle") { model.mount(found.partition) }
+                    .disabled(!found.partition.isRecognized
+                              || (model.isProtected(found.disk) && found.partition.ntfsDisk == nil)
+                              || model.busy.contains(found.partition.bsdName)
+                              || model.formatting.contains(found.disk.bsdName))
+            }
+        }
+        Button("Eject", systemImage: "eject") {
+            if let disk = selectedDisk { model.eject(disk) }
+        }
+        .disabled(!(selectedDisk.map { model.canEject($0) } ?? false))
+        Button("Show in Finder", systemImage: "folder") {
+            if let partition = selectedPartition?.partition { model.reveal(partition) }
+        }
+        .disabled(selectedPartition?.partition.mount == nil)
+        Button("Format…", systemImage: "eraser") { formatTarget = currentFormatTarget }
+            .disabled(currentFormatTarget == nil || formatBlock != nil)
+            .help(formatBlock?.message ?? String(localized: "Erase and format"))
     }
 
     private var selectedPartition: (partition: Partition, disk: PhysicalDisk)? {
@@ -81,7 +102,7 @@ struct MainWindowView: View {
         switch selection {
         case .disk(let name)?: model.inventory.physicalDisk(named: name)
         case .partition(let name)?: model.inventory.partition(named: name)?.disk
-        case nil: nil
+        case .settings?, nil: nil
         }
     }
 
@@ -89,7 +110,7 @@ struct MainWindowView: View {
         switch selection {
         case .disk(let name)?: .disk(name)
         case .partition(let name)?: .partition(name)
-        case nil: nil
+        case .settings?, nil: nil
         }
     }
 
@@ -113,6 +134,7 @@ struct MainWindowView: View {
         let isValid = switch selection {
         case .partition(let name)?: model.inventory.partition(named: name) != nil
         case .disk(let name)?: model.inventory.physicalDisk(named: name) != nil
+        case .settings?: true
         case nil: false
         }
         if !isValid {

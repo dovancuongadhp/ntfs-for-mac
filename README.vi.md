@@ -82,7 +82,8 @@ Applications. Gỡ bỏ: kéo app vào Thùng rác.
    ```sh
    xattr -dr com.apple.quarantine "/Applications/NTFS for Mac.app"
    ```
-4. **Bật tiện ích mở rộng hệ thống tệp.** Cửa sổ chào mừng có nút **Mở Cài đặt hệ thống**, đưa bạn tới
+4. **Bật tiện ích mở rộng hệ thống tệp.** Lần mở đầu tiên, ứng dụng hiện trang **Cài đặt**, có nút
+   **Mở Cài đặt hệ thống** đưa bạn tới
    **Cài đặt chung → Mục đăng nhập & tiện ích mở rộng → Tiện ích mở rộng hệ thống tệp**. Bật **NTFS for Mac**.
 5. **Cắm ổ NTFS.** Ổ hiện trong Finder và ghi được ngay. Nếu ổ đã cắm từ trước, bấm **Gắn** cạnh tên ổ trên
    thanh menu.
@@ -105,8 +106,8 @@ NTFS for Mac nằm trên thanh menu (không hiện trên Dock). Bấm vào biể
 | **Gắn** | Gắn ổ đang cắm nhưng chưa được gắn |
 | Nút đẩy ra | Đẩy ổ ra an toàn |
 
-Trong menu còn có **Mở NTFS for Mac…** để mở [cửa sổ chính](#quản-lý-ổ-và-định-dạng), và **Cài đặt…**, nơi bạn
-có thể:
+Trong menu còn có **Mở NTFS for Mac…** để mở [cửa sổ chính](#quản-lý-ổ-và-định-dạng). **Cài đặt…** mở cửa sổ
+ở trang **Cài đặt** (cũng nằm cuối thanh bên), nơi bạn có thể:
 
 - bật **Mở NTFS for Mac khi đăng nhập**,
 - chọn **Ngôn ngữ** (Theo hệ thống, English, Tiếng Việt),
@@ -290,7 +291,7 @@ Thay app bằng một bản ký khác sẽ huỷ đăng ký tiện ích cho tớ
 
 | Đường dẫn | Nội dung |
 | --- | --- |
-| `App/` | Ứng dụng thanh menu và quản lý ổ: danh sách ổ (DiskArbitration), gắn ổ, định dạng, cài đặt từng ổ, cửa sổ chính, chào mừng và cài đặt |
+| `App/` | Ứng dụng thanh menu và quản lý ổ: danh sách ổ (DiskArbitration), gắn ổ, định dạng, cài đặt từng ổ, cửa sổ chính và trang cài đặt |
 | `Extension/` | Tiện ích hệ thống tệp FSKit (`ntfsrw`) |
 | `Core/` | Swift package: ntfs-3g (`CNTFS`), API Swift bọc ngoài (`NTFSCore`), nhận diện boot sector (`NTFSProbe`), công cụ định dạng NTFS (`NTFSFormat`, `ntfs-format`) và các định danh dùng chung giữa app và tiện ích (`NTFSShared`) |
 | `AppTests/` | Unit test của ứng dụng |

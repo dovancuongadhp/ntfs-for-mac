@@ -5,9 +5,16 @@ struct NTFSForMacApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        // The menu bar icon comes from `StatusItemController`; this scene backs
-        // the Settings… item of the main menu while the main window is open.
-        Settings { SettingsView(model: appDelegate.model) }
+        // The menu bar icon comes from `StatusItemController` and every window
+        // from `WindowPresenter`; this empty scene only carries the main menu's
+        // Settings… item, which opens the settings page of the main window.
+        Settings { EmptyView() }
+            .commands {
+                CommandGroup(replacing: .appSettings) {
+                    Button("Settings…") { appDelegate.windows.showSettings() }
+                        .keyboardShortcut(",")
+                }
+            }
     }
 }
 
@@ -26,15 +33,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         model.start()
         if !UserDefaults.standard.bool(forKey: WindowPresenter.welcomeSeenKey) {
-            windows.showWelcome()
+            UserDefaults.standard.set(true, forKey: WindowPresenter.welcomeSeenKey)
+            windows.showSettings()
         } else if !launchedAsLoginItem {
             windows.showMain()
         }
-        // Remind the user if the extension is still switched off.
+        // Remind the user if the extension is still switched off; an open
+        // window already shows the reminder.
         Task {
             try? await Task.sleep(for: .seconds(2))
-            if model.extensionStatus.isEnabled == false {
-                windows.showWelcome()
+            if model.extensionStatus.isEnabled == false, !windows.isMainWindowVisible {
+                windows.showSettings()
             }
         }
     }

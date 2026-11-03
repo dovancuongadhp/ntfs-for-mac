@@ -13,7 +13,6 @@
 		16E8117290008DFF282C370C /* VolumeNameRuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C814D3D41ACE4A2AEA810A /* VolumeNameRuleTests.swift */; };
 		1A915EE13C8845DAF2F39018 /* WindowPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDFD749A4B9B1A12C2E7E3D7 /* WindowPresenter.swift */; };
 		285F80403C20AA0588A1E4B5 /* DiskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55383C3DDC8AFB36EABC4D03 /* DiskDetailView.swift */; };
-		2FD75A2114F310F87AD54AC7 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B56072589CD9D5143608846D /* WelcomeView.swift */; };
 		336F584844A3A7F92B7409ED /* Notifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA3CD2C8A24164BE3F5F6FA8 /* Notifier.swift */; };
 		3925A4B1966CE528CC35FAAB /* NTFSItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8A73EBEEB1488DF2E2DF7D1 /* NTFSItem.swift */; };
 		3E8B04DC8906712B8C082740 /* FormatModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC31409F633C639C76F2AC60 /* FormatModel.swift */; };
@@ -137,7 +136,6 @@
 		A7C814D3D41ACE4A2AEA810A /* VolumeNameRuleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeNameRuleTests.swift; sourceTree = "<group>"; };
 		AC31409F633C639C76F2AC60 /* FormatModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormatModel.swift; sourceTree = "<group>"; };
 		B4553E4B4FCAE427951A7B71 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		B56072589CD9D5143608846D /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		B5F4E02B60904B675A22BE39 /* VolumePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumePreferences.swift; sourceTree = "<group>"; };
 		B84570017E9BBECF4EF540AA /* FormatPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormatPlannerTests.swift; sourceTree = "<group>"; };
 		B8A73EBEEB1488DF2E2DF7D1 /* NTFSItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSItem.swift; sourceTree = "<group>"; };
@@ -338,7 +336,6 @@
 				D013B22C5C1D8E347B9B1A5C /* MenuContentView.swift */,
 				B4553E4B4FCAE427951A7B71 /* SettingsView.swift */,
 				7960144BF1EE5310C679D219 /* StatusItemController.swift */,
-				B56072589CD9D5143608846D /* WelcomeView.swift */,
 				FDFD749A4B9B1A12C2E7E3D7 /* WindowPresenter.swift */,
 				38A7FBB1951140F8610E35FD /* Main */,
 			);
@@ -430,7 +427,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					3553670FA52FDEB7D9DB77FE = {
 						ProvisioningStyle = Automatic;
@@ -540,7 +537,6 @@
 				81E8DD3BB10DDA0C46DECBBE /* StatusText.swift in Sources */,
 				C222D3734DD298286360196A /* VolumeNameRule.swift in Sources */,
 				98042B7BA8B0C2F551ED66B3 /* VolumePreferences.swift in Sources */,
-				2FD75A2114F310F87AD54AC7 /* WelcomeView.swift in Sources */,
 				1A915EE13C8845DAF2F39018 /* WindowPresenter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

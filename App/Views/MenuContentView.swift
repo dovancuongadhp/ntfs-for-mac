@@ -56,7 +56,6 @@ struct MenuContentView: View {
 
             HStack {
                 Button("Settings…") { windows.showSettings() }
-                Button("Setup Guide") { windows.showWelcome() }
                 Spacer()
                 Button("Quit") { NSApp.terminate(nil) }
             }
@@ -68,24 +67,5 @@ struct MenuContentView: View {
             model.extensionStatus.refresh()
             model.inventory.refreshUsage()
         }
-    }
-}
-
-private struct ExtensionDisabledBanner: View {
-    let model: AppModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label("The file system extension is turned off", systemImage: "exclamationmark.circle.fill")
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(.orange)
-            Text("Drives stay read-only until you turn on NTFS for Mac in System Settings.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button("Open System Settings") { model.extensionStatus.openSystemSettings() }
-        }
-        .padding(10)
-        .background(.orange.opacity(0.1), in: .rect(cornerRadius: 8))
     }
 }

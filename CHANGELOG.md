@@ -24,6 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - The menu bar panel is more compact and opens the main window.
+- One window instead of three: the welcome guide and the settings window are now a single **Settings** page in the
+  main window, and a banner in the window says when the file system extension is turned off.
 
 ### Security
 

@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%lld" : {
-      "shouldTranslate" : false
-    },
     "A drive is being formatted" : {
       "localizations" : {
         "vi" : {
@@ -194,16 +191,6 @@
         }
       }
     },
-    "Connect your drive" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cắm ổ đĩa"
-          }
-        }
-      }
-    },
     "Connection" : {
       "localizations" : {
         "vi" : {
@@ -304,6 +291,16 @@
         }
       }
     },
+    "Drives" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đĩa"
+          }
+        }
+      }
+    },
     "Drives stay read-only until you turn on NTFS for Mac in System Settings." : {
       "localizations" : {
         "vi" : {
@@ -320,16 +317,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đẩy ra"
-          }
-        }
-      }
-    },
-    "Eject before unplugging" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đẩy ổ ra trước khi rút"
           }
         }
       }
@@ -664,16 +651,6 @@
         }
       }
     },
-    "No Drives" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Không có ổ nào"
-          }
-        }
-      }
-    },
     "None" : {
       "localizations" : {
         "vi" : {
@@ -774,16 +751,6 @@
         }
       }
     },
-    "NTFS drives are mounted for reading and writing automatically and show up in Finder like any other drive." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ổ NTFS được tự động gắn để đọc và ghi, và hiện trong Finder như mọi ổ đĩa khác."
-          }
-        }
-      }
-    },
     "NTFS for Mac is formatting a drive. Wait until it finishes before closing this window." : {
       "localizations" : {
         "vi" : {
@@ -810,16 +777,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "NTFS for Mac cần quyền quản trị viên để định dạng “%@” thành NTFS."
-          }
-        }
-      }
-    },
-    "NTFS for Mac Settings" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cài đặt NTFS for Mac"
           }
         }
       }
@@ -1024,22 +981,22 @@
         }
       }
     },
+    "Settings" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cài đặt"
+          }
+        }
+      }
+    },
     "Settings…" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cài đặt…"
-          }
-        }
-      }
-    },
-    "Setup Guide" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hướng dẫn thiết lập"
           }
         }
       }
@@ -1374,22 +1331,22 @@
         }
       }
     },
-    "The partition was erased and formatted as exFAT, but NTFS formatting didn't finish (%@). Format it again as NTFS." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Phân vùng đã bị xóa và định dạng thành exFAT, nhưng định dạng NTFS chưa hoàn tất (%@). Hãy định dạng lại thành NTFS."
-          }
-        }
-      }
-    },
     "the partition table looks different than expected" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "bảng phân vùng khác với dự kiến"
+          }
+        }
+      }
+    },
+    "The partition was erased and formatted as exFAT, but NTFS formatting didn't finish (%@). Format it again as NTFS." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phân vùng đã bị xóa và định dạng thành exFAT, nhưng định dạng NTFS chưa hoàn tất (%@). Hãy định dạng lại thành NTFS."
           }
         }
       }
@@ -1534,32 +1491,12 @@
         }
       }
     },
-    "Turn on the file system extension" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bật tiện ích mở rộng hệ thống tệp"
-          }
-        }
-      }
-    },
     "Turn on “Allow writing” for this drive to make changes." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bật “Cho phép ghi” cho ổ này để có thể chỉnh sửa."
-          }
-        }
-      }
-    },
-    "Turned off" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Đang tắt"
           }
         }
       }
@@ -1650,16 +1587,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hãy chờ định dạng xong rồi mới thoát NTFS for Mac."
-          }
-        }
-      }
-    },
-    "Welcome to NTFS for Mac" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chào mừng bạn đến với NTFS for Mac"
           }
         }
       }

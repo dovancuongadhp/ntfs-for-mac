@@ -113,6 +113,26 @@ struct ErrorBanner: View {
     }
 }
 
+struct ExtensionDisabledBanner: View {
+    let model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("The file system extension is turned off", systemImage: "exclamationmark.circle.fill")
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(.orange)
+            Text("Drives stay read-only until you turn on NTFS for Mac in System Settings.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("Open System Settings") { model.extensionStatus.openSystemSettings() }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.orange.opacity(0.1), in: .rect(cornerRadius: 8))
+    }
+}
+
 struct DriveIcon: View {
     let systemImage: String
     let colors: [Color]

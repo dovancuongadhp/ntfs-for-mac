@@ -1,19 +1,30 @@
 import AppKit
 import SwiftUI
 
-/// Shows the main, welcome and settings windows. The app has no Dock icon
-/// except while the main window is open.
+/// What the main window's sidebar shows, kept outside the window so the menu
+/// can open it on a given page.
+@MainActor
+@Observable
+final class MainNavigation {
+    var selection: SidebarSelection?
+}
+
+/// Shows the main window, which also holds settings and setup. The app has no
+/// Dock icon except while the window is open.
 @MainActor
 final class WindowPresenter: NSObject, NSWindowDelegate {
     static let welcomeSeenKey = "WelcomeSeen"
 
     private let model: AppModel
-    private var welcomeWindow: NSWindow?
-    private var settingsWindow: NSWindow?
+    private let navigation = MainNavigation()
     private var mainWindow: NSWindow?
 
     init(model: AppModel) {
         self.model = model
+    }
+
+    var isMainWindowVisible: Bool {
+        mainWindow?.isVisible == true
     }
 
     func showMain() {
@@ -24,25 +35,14 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         window.makeKeyAndOrderFront(nil)
     }
 
-    func showWelcome() {
-        model.extensionStatus.refresh()
-        welcomeWindow = present(welcomeWindow, title: String(localized: "Welcome to NTFS for Mac")) {
-            WelcomeView(model: model) { [weak self] in
-                UserDefaults.standard.set(true, forKey: Self.welcomeSeenKey)
-                self?.welcomeWindow?.close()
-                self?.showMain()
-            }
-        }
-    }
-
     func showSettings() {
-        settingsWindow = present(settingsWindow, title: String(localized: "NTFS for Mac Settings")) {
-            SettingsView(model: model)
-        }
+        model.extensionStatus.refresh()
+        navigation.selection = .settings
+        showMain()
     }
 
     private func makeMainWindow() -> NSWindow {
-        let controller = NSHostingController(rootView: MainWindowView(model: model))
+        let controller = NSHostingController(rootView: MainWindowView(model: model, navigation: navigation))
         controller.sceneBridgingOptions = [.toolbars, .title]
         let window = NSWindow(contentViewController: controller)
         window.title = "NTFS for Mac"
@@ -79,19 +79,5 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
             : String(localized: "Wait until formatting finishes before quitting NTFS for Mac.")
         NSApp.activate()
         alert.runModal()
-    }
-
-    private func present(_ existing: NSWindow?, title: String, @ViewBuilder content: () -> some View) -> NSWindow {
-        let window = existing ?? {
-            let window = NSWindow(contentViewController: NSHostingController(rootView: content()))
-            window.title = title
-            window.styleMask = [.titled, .closable]
-            window.isReleasedWhenClosed = false
-            window.center()
-            return window
-        }()
-        NSApp.activate()
-        window.makeKeyAndOrderFront(nil)
-        return window
     }
 }

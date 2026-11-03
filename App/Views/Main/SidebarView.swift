@@ -3,6 +3,7 @@ import SwiftUI
 enum SidebarSelection: Hashable {
     case disk(String)
     case partition(String)
+    case settings
 }
 
 struct SidebarView: View {
@@ -12,17 +13,29 @@ struct SidebarView: View {
     var body: some View {
         let disks = model.inventory.sidebarDisks
         List(selection: $selection) {
+            if disks.isEmpty {
+                Section("Drives") {
+                    Text("Connect a drive and it will appear here.")
+                        .foregroundStyle(.secondary)
+                        .selectionDisabled()
+                }
+            }
             section("External", disks.filter { !$0.isInternal })
             section("Internal", disks.filter(\.isInternal))
-        }
-        .listStyle(.sidebar)
-        .overlay {
-            if disks.isEmpty {
-                ContentUnavailableView(
-                    "No Drives", systemImage: "externaldrive",
-                    description: Text("Connect a drive and it will appear here."))
+            Section("NTFS for Mac") {
+                HStack {
+                    Label("Settings", systemImage: "gearshape")
+                    Spacer()
+                    if model.extensionStatus.isEnabled == false {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .foregroundStyle(.orange)
+                            .help("The file system extension is turned off")
+                    }
+                }
+                .tag(SidebarSelection.settings)
             }
         }
+        .listStyle(.sidebar)
     }
 
     @ViewBuilder
