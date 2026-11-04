@@ -26,6 +26,20 @@ struct PendingTransfer: Identifiable {
     /// True when the sheet should offer "Copy anyway": the whole plan may be started despite the space warning.
     var proceedAnyway: Bool { hasSpaceWarning }
     var restOfJobs: [TransferJob] { TransferPreflight.jobs(jobs, without: problems) }
+
+    /// What the alert offers besides Cancel.
+    enum Choice: Equatable {
+        /// "Copy anyway": start despite the space warning (files with unusable names are still left out).
+        case copyAnyway
+        /// "Copy the Rest": start without the files that can't be stored.
+        case copyTheRest
+    }
+
+    /// Nil when there is nothing left that could be copied, so only Cancel makes sense.
+    var choice: Choice? {
+        guard !restOfJobs.isEmpty else { return nil }
+        return proceedAnyway ? .copyAnyway : .copyTheRest
+    }
 }
 
 /// Owns everything behind the File Transfer page: the two panes, the queue, and the app-level extras.

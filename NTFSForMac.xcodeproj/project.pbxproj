@@ -75,6 +75,8 @@
 		AAE64AF671271C86BA089B34 /* TransferSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EFF31B24A5A0F070F8B0AFB /* TransferSessionTests.swift */; };
 		90558CF20C1AC4E7EBE3B268 /* TransferPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAABFAF47582F106E450922D /* TransferPage.swift */; };
 		E1359AAA4E096ACFA4B1B2C4 /* FilePaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AFB2417156D447AE1A39D4 /* FilePaneView.swift */; };
+		2D851B546A7DB9F48CC133F6 /* TransferProgressPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDF402FAE9264A6DF4065021 /* TransferProgressPanel.swift */; };
+		A17AF2554964F4E9ADF0DAD0 /* TransferPrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C39FD9537FB1574636ED07 /* TransferPrompts.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -181,6 +183,8 @@
 		0EFF31B24A5A0F070F8B0AFB /* TransferSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferSessionTests.swift; sourceTree = "<group>"; };
 		BAABFAF47582F106E450922D /* TransferPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferPage.swift; sourceTree = "<group>"; };
 		40AFB2417156D447AE1A39D4 /* FilePaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePaneView.swift; sourceTree = "<group>"; };
+		CDF402FAE9264A6DF4065021 /* TransferProgressPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferProgressPanel.swift; sourceTree = "<group>"; };
+		92C39FD9537FB1574636ED07 /* TransferPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferPrompts.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -392,6 +396,8 @@
 				A9C0F061E55A099EBA8E3EEA /* ProtectedFolders.swift */,
 				BAABFAF47582F106E450922D /* TransferPage.swift */,
 				40AFB2417156D447AE1A39D4 /* FilePaneView.swift */,
+				CDF402FAE9264A6DF4065021 /* TransferProgressPanel.swift */,
+				92C39FD9537FB1574636ED07 /* TransferPrompts.swift */,
 			);
 			path = Transfer;
 			sourceTree = "<group>";
@@ -585,6 +591,8 @@
 				DDE71A44A24E391496CB39CC /* ProtectedFolders.swift in Sources */,
 				90558CF20C1AC4E7EBE3B268 /* TransferPage.swift in Sources */,
 				E1359AAA4E096ACFA4B1B2C4 /* FilePaneView.swift in Sources */,
+				2D851B546A7DB9F48CC133F6 /* TransferProgressPanel.swift in Sources */,
+				A17AF2554964F4E9ADF0DAD0 /* TransferPrompts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

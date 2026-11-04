@@ -77,4 +77,24 @@ struct TransferSessionTests {
         #expect(pending?.proceedAnyway == true)
         #expect(pending?.restOfJobs.map(\.id) == [1])
     }
+
+    @Test func spaceWarningOffersCopyAnywayWithTheRestOfTheFiles() {
+        let jobs = [job(1, "ok.txt", size: 5_000), job(2, "bad:name.txt", size: 5_000)]
+        let pending = TransferSession.review(jobs: jobs, rules: .exFAT, freeBytes: 100)
+        #expect(pending?.choice == .copyAnyway)
+        #expect(pending?.restOfJobs.map(\.id) == [1])
+    }
+
+    @Test func nameProblemsOnlyOfferCopyTheRest() {
+        let jobs = [job(1, "ok.txt", size: 10), job(2, "bad:name.txt", size: 10)]
+        let pending = TransferSession.review(jobs: jobs, rules: .exFAT, freeBytes: 1_000_000)
+        #expect(pending?.choice == .copyTheRest)
+    }
+
+    @Test func nothingToCopyOffersOnlyCancel() {
+        let pending = TransferSession.review(jobs: [job(1, "bad:name.txt")], rules: .exFAT, freeBytes: 1_000_000)
+        #expect(pending?.choice == nil)
+        let full = TransferSession.review(jobs: [job(1, "bad:name.txt", size: 5_000)], rules: .exFAT, freeBytes: 10)
+        #expect(full?.choice == nil)
+    }
 }
