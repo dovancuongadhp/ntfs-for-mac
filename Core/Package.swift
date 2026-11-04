@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "NTFSProbe", targets: ["NTFSProbe"]),
         .library(name: "NTFSShared", targets: ["NTFSShared"]),
         .library(name: "NTFSFormat", targets: ["NTFSFormat"]),
+        .library(name: "NTFSTransfer", targets: ["NTFSTransfer"]),
         .executable(name: "ntfs-mkfs", targets: ["ntfs-mkfs"]),
         .executable(name: "ntfs-format", targets: ["ntfs-format"]),
     ],
@@ -56,6 +57,8 @@ let package = Package(
         .target(name: "NTFSShared"),
         .target(name: "NTFSCore", dependencies: ["CNTFS", "NTFSProbe", "NTFSShared"]),
         .target(name: "NTFSFormat"),
+        .target(name: "NTFSTransfer"),
+        .testTarget(name: "NTFSTransferTests", dependencies: ["NTFSTransfer"]),
         .target(
             name: "NTFSAuthOpen",
             path: "Sources/NTFSAuthOpen",
