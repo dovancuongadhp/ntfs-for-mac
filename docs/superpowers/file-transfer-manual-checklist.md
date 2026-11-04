@@ -138,6 +138,25 @@ Notation: **Result** is what you should see. Tick the box when it did.
   finishes shows no banner and makes no sound; with the window hidden or another app in front it still banners.
   Questions still banner with sound in every case.
 
+## G. Final-review fixes (2.2.0-lotus wave)
+
+- [ ] **G1. Return on Delete permanently? (I4).** Select a file on a volume without Trash (e.g. NTFS volume
+  `NTFS_CUONG_2`). Press Delete. When the "Delete permanently?" alert appears, press **Return**. *Result:* the
+  alert is dismissed and nothing is deleted (Return activates **Cancel**, not **Delete**).
+- [ ] **G2. Read-only refusal message (I5).** With a drive that is mounted read-only (e.g. an NTFS volume whose
+  writing is not enabled), try to copy files into it via the Copy button or drag. *Result:* the preflight alert
+  appears with the message "This drive is read-only. Turn on writing for it in its drive page." and no copy action
+  is offered – only Cancel.
+- [ ] **G3. Finder-style duplicate on copy/paste in the same folder (I2).** Set both panes to the same folder.
+  Select a folder (e.g. "Photos") and press **Copy**. *Result:* a "Photos 2" folder appears beside it, containing
+  all the same contents. The original "Photos" is untouched. Same result when you ⌘C and ⌘V in the same folder.
+  *Note:* dragging "Photos" onto the same pane still does nothing (Drop intentionally ignores same-folder items).
+- [ ] **G4. Trash vs permanent delete on the NTFS volume (C1 regression check).** On the NTFS volume select a
+  file. Press Delete. *Result:* the "Delete permanently?" alert appears (Trash is unavailable on NTFS). The file
+  is gone after clicking **Delete**. Next, select a file inside a folder you do NOT have write permission to and
+  press Delete. *Result:* an error message appears (not the permanent-delete alert) and the file's contents are
+  untouched.
+
 ## Known limits (recorded for the final review)
 
 Not bugs to fix before the Beta; do not expect them to be fixed by this checklist.

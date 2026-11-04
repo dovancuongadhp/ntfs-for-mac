@@ -19,7 +19,9 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 - Copying can be paused, resumed, skipped file by file, cancelled, and retried for the files that failed. Errors can be exported as a list. A notification says when the copy is done or needs you.
 - Name conflicts offer Replace, Keep Both, Skip or Replace If Newer, with an option to apply the choice to every file.
 - **Verify after copy** compares a checksum of each file with its original. **Ask what to do on errors** turns a failed file into a Skip, Retry or Stop prompt.
-- Files are written under a temporary name and renamed when complete, so an unplugged drive never keeps a half-written file. A drive that runs out of space or is removed pauses the copy until you resume it.
+- Files are written under a temporary name and renamed when complete, so a half-written file never appears under its real name. A drive that runs out of space or is removed pauses the copy until you resume it.
+- Copying to a read-only drive is refused before anything starts, with a clear message pointing to the drive page.
+- Pressing Copy or ⌘V when both panes show the same folder produces a "Photos 2" duplicate beside the original (Finder-style), instead of merging into it.
 - Before copying, names that the destination cannot hold (such as `a:b.txt` on exFAT) and files too large for FAT32 are listed, and you can copy the rest.
 - New Folder, Rename, Delete (to the Trash) and Quick Look in either pane. Drives, system folders and your home folder are protected from Rename and Delete. The copy keeps the Mac awake, shows its progress on the Dock icon and in the menu bar menu, and asks before quitting while it runs.
 - The File Transfer row in the sidebar shows an orange dot when the copy needs an answer, even from another page.
