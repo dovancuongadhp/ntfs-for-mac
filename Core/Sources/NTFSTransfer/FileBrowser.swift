@@ -245,12 +245,48 @@ public enum FileOperations {
         return target
     }
 
-    /// Moves items to the Trash and returns the ones that could not go there, such as items on a volume without a Trash.
-    public static func trash(_ urls: [URL]) -> [URL] {
-        urls.filter { (try? FileManager.default.trashItem(at: $0, resultingItemURL: nil)) == nil }
+    /// The result of a trash operation.
+    public struct TrashResult: Sendable {
+        /// Items on a volume that has no Trash – these may be offered for permanent deletion.
+        public var stuck: [URL]
+        /// The first non-Trash error (permission denied, I/O error, …); nothing was deleted for these.
+        public var error: Error?
     }
 
+    /// Moves items to the Trash.
+    ///
+    /// An item is "stuck" only when the file system has no Trash support
+    /// (`NSFeatureUnsupportedError`). Any other error (permission denied, etc.) is
+    /// collected as `error` and the item is left untouched – it must NOT be offered for
+    /// permanent deletion.
+    public static func trash(_ urls: [URL]) -> TrashResult {
+        var stuck: [URL] = []
+        var firstError: Error?
+        for url in urls {
+            do {
+                try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+            } catch let err as NSError {
+                if err.domain == NSCocoaErrorDomain, err.code == NSFeatureUnsupportedError {
+                    stuck.append(url)
+                } else {
+                    if firstError == nil { firstError = err }
+                }
+            } catch {
+                if firstError == nil { firstError = error }
+            }
+        }
+        return TrashResult(stuck: stuck, error: firstError)
+    }
+
+    /// Permanently deletes items after a preflight that refuses when any item's parent is
+    /// not writable – preventing the inside-out partial-delete data-loss pattern.
     public static func deletePermanently(_ urls: [URL]) throws {
+        for url in urls {
+            guard FileManager.default.isDeletableFile(atPath: url.path) else {
+                throw CocoaError(.fileWriteNoPermission,
+                                 userInfo: [NSFilePathErrorKey: url.path])
+            }
+        }
         for url in urls { try FileManager.default.removeItem(at: url) }
     }
 }

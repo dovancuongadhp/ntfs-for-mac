@@ -112,6 +112,32 @@ struct ProtectedFoldersTests {
         #expect(ProtectedFolders.containsProtected([URL(fileURLWithPath: "/private/etc")] + ordinary, home: home))
     }
 
+    // MARK: C2 – /System/Volumes/* are volume roots
+
+    @Test func systemVolumesMountPointsAreProtected() {
+        // /System/Volumes/<name> are volume roots (APFS Data, VM, Preboot, …)
+        for path in ["/System/Volumes/Data", "/System/Volumes/VM",
+                     "/System/Volumes/Preboot", "/System/Volumes/Update"] {
+            #expect(isProtected(path), "\(path) should be protected")
+        }
+    }
+
+    @Test func contentsUnderSystemVolumesAreOperable() {
+        // Items INSIDE /System/Volumes/Data must remain reachable
+        #expect(!isProtected("/System/Volumes/Data/Users/tester/Documents/x.pdf"))
+        #expect(!isProtected("/System/Volumes/Data/Applications/Safari.app"))
+        // /System/Volumes/Data/Users and /System/Volumes/Data/Applications themselves are
+        // not volume roots and must not be blocked
+        #expect(!isProtected("/System/Volumes/Data/Users"))
+        #expect(!isProtected("/System/Volumes/Data/Applications"))
+    }
+
+    @Test func systemVolumesAreCaseInsensitive() {
+        #expect(isProtected("/system/volumes/data"))
+        #expect(isProtected("/SYSTEM/VOLUMES/DATA"))
+        #expect(!isProtected("/system/volumes/data/users"))
+    }
+
     @Test func aVolumeReachedThroughALinkedFolderIsStillARoot() throws {
         let sandbox = FileManager.default.temporaryDirectory.appending(component: UUID().uuidString)
         try FileManager.default.createDirectory(at: sandbox, withIntermediateDirectories: true)

@@ -27,7 +27,11 @@ struct PendingTransfer: Identifiable {
     }
     /// True when the sheet should offer "Copy anyway": the whole plan may be started despite the space warning.
     var proceedAnyway: Bool { hasSpaceWarning }
-    var restOfJobs: [TransferJob] { TransferPreflight.jobs(jobs, without: problems) }
+    var restOfJobs: [TransferJob] {
+        // A blocking problem (read-only destination) means nothing can be copied.
+        guard !problems.contains(where: \.isBlocking) else { return [] }
+        return TransferPreflight.jobs(jobs, without: problems)
+    }
 
     /// What the alert offers besides Cancel.
     enum Choice: Equatable {
@@ -231,7 +235,7 @@ final class TransferSession {
     // MARK: Copying
 
     func copyActiveToOther() {
-        copy(activeModel.selectedEntries.map(\.url), into: otherModel.folder)
+        copy(activeModel.selectedEntries.map(\.url), into: otherModel.folder, duplicate: true)
     }
 
     /// Dropping one row of a multi-selection brings the whole selection along.
@@ -270,17 +274,19 @@ final class TransferSession {
         }
     }
 
-    func copy(_ sources: [URL], into destination: URL) {
+    func copy(_ sources: [URL], into destination: URL, duplicate: Bool = false) {
         guard !sources.isEmpty else { return }
         Task {
             let access = PosixFileAccess()
             do {
                 let planned = try await Task.detached(priority: .userInitiated) { () throws -> ([TransferJob], VolumeInfo) in
-                    let jobs = try TransferPlanner.plan(sources: sources, into: destination, access: access)
+                    let jobs = try TransferPlanner.plan(sources: sources, into: destination, access: access, duplicate: duplicate)
                     return (jobs, try access.volumeInfo(at: destination))
                 }.value
                 let rules = DestinationRules.forFileSystem(planned.1.fileSystemType)
-                if let pending = Self.review(jobs: planned.0, rules: rules, freeBytes: planned.1.freeBytes) {
+                if let pending = Self.review(
+                    jobs: planned.0, rules: rules, freeBytes: planned.1.freeBytes,
+                    destinationReadOnly: planned.1.isReadOnly) {
                     pendingTransfer = pending
                 } else {
                     start(planned.0)
@@ -292,8 +298,12 @@ final class TransferSession {
     }
 
     /// Nil when the copy can start straight away; otherwise the plan with what the person must decide.
-    static func review(jobs: [TransferJob], rules: DestinationRules, freeBytes: Int64) -> PendingTransfer? {
-        let problems = TransferPreflight.check(jobs: jobs, rules: rules, freeBytes: freeBytes)
+    static func review(
+        jobs: [TransferJob], rules: DestinationRules, freeBytes: Int64,
+        destinationReadOnly: Bool = false
+    ) -> PendingTransfer? {
+        let problems = TransferPreflight.check(
+            jobs: jobs, rules: rules, freeBytes: freeBytes, destinationReadOnly: destinationReadOnly)
         return problems.isEmpty ? nil : PendingTransfer(jobs: jobs, problems: problems)
     }
 
@@ -309,7 +319,7 @@ final class TransferSession {
     func pasteFromPasteboard(into pane: TransferPane) {
         let urls = NSPasteboard.general.readObjects(
             forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
-        copy(urls, into: model(for: pane).folder)
+        copy(urls, into: model(for: pane).folder, duplicate: true)
     }
 
     func copyProviders(for pane: TransferPane) -> [NSItemProvider] {
@@ -407,18 +417,21 @@ final class TransferSession {
         guard let prompt = namePrompt else { return }
         namePrompt = nil
         let model = activeModel
-        do {
-            let created: URL
-            switch prompt.kind {
-            case .newFolder: created = try FileOperations.makeFolder(named: promptText, in: model.folder)
-            case .rename(let url): created = try FileOperations.rename(url, to: promptText)
-            }
-            Task {
+        let text = promptText
+        let folder = model.folder          // capture off-actor-safe value type
+        Task {
+            do {
+                let created = try await Task.detached(priority: .userInitiated) { () throws -> URL in
+                    switch prompt.kind {
+                    case .newFolder: return try FileOperations.makeFolder(named: text, in: folder)
+                    case .rename(let url): return try FileOperations.rename(url, to: text)
+                    }
+                }.value
                 await model.reload()
                 model.selection = [created]
+            } catch {
+                alertMessage = Self.message(for: error)
             }
-        } catch {
-            alertMessage = Self.message(for: error)
         }
     }
 
@@ -426,21 +439,30 @@ final class TransferSession {
         let model = activeModel
         let urls = model.selectedEntries.map(\.url)
         guard canDelete, !urls.isEmpty else { return }
-        let stuck = FileOperations.trash(urls)
-        Task { await model.reload() }
-        if !stuck.isEmpty { deleteRequest = stuck }
+        Task {
+            let result = await Task.detached(priority: .userInitiated) {
+                FileOperations.trash(urls)
+            }.value
+            await model.reload()
+            if let error = result.error { alertMessage = error.localizedDescription }
+            if !result.stuck.isEmpty { deleteRequest = result.stuck }
+        }
     }
 
     func confirmDelete() {
         guard let urls = deleteRequest else { return }
         deleteRequest = nil
         let model = activeModel
-        do {
-            try FileOperations.deletePermanently(urls)
-        } catch {
-            alertMessage = error.localizedDescription
+        Task {
+            do {
+                try await Task.detached(priority: .userInitiated) {
+                    try FileOperations.deletePermanently(urls)
+                }.value
+            } catch {
+                alertMessage = error.localizedDescription
+            }
+            await model.reload()
         }
-        Task { await model.reload() }
     }
 
     func preview() {
@@ -467,6 +489,18 @@ final class TransferSession {
         default:
             error.localizedDescription
         }
+    }
+
+    // MARK: Pending-transfer alert
+
+    /// Title for the preflight alert: "Not enough space" when only space is the problem,
+    /// "Can't copy everything" when names or file sizes also need attention.
+    var pendingTransferTitle: String {
+        guard let pending = pendingTransfer else { return "" }
+        let spaceOnly = pending.problems.allSatisfy { if case .notEnoughSpace = $0 { true } else { false } }
+        return spaceOnly
+            ? String(localized: "Not enough space")
+            : String(localized: "Can't copy everything")
     }
 }
 

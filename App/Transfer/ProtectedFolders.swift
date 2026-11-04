@@ -96,10 +96,15 @@ enum ProtectedFolders {
         return urls.contains { checker.isProtected($0) }
     }
 
-    /// A folder directly inside /Volumes. Takes a lowercased path: the volume names are matched without case.
+    /// A folder that is a direct child of /Volumes or /System/Volumes (case-insensitive).
+    /// These are volume roots: Trash operations on them are refused; their contents are reachable.
     fileprivate static func isVolumeRoot(_ lowered: String) -> Bool {
-        let prefix = "/volumes/"
-        return lowered.hasPrefix(prefix) && lowered.count > prefix.count && !lowered.dropFirst(prefix.count).contains("/")
+        for prefix in ["/volumes/", "/system/volumes/"] {
+            guard lowered.hasPrefix(prefix) else { continue }
+            let rest = lowered.dropFirst(prefix.count)
+            if !rest.isEmpty && !rest.contains("/") { return true }
+        }
+        return false
     }
 
     /// The standardized path, and the same path with the folders above the item resolved.

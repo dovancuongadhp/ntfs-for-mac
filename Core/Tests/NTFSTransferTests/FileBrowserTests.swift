@@ -143,4 +143,63 @@ import Testing
         #expect(!FileOperations.validate("."))
         #expect(!FileOperations.validate(".."))
     }
+
+    // MARK: C1 – trash refuses permission errors, does not offer permanent delete
+
+    /// A parent that is mode 0555 makes trashItem fail with EACCES / permission-denied,
+    /// NOT with the "volume has no Trash" code. The return value must NOT classify the item
+    /// as "stuck" (suitable for permanent delete) and the item's contents must survive.
+    @Test func trashRefusedByPermissionIsNotTreatedAsNoTrash() throws {
+        let parent = FileManager.default.temporaryDirectory
+            .appending(component: "ft-c1-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: parent.path)
+            try? FileManager.default.removeItem(at: parent)
+        }
+        let victim = parent.appending(component: "victim")
+        try FileManager.default.createDirectory(at: victim, withIntermediateDirectories: true)
+        try Data("keep me".utf8).write(to: victim.appending(component: "content.txt"))
+        // Make parent read-only so trashItem fails with permission denied, not "no Trash"
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: parent.path)
+
+        let result = FileOperations.trash([victim])
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: parent.path)
+        // A permission error must NOT be presented as permanent-delete candidate
+        #expect(result.stuck.isEmpty, "Permission error must not appear as 'no Trash on volume'")
+        #expect(result.error != nil, "Permission error must be surfaced")
+        // Contents survived (the item was never touched by removeItem)
+        #expect(
+            FileManager.default.fileExists(atPath: victim.appending(component: "content.txt").path),
+            "File contents must survive a failed trash attempt")
+    }
+
+    // MARK: C1 – deletePermanently refuses when parent is not writable
+
+    /// When the parent directory is read-only, deletePermanently must throw
+    /// without touching any of the item's contents.
+    @Test func permanentDeleteIsRefusedWhenParentIsReadOnly() throws {
+        let parent = FileManager.default.temporaryDirectory
+            .appending(component: "ft-c1b-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: parent.path)
+            try? FileManager.default.removeItem(at: parent)
+        }
+        let victim = parent.appending(component: "victim")
+        try FileManager.default.createDirectory(at: victim, withIntermediateDirectories: true)
+        let content = victim.appending(component: "content.txt")
+        try Data("keep me".utf8).write(to: content)
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: parent.path)
+
+        #expect(throws: (any Error).self) {
+            try FileOperations.deletePermanently([victim])
+        }
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: parent.path)
+        #expect(
+            FileManager.default.fileExists(atPath: content.path),
+            "Contents must survive a refused permanent delete")
+    }
 }
