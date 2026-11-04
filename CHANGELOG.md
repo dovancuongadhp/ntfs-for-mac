@@ -17,6 +17,7 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 
 - Formatting a removable drive as NTFS failed with “Creating the NTFS file system failed. The partition may not be usable; format it again.” macOS refuses a direct open of a removable disk, even for an administrator, so the NTFS formatter never started and the partition was left as an empty exFAT volume. NTFS for Mac now opens the drive through macOS’s own permission prompt and formats it with that access.
 - If macOS still blocks the drive, the error says where to allow it: System Settings → Privacy & Security → Files & Folders, then allow NTFS for Mac to access removable volumes.
+- A drive that also holds an APFS volume was listed twice, both rows using the drive's hardware name. macOS presents that volume as a separate virtual disk, and the app could not see which partition held it when the drive's name contained a space. The virtual disk is now a partition of the real drive.
 
 ### Changed
 

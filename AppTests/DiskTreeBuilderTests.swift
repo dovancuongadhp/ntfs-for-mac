@@ -34,6 +34,23 @@ struct DiskTreeBuilderTests {
         #expect(disk.partitions[0].partitionID == 1)
     }
 
+    @Test func apfsVolumeOnASharedDiskStaysUnderThatDisk() throws {
+        var infos = Fixture.usbGPT
+        infos.append(DiskInfo(
+            bsdName: "disk6s4", wholeBSDName: "disk6", isLeaf: false, size: 50_000_000_000, offset: 512_000_000_000,
+            partitionID: 4, content: DiskContent.apfsStore, mediaName: "Untitled 4", deviceProtocol: "USB"))
+        infos.append(DiskInfo(
+            bsdName: "disk12", wholeBSDName: "disk12", isWhole: true, isLeaf: false, size: 50_000_000_000,
+            content: DiskContent.apfsContainer, mediaName: "T7 Media", deviceProtocol: "USB",
+            physicalStore: "disk6s4", physicalStores: ["disk6s4"]))
+        infos.append(DiskInfo(
+            bsdName: "disk12s1", wholeBSDName: "disk12", size: 50_000_000_000, volumeKind: "apfs",
+            volumeName: "SSD-MACOS", deviceProtocol: "USB"))
+        let tree = DiskTreeBuilder.build(infos)
+        #expect(tree.map(\.bsdName) == ["disk6"])
+        #expect(tree[0].sidebarPartitions.map(\.name) == ["SSD-PUBLIC", "New Volume", "SSD-MACOS"])
+    }
+
     @Test func apfsVolumesReplaceTheirContainer() throws {
         let disks = DiskTreeBuilder.build(Fixture.usbAPFS)
         #expect(disks.map(\.bsdName) == ["disk8"])
