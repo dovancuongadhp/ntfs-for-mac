@@ -79,12 +79,6 @@ struct MainWindowView: View {
     /// The file copy page has its own buttons, in the same style and height.
     @ToolbarContentBuilder
     private var transferToolbar: some ToolbarContent {
-        actionItem(
-            "Copy", systemImage: "doc.on.doc",
-            help: String(localized: "Copy the selection to the other side"),
-            disabled: !model.transfer.canCopy
-        ) { model.transfer.copyActiveToOther() }
-        ToolbarSpacer(.fixed, placement: .primaryAction)
         actionItem("New Folder", systemImage: "folder.badge.plus") { model.transfer.beginNewFolder() }
         ToolbarSpacer(.fixed, placement: .primaryAction)
         actionItem("Rename", systemImage: "pencil", disabled: !model.transfer.canRename) { model.transfer.beginRename() }
