@@ -61,10 +61,18 @@ import Testing
         }
     }
 
-    @Test func windowsForbiddenNamesAreRejected() throws {
+    @Test func windowsForbiddenNamesRoundTrip() throws {
         try TestImage.withVolume { volume, _ in
-            for name in ["a:b", "what?", "CON", "trailing.", "x|y"] {
-                #expect(throws: NTFSError.invalid, "\(name)") { try volume.create(name, in: .root, type: .file) }
+            let names = [
+                "a:b", "what?", "CON", "con.txt", "COM1", "trailing.", "x|y",
+                "ghcr.io_songphantech_x52:main.tar", "name:with:colon.txt",
+            ]
+            for name in names {
+                let id = try volume.create(name, in: .root, type: .file)
+                #expect(try volume.lookup(name, in: .root) == id)
+                #expect(try volume.entries(of: .root).contains { $0.name == name && $0.id == id })
+                #expect(!NTFSFileName.forDisk(name).contains(":"))
+                try volume.remove(name, in: .root)
             }
         }
     }

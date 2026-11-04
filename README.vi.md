@@ -229,9 +229,9 @@ phiên bản chính. Mỗi bản phát hành ghi đủ số phiên bản kèm t�
 
 | | Quy ước | Ví dụ |
 | --- | --- | --- |
-| Tên bản phát hành | NTFS for Mac *phiên bản* *Tên* | NTFS for Mac 2.0.1 Lotus |
-| Tag Git | v*phiên bản* | v2.0.1 |
-| Nhánh phát hành | release-*phiên bản*-*tên* | release-2.0.1-lotus |
+| Tên bản phát hành | NTFS for Mac *phiên bản* *Tên* | NTFS for Mac 2.0.2 Lotus |
+| Tag Git | v*phiên bản* | v2.0.2 |
+| Nhánh phát hành | release-*phiên bản*-*tên* | release-2.0.2-lotus |
 
 Phiên bản chưa có tên thì bỏ phần tên: NTFS for Mac 1.0.1, nhánh `release-1.0.1`.
 

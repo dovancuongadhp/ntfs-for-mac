@@ -54,6 +54,15 @@ struct MenuContentView: View {
             }
             .buttonStyle(.borderless)
 
+            if case .available(let version) = model.updates.phase {
+                Button("Update to \(version.text)") { Task { await model.updates.install() } }
+                    .disabled(model.isFormatting)
+                    .buttonStyle(.borderless)
+            } else if case .downloading = model.updates.phase {
+                Text("Updating NTFS for Mac…")
+                    .foregroundStyle(.secondary)
+            }
+
             HStack {
                 Button("Settings…") { windows.showSettings() }
                 Spacer()

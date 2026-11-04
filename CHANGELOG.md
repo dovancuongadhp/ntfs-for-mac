@@ -11,6 +11,17 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 
 ## [Unreleased]
 
+## [2.0.2] Lotus - 2026-11-04
+
+### Added
+
+- Files whose names NTFS would reject can be copied. That includes `: * ? " < > \ |`, a trailing space or dot, and DOS names such as `CON` or `COM1`. The name is stored in a form Windows accepts and shown again with the original characters on the Mac. After installing, eject the drive and connect it again so the new file system extension is the one serving it.
+- Settings can check GitHub for a newer release. When one exists, **Update to …** downloads the disk image and replaces this app. The menu bar menu shows the same update when a newer version is available.
+
+### Changed
+
+- The toolbar actions are separate round buttons with a short name under each icon. Mount is a drive with a plus, Unmount a drive with a minus, and Eject keeps the eject symbol.
+
 ## [2.0.1] Lotus - 2026-11-04
 
 ### Fixed
@@ -80,7 +91,8 @@ First public release.
 - English and Vietnamese user interface.
 - Drag-to-install DMG, and `scripts/build-local.sh` to build an ad hoc signed copy without an Apple Developer account.
 
-[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.0...v1.0.1
