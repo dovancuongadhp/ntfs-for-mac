@@ -57,3 +57,8 @@ final class TempFolder: @unchecked Sendable {
         try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: path(relative).path)
     }
 }
+
+/// Convenience wrapper used by planner tests: plans with the real POSIX file system.
+func plan(_ sources: [URL], into folder: URL) throws -> [TransferJob] {
+    try TransferPlanner.plan(sources: sources, into: folder, access: PosixFileAccess())
+}
