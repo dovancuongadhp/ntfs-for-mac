@@ -8,6 +8,7 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            PageBanners(model: model, showsExtensionWarning: false)
             Section {
                 HStack(spacing: 14) {
                     Image(nsImage: NSApp.applicationIconImage)
@@ -77,9 +78,7 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
-        .frame(maxWidth: 620)
-        .frame(maxWidth: .infinity)
+        .detailColumn()
         .onAppear {
             model.extensionStatus.refresh()
             Task { await model.updates.check() }

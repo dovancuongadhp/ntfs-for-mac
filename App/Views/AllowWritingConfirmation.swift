@@ -15,3 +15,21 @@ enum AllowWritingConfirmation {
         }
     }
 }
+
+/// Asks for the password of an encrypted volume. Nothing is stored.
+@MainActor
+enum VolumePasswordPrompt {
+    static func ask(volumeName: String) -> String? {
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Unlock “\(volumeName)”")
+        alert.informativeText = String(localized: "This volume is encrypted. Enter its password to mount it.")
+        alert.addButton(withTitle: String(localized: "Unlock"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        NSApp.activate()
+        guard alert.runModal() == .alertFirstButtonReturn, !field.stringValue.isEmpty else { return nil }
+        return field.stringValue
+    }
+}

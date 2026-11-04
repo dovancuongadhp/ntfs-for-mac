@@ -10,6 +10,13 @@ struct DiskOperationError: LocalizedError {
 
     /// `kDAReturnBusy` (0xF8DA0002): a mount is already underway or finished.
     var isBusy: Bool { status == Int32(bitPattern: 0xF8DA0002) }
+
+    /// The device is held by something for now: DiskArbitration's busy, or the
+    /// unix `EBUSY` it passes through (0xC010, which shows as "49.168").
+    var isDeviceBusy: Bool { isBusy || status == 0xC000 | EBUSY }
+
+    /// `kDAReturnUnsupported` (0xF8DA000C): the device can't be ejected, only unmounted.
+    var isUnsupported: Bool { status == Int32(bitPattern: 0xF8DA000C) }
 }
 
 /// How to mount with the extension when DiskArbitration picked another driver.
@@ -77,14 +84,72 @@ final class MountController {
     }
 
     /// Unmounts every volume on the physical disk and ejects it.
-    func eject(bsdName: String) async throws {
+    ///
+    /// `apfsContainers` are the synthesized disks (disk6...) whose storage is on
+    /// this disk. Their volumes are not children of the physical disk, so
+    /// unmounting the physical disk leaves them mounted and the eject is refused
+    /// as busy.
+    func eject(bsdName: String, apfsContainers: [String] = []) async throws {
         let disk = try diskObject(bsdName)
         let whole = DADiskCopyWholeDisk(disk) ?? disk
-        try await unmount(whole, options: DADiskUnmountOptions(kDADiskUnmountOptionWhole))
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
-            DADiskEject(whole, DADiskEjectOptions(kDADiskEjectOptionDefault), { _, dissenter, context in
-                CallbackBox.resume(context, dissenter)
-            }, CallbackBox.retain(continuation))
+        func unmountEverything() async throws {
+            for container in apfsContainers {
+                guard let containerDisk = try? diskObject(container) else { continue }
+                try await unmount(containerDisk, options: DADiskUnmountOptions(kDADiskUnmountOptionWhole))
+            }
+            try await unmount(whole, options: DADiskUnmountOptions(kDADiskUnmountOptionWhole))
+        }
+        try await unmountEverything()
+        // Right after the unmount something (Spotlight, a just-closed app) can still
+        // hold the device for a moment, and the eject is refused as busy. That clears
+        // by itself, so try again before reporting it.
+        let attempts = 8
+        for attempt in 1...attempts {
+            do {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+                    DADiskEject(whole, DADiskEjectOptions(kDADiskEjectOptionDefault), { _, dissenter, context in
+                        CallbackBox.resume(context, dissenter)
+                    }, CallbackBox.retain(continuation))
+                }
+                return
+            } catch let error as DiskOperationError where error.isUnsupported {
+                // Fixed media, such as an external SSD, has nothing to power down. Every
+                // volume is already unmounted, which is all Finder does for it too.
+                return
+            } catch let error as DiskOperationError where error.isDeviceBusy {
+                guard attempt < attempts else {
+                    throw DiskOperationError(
+                        message: String(localized: "The drive is still in use, so it couldn't be ejected. Close anything using it and try again."),
+                        status: error.status)
+                }
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                // Something may have mounted a volume again in the meantime.
+                try? await unmountEverything()
+            }
+        }
+    }
+
+    /// An encrypted APFS volume that is locked, such as one that was just ejected.
+    /// DiskArbitration can't mount it without the password.
+    func isLockedVolume(bsdName: String) async -> Bool {
+        guard let result = try? await CommandLineTool.run("/usr/sbin/diskutil", ["info", "-plist", bsdName]),
+              result.status == 0,
+              let plist = try? PropertyListSerialization.propertyList(
+                from: Data(result.output.utf8), format: nil) as? [String: Any]
+        else { return false }
+        return plist["Locked"] as? Bool == true
+    }
+
+    /// Unlocks and mounts an encrypted APFS volume. The password goes in through
+    /// standard input, never the command line.
+    func unlockVolume(bsdName: String, passphrase: String) async throws {
+        let result = try await CommandLineTool.run(
+            "/usr/sbin/diskutil", ["apfs", "unlockVolume", bsdName, "-stdinpassphrase"], input: passphrase + "\n")
+        guard result.status == 0 else {
+            let output = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+            throw DiskOperationError(message: output.localizedCaseInsensitiveContains("incorrect")
+                ? String(localized: "The password is incorrect.")
+                : (output.isEmpty ? String(localized: "The volume could not be unlocked.") : output))
         }
     }
 

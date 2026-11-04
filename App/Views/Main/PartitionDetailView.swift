@@ -7,33 +7,40 @@ struct PartitionDetailView: View {
     let disk: PhysicalDisk
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                header
-                if let mount = partition.mount, mount.totalBytes > 0 {
-                    usage(mount)
-                }
-                InfoGrid(rows: rows)
-                if let ntfs = partition.ntfsDisk {
+        Form {
+            PageBanners(model: model)
+            Section { header }
+            if let mount = partition.mount, mount.totalBytes > 0 {
+                Section { usage(mount) }
+            }
+            Section {
+                InfoGrid(rows: [
+                    InfoRow(label: String(localized: "Mounted at"), value: partition.mount?.path.path ?? String(localized: "Not mounted")),
+                    InfoRow(label: String(localized: "Capacity"), value: (partition.mount?.totalBytes ?? partition.size).formatted(.byteCount(style: .file))),
+                    InfoRow(label: String(localized: "Device"), value: partition.bsdName),
+                    InfoRow(label: String(localized: "Driver"), value: driver),
+                    InfoRow(label: "UUID", value: partition.volumeUUID ?? "—"),
+                ])
+            }
+            if let ntfs = partition.ntfsDisk {
+                Section {
                     NTFSOptionsView(model: model, disk: ntfs, isLocked: model.formatting.contains(disk.bsdName))
                 }
             }
-            .padding(24)
-            .frame(maxWidth: 760, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .detailColumn()
     }
 
     private var header: some View {
         HStack(spacing: 14) {
             DriveIcon(systemImage: "externaldrive.fill", colors: partition.mount == nil ? [.gray, .secondary] : [.blue, .indigo])
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
-                    Text(partition.name).font(.title2.bold()).lineLimit(1)
+                    Text(partition.name).font(.title3.weight(.semibold)).lineLimit(1)
                     Badge(text: partition.fileSystem.label)
                     Badge(text: status.text, tint: status.color)
                 }
-                Text([disk.name, partition.bsdName, disk.connection].compactMap { $0 }.joined(separator: " · "))
+                Text([disk.name, disk.kind.label, partition.bsdName, disk.connection].compactMap { $0 }.joined(separator: " · "))
                     .foregroundStyle(.secondary)
             }
         }
@@ -63,16 +70,6 @@ struct PartitionDetailView: View {
                     .foregroundStyle(.secondary)
             }
         }
-    }
-
-    private var rows: [InfoRow] {
-        [
-            InfoRow(label: String(localized: "Mounted at"), value: partition.mount?.path.path ?? String(localized: "Not mounted")),
-            InfoRow(label: String(localized: "Capacity"), value: (partition.mount?.totalBytes ?? partition.size).formatted(.byteCount(style: .file))),
-            InfoRow(label: String(localized: "Device"), value: partition.bsdName),
-            InfoRow(label: String(localized: "Driver"), value: driver),
-            InfoRow(label: "UUID", value: partition.volumeUUID ?? "—"),
-        ]
     }
 
     private var driver: String {
@@ -121,8 +118,5 @@ struct NTFSOptionsView: View {
                 }
             }
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background.secondary, in: .rect(cornerRadius: 12))
     }
 }

@@ -18,8 +18,15 @@ enum DiskInfoReader {
         let deviceProtocol = description[kDADiskDescriptionDeviceProtocolKey as String] as? String
         let mediaPath = description[kDADiskDescriptionMediaPathKey as String] as? String
         let mount = (description[kDADiskDescriptionVolumePathKey as String] as? URL).flatMap(mountInfo)
+        // Only virtual devices may lack the key; anything else unknown counts as internal.
+        let isInternal = description[kDADiskDescriptionDeviceInternalKey as String] as? Bool
+            ?? (deviceProtocol != DiskContent.virtualProtocol)
+        // An external SSD is fixed media, so DiskArbitration calls it not ejectable,
+        // yet Finder and diskutil eject it. Anything external can be ejected.
+        let isEjectable = (description[kDADiskDescriptionMediaEjectableKey as String] as? Bool ?? false) || !isInternal
         let roles = mediaPath.map { IOMedia.strings($0, "Role") } ?? []
         let isContainer = isWhole && content == DiskContent.apfsContainer
+        let traits = isWhole ? IOMedia.deviceTraits(mediaPath, bsdName: bsdName) : IOMedia.DeviceTraits()
 
         return DiskInfo(
             bsdName: bsdName,
@@ -38,13 +45,14 @@ enum DiskInfoReader {
             volumeUUID: uuidString(description[kDADiskDescriptionVolumeUUIDKey as String]),
             mount: mount,
             isWritable: description[kDADiskDescriptionMediaWritableKey as String] as? Bool ?? true,
-            isEjectable: description[kDADiskDescriptionMediaEjectableKey as String] as? Bool ?? false,
-            // Only virtual devices may lack the key; anything else unknown counts as internal.
-            isInternal: description[kDADiskDescriptionDeviceInternalKey as String] as? Bool
-                ?? (deviceProtocol != DiskContent.virtualProtocol),
+            isEjectable: isEjectable,
+            isInternal: isInternal,
             deviceProtocol: deviceProtocol,
             deviceModel: (description[kDADiskDescriptionDeviceModelKey as String] as? String)?
                 .trimmingCharacters(in: .whitespaces),
+            isRemovable: description[kDADiskDescriptionMediaRemovableKey as String] as? Bool ?? false,
+            mediumType: traits.mediumType,
+            interconnect: traits.interconnect,
             physicalStore: isContainer ? containerParent(bsdName, path: mediaPath) : nil,
             physicalStores: isContainer ? containerAncestors(bsdName, path: mediaPath) : [],
             registryID: registryID(of: disk),

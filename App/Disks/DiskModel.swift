@@ -52,6 +52,10 @@ struct DiskInfo: Equatable, Sendable {
     var isInternal = false
     var deviceProtocol: String?
     var deviceModel: String?
+    var isRemovable = false
+    /// "Solid State" or "Rotational", when the device reports it.
+    var mediumType: String?
+    var interconnect: String?
     /// For an APFS container's whole disk: the partition that stores it.
     var physicalStore: String?
     /// For an APFS container's whole disk: every partition it is stored on.
@@ -163,6 +167,38 @@ struct Partition: Identifiable, Equatable, Sendable {
     }
 }
 
+/// What kind of storage a physical disk is, as far as macOS tells us.
+enum DriveKind: Equatable, Sendable {
+    case ssd, hdd, sdCard, usbFlash, unknown
+
+    /// A USB flash drive reports no medium type, so it is recognised as a
+    /// removable USB device with none; an enclosure that also reports nothing
+    /// stays `unknown` rather than being guessed.
+    static func classify(mediumType: String?, interconnect: String?, isRemovable: Bool) -> DriveKind {
+        if interconnect == "Secure Digital" { return .sdCard }
+        switch mediumType {
+        case "Solid State": return .ssd
+        case "Rotational": return .hdd
+        default: break
+        }
+        return interconnect == "USB" && isRemovable ? .usbFlash : .unknown
+    }
+
+    var label: String? {
+        switch self {
+        case .ssd: "SSD"
+        case .hdd: String(localized: "Hard drive (HDD)")
+        case .sdCard: String(localized: "SD card")
+        case .usbFlash: String(localized: "USB flash drive")
+        case .unknown: nil
+        }
+    }
+
+    var symbol: String? {
+        self == .sdCard ? "sdcard" : nil
+    }
+}
+
 struct PhysicalDisk: Identifiable, Equatable, Sendable {
     var id: String { bsdName }
 
@@ -175,6 +211,7 @@ struct PhysicalDisk: Identifiable, Equatable, Sendable {
     var isEjectable: Bool
     var isWritable: Bool
     var connection: String?
+    var kind: DriveKind = .unknown
     var blockSize: UInt64
     /// Partitions in disk order, each APFS store followed by its volumes.
     var partitions: [Partition]

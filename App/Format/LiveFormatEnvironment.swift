@@ -69,7 +69,9 @@ struct CommandResult: Sendable {
 }
 
 enum CommandLineTool {
-    static func run(_ path: String, _ arguments: [String]) async throws -> CommandResult {
+    /// `input` goes to the tool's standard input, so a secret never appears in
+    /// the argument list that other processes can read.
+    static func run(_ path: String, _ arguments: [String], input: String? = nil) async throws -> CommandResult {
         try await Task.detached {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: path)
@@ -77,7 +79,13 @@ enum CommandLineTool {
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = pipe
+            let stdin = input.map { _ in Pipe() }
+            process.standardInput = stdin
             try process.run()
+            if let stdin, let input {
+                stdin.fileHandleForWriting.write(Data(input.utf8))
+                try? stdin.fileHandleForWriting.close()
+            }
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
             return CommandResult(status: process.terminationStatus, output: String(decoding: data, as: UTF8.self))

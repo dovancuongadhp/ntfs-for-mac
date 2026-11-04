@@ -212,7 +212,7 @@ struct FormatSafetyTests {
         #expect(preparation.suggestedName == "New Volume")
         #expect(preparation.fingerprint == fingerprint)
         #expect(fingerprint.deviceModel == "Samsung T7 Shield")
-        #expect(fingerprint.mediaName == "T7 Media")
+        #expect(fingerprint.mediaName == "Samsung T7 Shield Media")
         #expect(preparation.block == nil)
         #expect(preparation.usedBytes == 90_000)
     }
