@@ -254,4 +254,232 @@ private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool
         #expect(try destination.names() == [".unrelated.ntfs-part", "a.bin"])
         #expect(queue.progress.items.filter { $0.state == .skipped }.count == 2)
     }
+
+    // MARK: A stale answer must not reach the next question
+
+    @Test func anAnswerForAnEarlierConflictIsIgnoredAndTheNewOneStaysPending() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        for name in ["a.txt", "b.txt"] {
+            try source.file(name, "new")
+            try destination.file(name, "old")
+        }
+        let queue = TransferQueue()
+        queue.enqueue(try plan(["a.txt", "b.txt"].map { source.path($0) }, into: destination.url))
+
+        #expect(await waitUntil { queue.conflict?.info.name == "a.txt" })
+        let first = try #require(queue.conflict)
+        queue.answer(ConflictDecision(choice: .skip), for: first)
+        #expect(await waitUntil { queue.conflict?.info.name == "b.txt" })
+        let second = try #require(queue.conflict)
+
+        // A late click or a held Return on the first sheet arrives now.
+        queue.answer(ConflictDecision(choice: .replace), for: first)
+        #expect(queue.conflict === second)
+        #expect(try destination.text("b.txt") == "old")
+
+        queue.answer(ConflictDecision(choice: .skip), for: second)
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(queue.conflict == nil)
+        #expect(try destination.text("a.txt") == "old")
+        #expect(try destination.text("b.txt") == "old")
+    }
+
+    @Test func anAnswerForTheCurrentConflictStillWorks() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.txt", "new")
+        try destination.file("a.txt", "old")
+        let queue = TransferQueue()
+        queue.enqueue(try plan([source.path("a.txt")], into: destination.url))
+
+        #expect(await waitUntil { queue.conflict != nil })
+        queue.answer(ConflictDecision(choice: .replace), for: try #require(queue.conflict))
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(try destination.text("a.txt") == "new")
+    }
+
+    @Test func anAnswerForAnEarlierErrorIsIgnoredAndTheNewOneStaysPending() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("bad1.bin", "xxxx")
+        try source.file("bad2.bin", "yyyy")
+        let flaky = Flaky()
+        flaky.update { $0.failReading = ["bad1.bin", "bad2.bin"] }
+        let queue = TransferQueue(access: flaky)
+        queue.options = TransferOptions(askOnError: true)
+        queue.enqueue(try plan(["bad1.bin", "bad2.bin"].map { source.path($0) }, into: destination.url))
+
+        #expect(await waitUntil { queue.errorPrompt?.info.name == "bad1.bin" })
+        let first = try #require(queue.errorPrompt)
+        queue.answerError(ErrorDecision(choice: .skip), for: first)
+        #expect(await waitUntil { queue.errorPrompt?.info.name == "bad2.bin" })
+        let second = try #require(queue.errorPrompt)
+
+        queue.answerError(ErrorDecision(choice: .stop), for: first)
+        #expect(queue.errorPrompt === second)
+        #expect(queue.phase == .running)
+
+        queue.answerError(ErrorDecision(choice: .skip), for: second)
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(queue.lastStop == .finished)
+    }
+
+    @Test func aNewPromptTellsTheOwnerSoItCanGetAttention() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.txt", "new")
+        try destination.file("a.txt", "old")
+        let queue = TransferQueue()
+        let prompts = Counter()
+        queue.onPrompt = {
+            // The request is already visible when the owner is told.
+            if queue.conflict != nil { prompts.increment() }
+        }
+        queue.enqueue(try plan([source.path("a.txt")], into: destination.url))
+
+        #expect(await waitUntil { queue.conflict != nil })
+        #expect(prompts.value == 1)
+        queue.answer(ConflictDecision(choice: .skip))
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(prompts.value == 1)
+    }
+
+    // MARK: Why the queue ended
+
+    @Test func aFinishedCopyRemembersItFinished() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.txt")
+        let queue = TransferQueue()
+        #expect(queue.lastStop == nil)
+        queue.enqueue(try plan([source.path("a.txt")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(queue.lastStop == .finished)
+    }
+
+    @Test func aCancelledCopyRemembersItWasCancelled() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.txt", "x")
+        try destination.file("a.txt", "old")
+        let queue = TransferQueue()
+        queue.enqueue(try plan([source.path("a.txt")], into: destination.url))
+
+        #expect(await waitUntil { queue.conflict != nil })
+        await queue.cancelAndWait()
+
+        #expect(queue.phase == .finished)
+        #expect(queue.lastStop == .cancelled)
+        queue.clear()
+        #expect(queue.lastStop == nil)
+    }
+
+    @Test func aCopyStoppedByTheUserRemembersThat() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("bad.bin", "xxxx")
+        let flaky = Flaky()
+        flaky.update { $0.failReading = ["bad.bin"] }
+        let queue = TransferQueue(access: flaky)
+        queue.options = TransferOptions(askOnError: true)
+        queue.enqueue(try plan([source.path("bad.bin")], into: destination.url))
+
+        #expect(await waitUntil { queue.errorPrompt != nil })
+        queue.answerError(ErrorDecision(choice: .stop))
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(queue.lastStop == .userStopped)
+    }
+
+    @Test func aHaltedCopyKnowsWhyAndAFreshCopyForgetsIt() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.bin", "aaaa")
+        try source.file("b.bin", "bbbb")
+        let flaky = Flaky()
+        flaky.update { $0.failWriting = ["b.bin": .ENOSPC] }
+        let queue = TransferQueue(access: flaky)
+        queue.enqueue(try plan(["a.bin", "b.bin"].map { source.path($0) }, into: destination.url))
+
+        #expect(await waitUntil { queue.phase == .stopped(.noSpace) })
+        #expect(queue.lastStop == .noSpace)
+
+        flaky.update { $0.failWriting = [:] }
+        queue.resume()
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(queue.lastStop == .finished)
+
+        let other = try TempFolder()
+        queue.enqueue(try plan([source.path("a.bin")], into: other.url))
+        #expect(queue.lastStop == nil)
+        #expect(await waitUntil { queue.phase == .finished })
+    }
+
+    // MARK: Updates reach the screen a few times a second
+
+    @Test func manyEventsAreCoalescedIntoFewReportsButTheEndIsAlwaysReported() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        let names = (0..<40).map { "f\($0).txt" }
+        for name in names { try source.file(name) }
+        let queue = TransferQueue()
+        queue.progressInterval = .seconds(30)
+        let reports = Counter()
+        queue.onProgress = { _ in reports.increment() }
+
+        queue.enqueue(try plan(names.map { source.path($0) }, into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+
+        // 40 files make at least 80 events; a 30 s interval lets only the edges through.
+        #expect(reports.value <= 5, "reports: \(reports.value)")
+        #expect(queue.progress.doneCount == 40)
+        #expect(queue.progress.fraction == 1)
+    }
+
+    @Test func withoutAnIntervalEveryEventIsReported() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        let names = (0..<40).map { "f\($0).txt" }
+        for name in names { try source.file(name) }
+        let queue = TransferQueue()
+        queue.progressInterval = .zero
+        let reports = Counter()
+        queue.onProgress = { _ in reports.increment() }
+
+        queue.enqueue(try plan(names.map { source.path($0) }, into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(reports.value >= 80, "reports: \(reports.value)")
+    }
+
+    @Test func aReportThatWasHeldBackStillArrivesAfterTheInterval() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.txt")
+        try source.file("b.txt")
+        let target = destination.path("b.txt").standardizedFileURL.path
+        let gate = Gate()
+        let flaky = Flaky()
+        flaky.update {
+            $0.beforeAttributes = { url in
+                if url.standardizedFileURL.path == target, !gate.hasArrived { gate.arriveAndWait() }
+            }
+        }
+        let queue = TransferQueue(access: flaky)
+        queue.progressInterval = .milliseconds(300)
+        let reports = Counter()
+        let doneInLastReport = Counter()
+        queue.onProgress = { progress in
+            reports.increment()
+            doneInLastReport.set(progress.doneCount)
+        }
+        queue.enqueue(try plan(["a.txt", "b.txt"].map { source.path($0) }, into: destination.url))
+
+        // The engine is held before b; a's events came within one interval of the first report.
+        #expect(await waitUntil { gate.hasArrived })
+        #expect(await waitUntil(timeout: .seconds(5)) { doneInLastReport.value == 1 })
+        #expect(reports.value >= 2)
+        gate.open()
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(doneInLastReport.value == 2)
+    }
 }
