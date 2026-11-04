@@ -74,6 +74,7 @@
 		A768AC60AF9DE373F1CF8141 /* ProtectedFoldersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93513823EDAF297F6530BAF /* ProtectedFoldersTests.swift */; };
 		AAE64AF671271C86BA089B34 /* TransferSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EFF31B24A5A0F070F8B0AFB /* TransferSessionTests.swift */; };
 		90558CF20C1AC4E7EBE3B268 /* TransferPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAABFAF47582F106E450922D /* TransferPage.swift */; };
+		E1359AAA4E096ACFA4B1B2C4 /* FilePaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AFB2417156D447AE1A39D4 /* FilePaneView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -179,6 +180,7 @@
 		D93513823EDAF297F6530BAF /* ProtectedFoldersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtectedFoldersTests.swift; sourceTree = "<group>"; };
 		0EFF31B24A5A0F070F8B0AFB /* TransferSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferSessionTests.swift; sourceTree = "<group>"; };
 		BAABFAF47582F106E450922D /* TransferPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferPage.swift; sourceTree = "<group>"; };
+		40AFB2417156D447AE1A39D4 /* FilePaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePaneView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -389,6 +391,7 @@
 				882ECD249DF21C05324A1586 /* TransferSession.swift */,
 				A9C0F061E55A099EBA8E3EEA /* ProtectedFolders.swift */,
 				BAABFAF47582F106E450922D /* TransferPage.swift */,
+				40AFB2417156D447AE1A39D4 /* FilePaneView.swift */,
 			);
 			path = Transfer;
 			sourceTree = "<group>";
@@ -581,6 +584,7 @@
 				C9C26388B177B4F9CB720705 /* TransferSession.swift in Sources */,
 				DDE71A44A24E391496CB39CC /* ProtectedFolders.swift in Sources */,
 				90558CF20C1AC4E7EBE3B268 /* TransferPage.swift in Sources */,
+				E1359AAA4E096ACFA4B1B2C4 /* FilePaneView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
