@@ -22,7 +22,9 @@ struct PendingTransfer: Identifiable {
     let problems: [TransferProblem]
 
     /// Not enough room is a warning, not a stop: the copy can still be started and may run until the drive fills.
-    var hasSpaceWarning: Bool { problems.contains { $0.isBlocking } }
+    var hasSpaceWarning: Bool {
+        problems.contains { if case .notEnoughSpace = $0 { true } else { false } }
+    }
     /// True when the sheet should offer "Copy anyway": the whole plan may be started despite the space warning.
     var proceedAnyway: Bool { hasSpaceWarning }
     var restOfJobs: [TransferJob] { TransferPreflight.jobs(jobs, without: problems) }
@@ -50,7 +52,7 @@ final class TransferSession {
     static let askOnErrorKey = "TransferAskOnError"
     static let preventSleepKey = "TransferPreventSleep"
 
-    let queue = TransferQueue()
+    let queue: TransferQueue
     let left: FileBrowserModel
     let right: FileBrowserModel
     var activePane: TransferPane = .left
@@ -64,15 +66,35 @@ final class TransferSession {
     var alertMessage: String?
 
     @ObservationIgnored private let notify: @MainActor (String, String) -> Void
+    @ObservationIgnored private let home: URL
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let beginActivity: @MainActor () -> NSObjectProtocol
+    @ObservationIgnored private let endActivityHandler: @MainActor (NSObjectProtocol) -> Void
     @ObservationIgnored private var activity: NSObjectProtocol?
     @ObservationIgnored private var lastBadgePercent = -1
 
-    init(notify: @escaping @MainActor (String, String) -> Void) {
-        let home = FileManager.default.homeDirectoryForCurrentUser
+    /// Everything after `notify` exists so tests can stand in for the real queue, home folder, settings and
+    /// the system's sleep assertion; the app uses the defaults.
+    init(
+        notify: @escaping @MainActor (String, String) -> Void,
+        queue: TransferQueue = TransferQueue(),
+        home: URL = FileManager.default.homeDirectoryForCurrentUser,
+        defaults: UserDefaults = .standard,
+        beginActivity: @escaping @MainActor () -> NSObjectProtocol = {
+            ProcessInfo.processInfo.beginActivity(
+                options: [.idleSystemSleepDisabled, .userInitiated], reason: "Copying files")
+        },
+        endActivity: @escaping @MainActor (NSObjectProtocol) -> Void = { ProcessInfo.processInfo.endActivity($0) }
+    ) {
+        self.queue = queue
+        self.home = home
+        self.defaults = defaults
+        self.beginActivity = beginActivity
+        endActivityHandler = endActivity
         left = FileBrowserModel(folder: home)
         right = FileBrowserModel(folder: FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? home)
         self.notify = notify
-        UserDefaults.standard.register(defaults: [Self.preventSleepKey: true])
+        defaults.register(defaults: [Self.preventSleepKey: true])
         queue.onProgress = { [weak self] progress in self?.progressChanged(progress) }
         queue.onFinish = { [weak self] summary, stop in self?.finished(summary, stop) }
     }
@@ -89,11 +111,11 @@ final class TransferSession {
     /// Delete and Rename refuse volume roots, system folders and the home folder; copying is never restricted.
     var canRename: Bool {
         let selection = activeModel.selection
-        return selection.count == 1 && !selection.contains { ProtectedFolders.isProtected($0) }
+        return selection.count == 1 && !ProtectedFolders.containsProtected(selection, home: home)
     }
     var canDelete: Bool {
         let selection = activeModel.selection
-        return !selection.isEmpty && !selection.contains { ProtectedFolders.isProtected($0) }
+        return !selection.isEmpty && !ProtectedFolders.containsProtected(selection, home: home)
     }
     var canPreview: Bool { !activeModel.selection.isEmpty }
 
@@ -141,15 +163,12 @@ final class TransferSession {
     }
 
     func start(_ jobs: [TransferJob]) {
-        let defaults = UserDefaults.standard
+        guard !jobs.isEmpty else { return }
         queue.options = TransferOptions(
             verify: defaults.bool(forKey: Self.verifyKey),
             askOnError: defaults.bool(forKey: Self.askOnErrorKey))
-        if activity == nil, defaults.bool(forKey: Self.preventSleepKey) {
-            activity = ProcessInfo.processInfo.beginActivity(
-                options: [.idleSystemSleepDisabled, .userInitiated], reason: "Copying files")
-        }
         queue.enqueue(jobs)
+        syncActivity()
     }
 
     func pasteFromPasteboard(into pane: TransferPane) {
@@ -165,6 +184,7 @@ final class TransferSession {
     // MARK: Progress and finish
 
     private func progressChanged(_ progress: TransferProgress) {
+        syncActivity()
         let percent = Int(progress.fraction * 100)
         guard percent != lastBadgePercent else { return }
         lastBadgePercent = percent
@@ -183,8 +203,19 @@ final class TransferSession {
         }
     }
 
+    /// Keeps the Mac awake exactly while the queue is busy (running or paused). A queue that is idle,
+    /// finished or stopped on a full or removed drive holds nothing; resuming makes it busy again, and the
+    /// next progress report takes the hold back.
+    private func syncActivity() {
+        if queue.isBusy {
+            if activity == nil, defaults.bool(forKey: Self.preventSleepKey) { activity = beginActivity() }
+        } else {
+            endActivity()
+        }
+    }
+
     private func endActivity() {
-        if let activity { ProcessInfo.processInfo.endActivity(activity) }
+        if let activity { endActivityHandler(activity) }
         activity = nil
     }
 

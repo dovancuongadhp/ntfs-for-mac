@@ -20,15 +20,14 @@ struct TransferTextTests {
         let summary = TransferSummary(copied: 14, failed: 0, skipped: 0, bytes: 5_000_000_000, duration: 252)
         let notice = TransferText.notice(for: summary, stop: .finished)
         #expect(notice.title == "Copy complete")
-        #expect(notice.body.contains("14"))
+        #expect(notice.body == "Files copied: 14 · \(TransferText.size(5_000_000_000)) · \(TransferText.duration(252))")
     }
 
     @Test func failuresChangeTheTitleAndMentionTheCount() {
         let summary = TransferSummary(copied: 12, failed: 2, skipped: 0, bytes: 1000, duration: 5)
         let notice = TransferText.notice(for: summary, stop: .finished)
         #expect(notice.title == "Copy finished with errors")
-        #expect(notice.body.contains("12"))
-        #expect(notice.body.contains("2"))
+        #expect(notice.body == "Files copied: 12 · Failed: 2")
     }
 
     @Test func eachStopReasonHasItsOwnTitle() {
@@ -44,7 +43,9 @@ struct TransferTextTests {
         #expect(text.contains("bad0:"))
         #expect(text.contains("bad4:"))
         #expect(!text.contains("bad5:"))
-        #expect(text.contains("3"))
+        let lines = text.split(separator: "\n").map(String.init)
+        #expect(lines.count == 6)
+        #expect(lines.last == "…and 3 more")
     }
 
     @Test func spaceProblemsMentionBothSizes() {

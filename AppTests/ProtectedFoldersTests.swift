@@ -69,4 +69,48 @@ struct ProtectedFoldersTests {
         #expect(ProtectedFolders.isProtected(resolved, home: fakeHome))
         #expect(!ProtectedFolders.isProtected(fakeHome.appending(component: "Documents"), home: resolved))
     }
+
+    @Test func volumeNamesAreMatchedWithoutCase() {
+        #expect(isProtected("/volumes/Backup"))
+        #expect(isProtected("/VOLUMES/backup"))
+        #expect(!isProtected("/volumes/Backup/Photos"))
+    }
+
+    @Test func theRulesForAHomeAreBuiltOnceAndShared() {
+        let first = ProtectedFolders.rules(for: URL(fileURLWithPath: "/Users/cache-probe"))
+        let second = ProtectedFolders.rules(for: URL(fileURLWithPath: "/Users/cache-probe/"))
+        #expect(first === second)
+        let other = ProtectedFolders.rules(for: URL(fileURLWithPath: "/Users/someone-else"))
+        #expect(other !== first)
+        #expect(other.paths.contains("/users/someone-else"))
+    }
+
+    @Test func aBigSelectionInOneFolderResolvesTheFolderOnce() {
+        var checker = ProtectedFolders.Checker(home: home)
+        for index in 0..<5_000 {
+            let protected = checker.isProtected(URL(fileURLWithPath: "/Users/tester/Documents/file-\(index).txt"))
+            #expect(!protected)
+        }
+        #expect(checker.parentLookups == 1)
+        let homeIsProtected = checker.isProtected(URL(fileURLWithPath: "/Users/tester"))
+        #expect(homeIsProtected)
+        #expect(checker.parentLookups == 2)
+    }
+
+    @Test func aSelectionIsRefusedIfAnyItemIsProtected() {
+        let ordinary = (0..<100).map { URL(fileURLWithPath: "/Users/tester/Documents/f\($0).txt") }
+        #expect(!ProtectedFolders.containsProtected(ordinary, home: home))
+        #expect(ProtectedFolders.containsProtected(ordinary + [URL(fileURLWithPath: "/Volumes/Backup")], home: home))
+        #expect(ProtectedFolders.containsProtected([URL(fileURLWithPath: "/private/etc")] + ordinary, home: home))
+    }
+
+    @Test func aVolumeReachedThroughALinkedFolderIsStillARoot() throws {
+        let sandbox = FileManager.default.temporaryDirectory.appending(component: UUID().uuidString)
+        try FileManager.default.createDirectory(at: sandbox, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: sandbox) }
+        let link = sandbox.appending(component: "volumes")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: URL(fileURLWithPath: "/Volumes"))
+        #expect(ProtectedFolders.isProtected(link.appending(component: "Backup"), home: home))
+        #expect(!ProtectedFolders.isProtected(link.appending(component: "Backup").appending(component: "Photos"), home: home))
+    }
 }
