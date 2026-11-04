@@ -78,6 +78,7 @@ final class TransferSession {
     @ObservationIgnored private let isForeground: @MainActor () -> Bool
     @ObservationIgnored private var activity: NSObjectProtocol?
     @ObservationIgnored private var lastBadgePercent = -1
+    @ObservationIgnored private var lastPaneReload = Date.distantPast
 
     /// Everything after `notify` exists so tests can stand in for the real queue, home folder, settings and
     /// the system's sleep assertion; the app uses the defaults.
@@ -356,6 +357,13 @@ final class TransferSession {
 
     private func progressChanged(_ progress: TransferProgress) {
         syncActivity()
+        if queue.isBusy, Date.now.timeIntervalSince(lastPaneReload) >= 2 {
+            lastPaneReload = .now
+            Task {
+                await left.reload()
+                await right.reload()
+            }
+        }
         let percent = Int(progress.fraction * 100)
         guard percent != lastBadgePercent else { return }
         lastBadgePercent = percent

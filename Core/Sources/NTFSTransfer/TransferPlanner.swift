@@ -16,7 +16,7 @@ public enum TransferPlanner {
     ) throws -> [TransferJob] {
         var jobs: [TransferJob] = []
         let target = folder.standardizedFileURL.path
-        for source in sources {
+        for source in distinctTopLevel(sources) {
             let attributes = try access.attributes(of: source)
             let sourcePath = source.standardizedFileURL.path
             if attributes.kind == .directory, target == sourcePath || target.hasPrefix(sourcePath + "/") {
@@ -31,6 +31,23 @@ public enum TransferPlanner {
             try add(source, attributes: attributes, destination: destination, access: access, jobs: &jobs)
         }
         return jobs
+    }
+
+    /// `sources` in order, without repeats and without items that sit inside another source,
+    /// so a pasteboard or drop listing the same thing twice copies it once.
+    static func distinctTopLevel(_ sources: [URL]) -> [URL] {
+        let paths = sources.map { $0.standardizedFileURL.path }
+        let all = Set(paths)
+        var seen: Set<String> = []
+        return zip(sources, paths).compactMap { source, path in
+            guard seen.insert(path).inserted else { return nil }
+            var parent = (path as NSString).deletingLastPathComponent
+            while parent != "/" && !parent.isEmpty {
+                if all.contains(parent) { return nil }
+                parent = (parent as NSString).deletingLastPathComponent
+            }
+            return source
+        }
     }
 
     private static func add(

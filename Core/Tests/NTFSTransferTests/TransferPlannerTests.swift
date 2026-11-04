@@ -17,6 +17,19 @@ import Testing
         #expect(jobs[1].destination == destination.path("tree/a.txt"))
     }
 
+    @Test func anItemGivenTwiceOrInsideAnotherSourceIsCopiedOnce() throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("tree/a.txt", "1")
+        try source.file("tree/sub/b.txt", "1")
+        let tree = source.path("tree")
+        let jobs = try plan(
+            [tree, URL(fileURLWithPath: tree.path + "/"), source.path("tree/sub/b.txt"), source.path("tree/sub")],
+            into: destination.url)
+        #expect(jobs.map(\.name) == ["tree", "a.txt", "sub", "b.txt"])
+        #expect(jobs.map(\.id) == [0, 1, 2, 3])
+    }
+
     @Test func aSingleFileIsOneJob() throws {
         let source = try TempFolder()
         let destination = try TempFolder()
