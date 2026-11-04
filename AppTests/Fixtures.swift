@@ -17,7 +17,7 @@ enum Fixture {
     static var usbGPT: [DiskInfo] {
         [
             DiskInfo(bsdName: "disk6", wholeBSDName: "disk6", isWhole: true, isLeaf: false, size: 512_110_190_592,
-                     content: "GUID_partition_scheme", mediaName: "T7 Media", isEjectable: true,
+                     content: "GUID_partition_scheme", mediaName: "Samsung T7 Shield Media", isEjectable: true,
                      deviceProtocol: "USB", deviceModel: "Samsung T7 Shield", registryID: 0x1_0000_0601),
             DiskInfo(bsdName: "disk6s1", wholeBSDName: "disk6", size: 209_715_200, offset: 20_480, partitionID: 1,
                      content: "C12A7328-F81F-11D2-BA4B-00A0C93EC93B", mediaName: "EFI System Partition",

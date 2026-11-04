@@ -52,7 +52,7 @@ struct SegmentedBar: View {
         }
         .frame(height: height)
         .background(Color.secondary.opacity(0.15))
-        .clipShape(.rect(cornerRadius: height / 2))
+        .clipShape(.rect(cornerRadius: 3))
     }
 }
 
@@ -62,25 +62,30 @@ struct InfoRow: Identifiable {
     let value: String
 }
 
+/// Facts about a drive. Two columns when the page is wide enough to hold them
+/// without cutting a value short, one column otherwise.
 struct InfoGrid: View {
     let rows: [InfoRow]
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 28, verticalSpacing: 9) {
-            ForEach(Array(stride(from: 0, to: rows.count, by: 2)), id: \.self) { index in
-                GridRow {
-                    cell(rows[index])
-                    if index + 1 < rows.count {
-                        cell(rows[index + 1])
-                    } else {
-                        Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+        ViewThatFits(in: .horizontal) {
+            Grid(alignment: .leading, horizontalSpacing: 32, verticalSpacing: 10) {
+                ForEach(Array(stride(from: 0, to: rows.count, by: 2)), id: \.self) { index in
+                    GridRow {
+                        cell(rows[index])
+                        if index + 1 < rows.count {
+                            cell(rows[index + 1])
+                        } else {
+                            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                        }
                     }
                 }
             }
+            VStack(spacing: 10) {
+                ForEach(rows) { cell($0) }
+            }
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background.secondary, in: .rect(cornerRadius: 12))
     }
 
     private func cell(_ row: InfoRow) -> some View {
@@ -89,7 +94,38 @@ struct InfoGrid: View {
             Spacer(minLength: 12)
             Text(row.value).textSelection(.enabled).lineLimit(1).truncationMode(.middle)
         }
-        .font(.callout)
+    }
+}
+
+/// The warnings at the top of a page. They are part of the page's form: stacked
+/// above a form, they made the column taller than the window.
+struct PageBanners: View {
+    let model: AppModel
+    var showsExtensionWarning = true
+
+    var body: some View {
+        if showsExtensionWarning, model.extensionStatus.isEnabled == false {
+            Section {
+                ExtensionDisabledBanner(model: model)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+        }
+        if let error = model.lastError {
+            Section {
+                ErrorBanner(message: error) { model.dismissError() }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+        }
+    }
+}
+
+extension View {
+    /// The same grouped-form metrics for a drive page and Settings. It fills the
+    /// detail column, so resizing the window resizes the page with it.
+    func detailColumn() -> some View {
+        formStyle(.grouped)
     }
 }
 

@@ -11,6 +11,27 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 
 ## [Unreleased]
 
+## [2.1.0] Lotus - 2026-11-04
+
+### Added
+
+- Each drive shows its type: SSD, hard drive (HDD), SD card or USB flash drive. The type appears in the sidebar icon, the page subtitle and a new **Type** row.
+- Drive names read as macOS names them, with the maker and model, such as “Lexar E6” instead of “E6”.
+- External SSDs and drives that hold an APFS volume can be ejected. NTFS for Mac unmounts the APFS volumes on the drive first, and retries for a moment if the drive is still busy.
+- Mounting an encrypted (FileVault) APFS volume asks for its password and unlocks it, instead of failing with code 49.229.
+
+### Changed
+
+- The main window follows the Disk Utility layout: a floating sidebar, and a toolbar with Mount, Unmount, Eject, Finder and Format that keeps the same height on every page.
+- Drive pages and Settings share one layout. The content fills the window, the details switch between two columns and one column as the window resizes, and the sidebar hides itself when the window gets narrow.
+- The capacity bar has less rounded corners.
+
+### Fixed
+
+- The drive header was drawn under the toolbar.
+- With the file system extension turned off, the warning banner pushed the page out of the window.
+- Ejecting a drive could fail with code 49.168 while macOS was still releasing it.
+
 ## [2.0.3] Lotus - 2026-11-04
 
 ### Fixed
@@ -99,7 +120,8 @@ First public release.
 - English and Vietnamese user interface.
 - Drag-to-install DMG, and `scripts/build-local.sh` to build an ad hoc signed copy without an Apple Developer account.
 
-[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.3...HEAD
+[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.3...v2.1.0
 [2.0.3]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.0...v2.0.1

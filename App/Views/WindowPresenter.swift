@@ -49,13 +49,21 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     private func makeMainWindow() -> NSWindow {
         let controller = NSHostingController(rootView: MainWindowView(model: model, navigation: navigation))
         controller.sceneBridgingOptions = [.toolbars, .title]
+        // The window sets the size, not the page: a long page (or a banner above
+        // it) used to make the content taller than the window and spill out of it.
+        controller.sizingOptions = []
         controller.view.appearance = NSApp.effectiveAppearance
         let window = NSWindow(contentViewController: controller)
         window.title = "NTFS for Mac"
+        // The sidebar floats beside the content and the window controls sit in it,
+        // as in Disk Utility. Every page is a Form, which keeps clear of the toolbar.
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         window.toolbarStyle = .unified
         window.isReleasedWhenClosed = false
         window.delegate = self
+        // Small enough that the sidebar folds away on a narrow window instead of
+        // the page being cut off on both sides.
+        window.contentMinSize = NSSize(width: 460, height: 400)
         window.setContentSize(NSSize(width: 980, height: 620))
         window.center()
         window.setFrameAutosaveName("MainWindow")

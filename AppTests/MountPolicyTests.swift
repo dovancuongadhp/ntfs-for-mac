@@ -130,4 +130,17 @@ struct DiskOperationErrorTests {
         #expect(!DiskOperationError(message: "other", status: 1).isBusy)
         #expect(!DiskOperationError(message: "unknown").isBusy)
     }
+
+    @Test func ejectRefusedAsBusyIsRetriedNotReported() {
+        #expect(DiskOperationError(message: "busy", status: 49168).isDeviceBusy)
+        #expect(DiskOperationError(message: "busy", status: Int32(bitPattern: 0xF8DA0002)).isDeviceBusy)
+        #expect(!DiskOperationError(message: "other", status: 1).isDeviceBusy)
+        #expect(!DiskOperationError(message: "unknown").isDeviceBusy)
+    }
+
+    @Test func unsupportedMeansFixedMediaThatCanOnlyBeUnmounted() {
+        let unsupported = DiskOperationError(message: "unsupported", status: Int32(bitPattern: 0xF8DA000C))
+        #expect(unsupported.isUnsupported && !unsupported.isBusy)
+        #expect(!DiskOperationError(message: "busy", status: Int32(bitPattern: 0xF8DA0002)).isUnsupported)
+    }
 }

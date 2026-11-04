@@ -12,6 +12,37 @@ public enum IOMedia {
         withEntry(path) { property($0, key) as? [String] }.flatMap { $0 } ?? []
     }
 
+    /// What the storage device says it is: "Solid State" or "Rotational", and the
+    /// bus it hangs off ("USB", "Secure Digital", "NVMe", "Apple Fabric"...).
+    /// Either can be missing; many USB bridges report no medium type.
+    public struct DeviceTraits: Equatable, Sendable {
+        public var mediumType: String?
+        public var interconnect: String?
+
+        public init(mediumType: String? = nil, interconnect: String? = nil) {
+            self.mediumType = mediumType
+            self.interconnect = interconnect
+        }
+    }
+
+    public static func deviceTraits(_ path: String?, bsdName: String) -> DeviceTraits {
+        if let path, let traits = withEntry(path, { deviceTraits(of: $0) }) { return traits }
+        guard let entry = media(named: bsdName) else { return DeviceTraits() }
+        defer { IOObjectRelease(entry) }
+        return deviceTraits(of: entry)
+    }
+
+    private static func deviceTraits(of entry: io_registry_entry_t) -> DeviceTraits {
+        func search(_ key: String) -> [String: Any]? {
+            IORegistryEntrySearchCFProperty(
+                entry, kIOServicePlane, key as CFString, kCFAllocatorDefault,
+                IOOptionBits(kIORegistryIterateRecursively | kIORegistryIterateParents)) as? [String: Any]
+        }
+        return DeviceTraits(
+            mediumType: search("Device Characteristics")?["Medium Type"] as? String,
+            interconnect: search("Protocol Characteristics")?["Physical Interconnect"] as? String)
+    }
+
     /// The BSD name of the nearest IOMedia above this one, e.g. the partition
     /// that stores an APFS container.
     public static func parentBSDName(_ path: String) -> String? {

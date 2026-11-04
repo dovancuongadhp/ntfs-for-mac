@@ -2,6 +2,20 @@ import Foundation
 
 /// Turns flat DiskArbitration records into physical disks with their partitions.
 enum DiskTreeBuilder {
+    /// The maker and model macOS gives the drive ("Lexar E6"). Its media name is
+    /// that with a technical " Media" tacked on by IOKit, which isn't part of the
+    /// name; the model alone ("E6") would leave out the maker.
+    static func driveName(mediaName: String?, model: String?) -> String? {
+        func clean(_ text: String?) -> String? {
+            guard var text = text?.trimmingCharacters(in: .whitespaces) else { return nil }
+            if text.hasSuffix(" Media") {
+                text = String(text.dropLast(" Media".count)).trimmingCharacters(in: .whitespaces)
+            }
+            return text.isEmpty ? nil : text
+        }
+        return clean(mediaName) ?? clean(model)
+    }
+
     static func build(_ infos: [DiskInfo]) -> [PhysicalDisk] {
         let snapshots = infos.filter { isSnapshot($0.bsdName) }
         let infos = infos.filter { !isSnapshot($0.bsdName) }.map { info in
@@ -90,10 +104,9 @@ enum DiskTreeBuilder {
     }
 
     private static func disk(_ whole: DiskInfo, scheme: PartitionScheme, partitions: [Partition]) -> PhysicalDisk {
-        let model = whole.deviceModel.flatMap { $0.isEmpty ? nil : $0 }
         return PhysicalDisk(
             bsdName: whole.bsdName,
-            name: model ?? whole.mediaName ?? whole.bsdName,
+            name: driveName(mediaName: whole.mediaName, model: whole.deviceModel) ?? whole.bsdName,
             size: whole.size,
             scheme: scheme,
             isInternal: whole.isInternal,
@@ -101,6 +114,8 @@ enum DiskTreeBuilder {
             isEjectable: whole.isEjectable,
             isWritable: whole.isWritable,
             connection: whole.deviceProtocol,
+            kind: DriveKind.classify(
+                mediumType: whole.mediumType, interconnect: whole.interconnect, isRemovable: whole.isRemovable),
             blockSize: whole.blockSize,
             partitions: partitions
         )

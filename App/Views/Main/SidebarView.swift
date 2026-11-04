@@ -62,7 +62,7 @@ private struct DiskSidebarRow: View {
 
     var body: some View {
         HStack {
-            Label(disk.name, systemImage: disk.isInternal ? "internaldrive" : "externaldrive")
+            Label(disk.name, systemImage: disk.kind.symbol ?? (disk.isInternal ? "internaldrive" : "externaldrive"))
                 .lineLimit(1)
             Spacer()
             if model.busy.contains(disk.bsdName) || model.formatting.contains(disk.bsdName) {

@@ -85,8 +85,18 @@ final class AppModel {
 
     func eject(_ disk: NTFSDisk) {
         guard let physical = inventory.partition(named: disk.bsdName)?.disk, !isProtected(physical) else { return }
+        let containers = Self.apfsContainers(on: physical)
         perform(on: disk.bsdName, name: disk.name) { [mounter] in
-            try await mounter.eject(bsdName: disk.bsdName)
+            try await mounter.eject(bsdName: disk.bsdName, apfsContainers: containers)
+        }
+    }
+
+    /// The synthesized disks holding the APFS volumes stored on this physical disk.
+    nonisolated static func apfsContainers(on disk: PhysicalDisk) -> [String] {
+        var seen: Set<String> = []
+        return disk.partitions.compactMap { partition in
+            guard partition.apfsStore != nil, seen.insert(partition.wholeBSDName).inserted else { return nil }
+            return partition.wholeBSDName
         }
     }
 
@@ -109,7 +119,14 @@ final class AppModel {
         }
         handled.insert(partition.bsdName)
         perform(on: partition.bsdName, name: partition.name) { [mounter] in
-            try await mounter.mountDefault(bsdName: partition.bsdName)
+            // A locked encrypted volume (every one after an eject) can't be mounted
+            // without its password.
+            if await mounter.isLockedVolume(bsdName: partition.bsdName) {
+                guard let passphrase = VolumePasswordPrompt.ask(volumeName: partition.name) else { return }
+                try await mounter.unlockVolume(bsdName: partition.bsdName, passphrase: passphrase)
+            } else {
+                try await mounter.mountDefault(bsdName: partition.bsdName)
+            }
         }
     }
 
@@ -123,8 +140,9 @@ final class AppModel {
 
     func eject(_ disk: PhysicalDisk) {
         guard !isProtected(disk) else { return }
+        let containers = Self.apfsContainers(on: disk)
         perform(on: disk.bsdName, name: disk.name) { [mounter] in
-            try await mounter.eject(bsdName: disk.bsdName)
+            try await mounter.eject(bsdName: disk.bsdName, apfsContainers: containers)
         }
     }
 

@@ -16,6 +16,14 @@ struct DiskTreeBuilderTests {
         #expect(disk.partitions[0].name == "EFI" && disk.partitions[0].isHidden)
     }
 
+    @Test func driveNameKeepsTheMakerAndDropsTheMediaSuffix() {
+        #expect(DiskTreeBuilder.driveName(mediaName: "Lexar E6 Media", model: "E6") == "Lexar E6")
+        #expect(DiskTreeBuilder.driveName(mediaName: "USB SanDisk 3.2Gen1 Media", model: " SanDisk 3.2Gen1") == "USB SanDisk 3.2Gen1")
+        #expect(DiskTreeBuilder.driveName(mediaName: nil, model: "E6") == "E6")
+        #expect(DiskTreeBuilder.driveName(mediaName: "Mediabox", model: nil) == "Mediabox")
+        #expect(DiskTreeBuilder.driveName(mediaName: nil, model: nil) == nil)
+    }
+
     @Test func onlyNTFSPartitionsBecomeNTFSDisks() throws {
         let disk = try #require(DiskTreeBuilder.build(Fixture.usbGPT).first)
         #expect(disk.partitions[1].ntfsDisk == nil)
@@ -61,6 +69,14 @@ struct DiskTreeBuilderTests {
         #expect(disk.mapPartitions.count == 1)
         #expect(store.bsdName == "disk8s1" && store.isAPFSStore && store.isHidden)
         #expect(store.name == "Photos, Projects")
+    }
+
+    @Test func ejectingUnmountsTheAPFSContainerThatLivesOnTheDisk() throws {
+        let disk = try #require(DiskTreeBuilder.build(Fixture.usbAPFS).first)
+        #expect(AppModel.apfsContainers(on: disk).count == 1)
+        #expect(AppModel.apfsContainers(on: disk) != [disk.bsdName])
+        let plain = try #require(DiskTreeBuilder.build(Fixture.usbGPT).first)
+        #expect(AppModel.apfsContainers(on: plain).isEmpty)
     }
 
     @Test func storeOfOnlyHiddenVolumesKeepsItsOwnName() throws {
@@ -139,5 +155,28 @@ struct DiskTreeBuilderTests {
         two[1].wholeBSDName = "disk10"
         let tree = DiskTreeBuilder.build(two + Fixture.usbGPT)
         #expect(tree.map(\.bsdName) == ["disk6", "disk10"])
+    }
+}
+
+struct DriveKindTests {
+    @Test func mediumTypeDecidesSSDAndHDD() {
+        #expect(DriveKind.classify(mediumType: "Solid State", interconnect: "USB", isRemovable: false) == .ssd)
+        #expect(DriveKind.classify(mediumType: "Solid State", interconnect: "Apple Fabric", isRemovable: false) == .ssd)
+        #expect(DriveKind.classify(mediumType: "Rotational", interconnect: "USB", isRemovable: false) == .hdd)
+    }
+
+    @Test func secureDigitalIsAnSDCardEvenWithoutAMediumType() {
+        #expect(DriveKind.classify(mediumType: nil, interconnect: "Secure Digital", isRemovable: true) == .sdCard)
+        #expect(DriveKind.classify(mediumType: "Solid State", interconnect: "Secure Digital", isRemovable: true) == .sdCard)
+    }
+
+    @Test func removableUSBWithNoMediumTypeIsAFlashDrive() {
+        #expect(DriveKind.classify(mediumType: nil, interconnect: "USB", isRemovable: true) == .usbFlash)
+    }
+
+    @Test func anEnclosureThatReportsNothingIsNotGuessed() {
+        #expect(DriveKind.classify(mediumType: nil, interconnect: "USB", isRemovable: false) == .unknown)
+        #expect(DriveKind.classify(mediumType: nil, interconnect: nil, isRemovable: false) == .unknown)
+        #expect(DriveKind.unknown.label == nil)
     }
 }
