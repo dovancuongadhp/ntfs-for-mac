@@ -18,6 +18,8 @@ extension FormatToolError {
         case .badPartitionTable: String(localized: "The drive's partition table looks different than expected, so NTFS for Mac stopped.")
         case .ioError: String(localized: "The drive couldn't be read or written.")
         case .mkntfsFailed: String(localized: "Creating the NTFS file system failed. The partition may not be usable; format it again.")
+        case .authorizationCancelled: String(localized: "Formatting was cancelled. Nothing was erased.")
+        case .notAuthorized: String(localized: "macOS blocked access to this drive. In System Settings → Privacy & Security → Files & Folders, allow NTFS for Mac to access removable volumes, then try again.")
         }
     }
 
@@ -38,6 +40,8 @@ extension FormatToolError {
         case .badPartitionTable: String(localized: "the partition table looks different than expected")
         case .ioError: String(localized: "the drive couldn't be read or written")
         case .mkntfsFailed: String(localized: "creating the NTFS file system failed")
+        case .authorizationCancelled: String(localized: "the administrator prompt was cancelled")
+        case .notAuthorized: String(localized: "macOS blocked access to the drive")
         }
     }
 }

@@ -15,6 +15,10 @@ public enum FormatToolError: Int32, Error, CaseIterable, Sendable {
     case badPartitionTable
     case ioError
     case mkntfsFailed
+    /// The administrator prompt was dismissed.
+    case authorizationCancelled
+    /// macOS refused the disk (removable-volume access).
+    case notAuthorized
 
     public var exitCode: Int32 { rawValue }
 }

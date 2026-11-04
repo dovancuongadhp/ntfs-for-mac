@@ -130,7 +130,7 @@ và trạng thái NTFS; chọn một ổ để xem model, kiểu kết nối, b�
 | --- | --- |
 | Định dạng | NTFS, exFAT, FAT32, APFS |
 | Bảng phân vùng (chỉ khi xoá cả ổ) | GUID (GPT) hoặc Master Boot Record (MBR) |
-| Tùy chọn NTFS | Kích thước cluster; **Định dạng nhanh** (tắt đi để ghi số 0 lên toàn bộ phân vùng, mất nhiều thời gian hơn) |
+| Tùy chọn NTFS | Kích thước cụm (Tự động phù hợp với hầu hết ổ; cụm lớn hơn lãng phí chỗ khi có nhiều tệp nhỏ); **Định dạng nhanh** (tắt đi để ghi số 0 lên toàn bộ phân vùng, mất nhiều thời gian hơn) |
 
 Việc định dạng được thiết kế để không bao giờ xoá nhầm:
 
@@ -140,7 +140,7 @@ Việc định dạng được thiết kế để không bao giờ xoá nhầm:
 - **Ổ trong máy, ổ chứa macOS đang chạy và ổ chứa NTFS for Mac được bảo vệ.** Các ổ này vẫn hiển thị nhưng không
   thể tháo, đẩy ra hay định dạng. Ảnh đĩa cũng không thể định dạng.
 - Định dạng NTFS chạy một công cụ nhỏ với quyền quản trị viên, bạn cấp trong hộp thoại mật khẩu chuẩn của macOS.
-  NTFS for Mac không bao giờ thấy mật khẩu của bạn.
+  NTFS for Mac không bao giờ thấy mật khẩu của bạn. Lần đầu, macOS cũng có thể hỏi quyền truy cập ổ rời.
 - Xoá **toàn bộ ổ** thành NTFS gồm hai bước: macOS xoá ổ thành exFAT trước, rồi hỏi mật khẩu để chuyển phân vùng
   sang NTFS. Nếu bạn hủy hộp thoại đó, ổ vẫn là exFAT.
 - Khi định dạng một phân vùng Mac (APFS hoặc Mac OS Extended) thành NTFS, loại phân vùng cũng được đổi để Windows
@@ -260,7 +260,7 @@ log show --last 10m --predicate 'subsystem BEGINSWITH "com.docuong.ntfsformac"'
 ```
 NTFS for Mac.app
 ├── Contents/MacOS/NTFS for Mac                ← ứng dụng thanh menu và quản lý ổ (SwiftUI)
-├── Contents/Helpers/ntfs-format, ntfs-mkfs    ← công cụ định dạng NTFS, chạy với quyền quản trị viên
+├── Contents/Helpers/ntfs-format, ntfs-mkfs, libNTFSDiskOpen.dylib    ← công cụ định dạng NTFS
 └── Contents/Extensions/NTFSExtension.appex    ← tiện ích hệ thống tệp FSKit
         └── NTFSCore → libntfs-3g              ← lõi đọc ghi NTFS
 ```
@@ -270,7 +270,8 @@ NTFS for Mac.app
 - **Tiện ích FSKit** (`ntfsrw`) chạy ở chế độ người dùng, chuyển các thao tác của Finder thành lời gọi tới
   libntfs-3g để đọc ghi trực tiếp cấu trúc NTFS trên thiết bị.
 - **Định dạng** dùng `diskutil` cho exFAT, FAT32, APFS và bảng phân vùng. Với NTFS, công cụ `ntfs-format` kiểm tra
-  lại phân vùng, chặn không cho phân vùng bị gắn trong lúc làm việc rồi chạy `mkntfs` của ntfs-3g.
+  lại phân vùng, chặn không cho phân vùng bị gắn trong lúc làm việc, rồi mở ổ rời thông qua macOS trước khi chạy
+  `mkntfs` của ntfs-3g. macOS từ chối mở trực tiếp ổ đó, kể cả với quản trị viên.
 
 ## Tự build từ mã nguồn
 

@@ -72,9 +72,9 @@ struct FormatSheet: View {
         if fileSystem == .ntfs {
             Group {
                 if preparation.target.isDisk {
-                    Text("You'll be asked for an administrator password to finish formatting as NTFS. If you cancel it, the drive stays exFAT.")
+                    Text("You'll be asked for an administrator password to finish formatting as NTFS. If you cancel it, the drive stays exFAT. The first time, allow access to removable volumes.")
                 } else {
-                    Text("You'll be asked for an administrator password.")
+                    Text("You'll be asked for an administrator password. The first time, allow access to removable volumes.")
                 }
             }
             .font(.caption)
@@ -113,7 +113,7 @@ struct FormatSheet: View {
         .disabled(phase != .editing)
 
         if fileSystem == .ntfs {
-            DisclosureGroup("Advanced", isExpanded: $showsAdvanced) {
+            DisclosureGroup(isExpanded: $showsAdvanced) {
                 VStack(alignment: .leading, spacing: 8) {
                     Picker("Cluster size", selection: $clusterSize) {
                         Text("Automatic").tag(0)
@@ -121,14 +121,24 @@ struct FormatSheet: View {
                             Text(Int64(size).formatted(.byteCount(style: .memory))).tag(size)
                         }
                     }
+                    Text("Leave this on Automatic. A larger size wastes space when a drive holds many small files.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                     Toggle("Quick format", isOn: $quick)
-                    if !quick {
-                        Text("A full format writes zeros over the whole partition and can take a long time.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text("Quick format only creates the file system. Turn it off to overwrite the whole partition with zeros, which takes a long time.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.top, 6)
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Cluster size and quick format")
+                    Text("The defaults are fine for almost every drive.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .disabled(phase != .editing)
         }

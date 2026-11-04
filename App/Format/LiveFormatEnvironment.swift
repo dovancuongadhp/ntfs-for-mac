@@ -31,15 +31,24 @@ struct LiveFormatEnvironment: FormatEnvironment {
     }
 
     func runNTFSFormat(_ request: FormatRequest) async throws {
+        // Not osascript. A root shell still cannot open a removable disk; ntfs-format
+        // asks authopen, which shows the password dialog and is allowed to.
         let helper = Bundle.main.bundleURL.appending(path: "Contents/Helpers/ntfs-format").path
-        let command = ([helper] + request.arguments).map(MountController.shellQuoted).joined(separator: " ") + " 2>&1"
-        let prompt = String(localized: "NTFS for Mac needs administrator rights to format “\(request.label)” as NTFS.")
-        let script = "do shell script \(MountController.appleScriptQuoted(command))"
-            + " with prompt \(MountController.appleScriptQuoted(prompt)) with administrator privileges"
-        // osascript, not NSAppleScript: a full format can take hours and must not block the main thread.
-        let result = try await CommandLineTool.run("/usr/bin/osascript", ["-e", script])
+        let result = try await CommandLineTool.run(helper, request.arguments)
         appLog.notice("ntfs-format \(request.device, privacy: .public): \(result.status) \(result.output, privacy: .public)")
-        guard result.status == 0 else { throw PrivilegedOutput.error(fromOsascript: result.output) }
+        guard result.status == 0 else { throw Self.formatError(result) }
+    }
+
+    private static func formatError(_ result: CommandResult) -> FormatError {
+        guard let tool = FormatToolError(rawValue: result.status) else {
+            return .failed(result.lastLine)
+        }
+        if tool == .authorizationCancelled { return .cancelled }
+        if tool == .mkntfsFailed {
+            let detail = result.lastLine.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !detail.isEmpty { return .failed(detail) }
+        }
+        return .tool(tool)
     }
 
     func pause(_ duration: Duration) async {

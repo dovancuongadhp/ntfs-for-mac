@@ -186,7 +186,47 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kích thước cluster"
+            "value" : "Kích thước cụm"
+          }
+        }
+      }
+    },
+    "Cluster size and quick format" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kích thước cụm và định dạng nhanh"
+          }
+        }
+      }
+    },
+    "Leave this on Automatic. A larger size wastes space when a drive holds many small files." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy để Tự động. Cụm lớn hơn sẽ lãng phí chỗ khi ổ chứa nhiều tệp nhỏ."
+          }
+        }
+      }
+    },
+    "Quick format only creates the file system. Turn it off to overwrite the whole partition with zeros, which takes a long time." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Định dạng nhanh chỉ tạo hệ thống tệp. Tắt để ghi số 0 lên toàn bộ phân vùng, việc này mất nhiều thời gian."
+          }
+        }
+      }
+    },
+    "The defaults are fine for almost every drive." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mặc định phù hợp với hầu hết mọi ổ."
           }
         }
       }
@@ -1724,22 +1764,42 @@
         }
       }
     },
-    "You'll be asked for an administrator password to finish formatting as NTFS. If you cancel it, the drive stays exFAT." : {
+    "You'll be asked for an administrator password to finish formatting as NTFS. If you cancel it, the drive stays exFAT. The first time, allow access to removable volumes." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bạn sẽ được yêu cầu nhập mật khẩu quản trị viên để hoàn tất định dạng NTFS. Nếu bạn hủy, ổ vẫn giữ định dạng exFAT."
+            "value" : "Bạn sẽ được yêu cầu nhập mật khẩu quản trị viên để hoàn tất định dạng NTFS. Nếu bạn hủy, ổ vẫn giữ định dạng exFAT. Lần đầu, hãy cho phép truy cập ổ rời."
           }
         }
       }
     },
-    "You'll be asked for an administrator password." : {
+    "You'll be asked for an administrator password. The first time, allow access to removable volumes." : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bạn sẽ được yêu cầu nhập mật khẩu quản trị viên."
+            "value" : "Bạn sẽ được yêu cầu nhập mật khẩu quản trị viên. Lần đầu, hãy cho phép truy cập ổ rời."
+          }
+        }
+      }
+    },
+    "macOS blocked access to this drive. In System Settings → Privacy & Security → Files & Folders, allow NTFS for Mac to access removable volumes, then try again." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS đã chặn truy cập ổ này. Trong Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Tệp và thư mục, hãy cho phép NTFS for Mac truy cập ổ rời, rồi thử lại."
+          }
+        }
+      }
+    },
+    "macOS blocked access to the drive" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS đã chặn truy cập ổ"
           }
         }
       }
