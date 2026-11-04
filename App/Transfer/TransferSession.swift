@@ -322,6 +322,18 @@ final class TransferSession {
         copy(urls, into: model(for: pane).folder, duplicate: true)
     }
 
+    /// Puts the selected items on the clipboard, so they can be pasted in a pane or in Finder.
+    func copyToPasteboard(from pane: TransferPane) {
+        let urls = model(for: pane).selectedEntries.map { $0.url as NSURL }
+        guard !urls.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.writeObjects(urls)
+    }
+
+    var pasteboardHasFiles: Bool {
+        NSPasteboard.general.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true])
+    }
+
     func copyProviders(for pane: TransferPane) -> [NSItemProvider] {
         model(for: pane).selectedEntries.map { NSItemProvider(object: $0.url as NSURL) }
     }

@@ -2604,6 +2604,16 @@
         }
       }
     },
+    "Paste Here" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dán vào đây"
+          }
+        }
+      }
+    },
     "Can't copy everything" : {
       "localizations" : {
         "vi" : {

@@ -125,7 +125,10 @@ struct FilePaneView: View {
         .onChange(of: model.selection) { _, selection in
             if !selection.isEmpty { session.activePane = pane }
         }
-        .onCopyCommand { session.copyProviders(for: pane) }
+        .onCopyCommand {
+            session.copyToPasteboard(from: pane)
+            return session.copyProviders(for: pane)
+        }
         .onPasteCommand(of: [.fileURL]) { _ in session.pasteFromPasteboard(into: pane) }
         .onDeleteCommand {
             session.activePane = pane
@@ -152,6 +155,10 @@ struct FilePaneView: View {
         let protected = urls.contains { ProtectedFolders.isProtected($0) }
         if !urls.isEmpty {
             Button("Open") { open(Array(urls), in: session.model(for: pane)) }
+            Button("Copy") {
+                focus(urls)
+                session.copyToPasteboard(from: pane)
+            }
             Button("Copy to the Other Side") {
                 focus(urls)
                 session.copyActiveToOther()
@@ -177,6 +184,11 @@ struct FilePaneView: View {
                 session.revealInFinder()
             }
         }
+        Button("Paste Here") {
+            session.activePane = pane
+            session.pasteFromPasteboard(into: pane)
+        }
+        .disabled(!session.pasteboardHasFiles)
         Button("New Folder") {
             session.activePane = pane
             session.beginNewFolder()
