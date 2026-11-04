@@ -45,14 +45,28 @@ enum DiskInfoReader {
             deviceProtocol: deviceProtocol,
             deviceModel: (description[kDADiskDescriptionDeviceModelKey as String] as? String)?
                 .trimmingCharacters(in: .whitespaces),
-            physicalStore: isContainer ? mediaPath.flatMap(IOMedia.parentBSDName) : nil,
-            physicalStores: isContainer ? mediaPath.map(IOMedia.ancestorBSDNames) ?? [] : [],
+            physicalStore: isContainer ? containerParent(bsdName, path: mediaPath) : nil,
+            physicalStores: isContainer ? containerAncestors(bsdName, path: mediaPath) : [],
             registryID: registryID(of: disk),
             apfsRoles: roles,
             hasTimeMachineBackup: mount.map {
                 FileManager.default.fileExists(atPath: $0.path.appending(path: "Backups.backupdb").path)
             } ?? false
         )
+    }
+
+    /// The registry path fails when a node name contains a space, so fall back to the BSD name.
+    private static func containerParent(_ bsdName: String, path: String?) -> String? {
+        if let path, let name = IOMedia.parentBSDName(path) { return name }
+        return IOMedia.parentBSDName(bsdName: bsdName)
+    }
+
+    private static func containerAncestors(_ bsdName: String, path: String?) -> [String] {
+        if let path {
+            let names = IOMedia.ancestorBSDNames(path)
+            if !names.isEmpty { return names }
+        }
+        return IOMedia.ancestorBSDNames(bsdName: bsdName)
     }
 
     static func mountInfo(_ path: URL) -> NTFSDisk.Mount? {
