@@ -96,6 +96,16 @@ import Testing
         #expect(places.contains { $0.url.standardizedFileURL == FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL })
         #expect(places.contains { $0.symbol.hasSuffix("drive") })
     }
+
+    @Test func listsTheStartupDiskAndBrowsableDrivesUnderVolumes() {
+        #expect(Locations.isListedVolume(path: "/", browsable: true))
+        #expect(Locations.isListedVolume(path: "/Volumes/USB_CUONG", browsable: true))
+        #expect(Locations.isListedVolume(path: "/Volumes/Stick", browsable: nil))
+        #expect(!Locations.isListedVolume(path: "/Volumes/Recovery", browsable: false))
+        #expect(!Locations.isListedVolume(path: "/System/Volumes/VM", browsable: true))
+        #expect(!Locations.isListedVolume(path: "/Users/me/Library/Developer/CoreDevice/DeviceFS", browsable: true))
+        #expect(!Locations.isListedVolume(path: "/Volumes/A/B", browsable: true))
+    }
 }
 
 @Suite struct FileOperationsTests {

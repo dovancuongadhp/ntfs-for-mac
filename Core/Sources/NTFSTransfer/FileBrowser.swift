@@ -191,14 +191,24 @@ public enum Locations {
                 places.append(FileLocation(name: fileManager.displayName(atPath: url.path), url: url, symbol: symbol))
             }
         }
-        let keys: [URLResourceKey] = [.volumeNameKey, .volumeIsInternalKey]
-        for url in fileManager.mountedVolumeURLs(includingResourceValuesForKeys: keys, options: [.skipHiddenVolumes]) ?? [] {
+        // `.skipHiddenVolumes` also drops FSKit mounts (the NTFS driver), so filter by hand.
+        let keys: [URLResourceKey] = [.volumeNameKey, .volumeIsInternalKey, .volumeIsBrowsableKey]
+        for url in fileManager.mountedVolumeURLs(includingResourceValuesForKeys: keys, options: []) ?? [] {
             let values = try? url.resourceValues(forKeys: Set(keys))
+            guard isListedVolume(path: url.standardizedFileURL.path, browsable: values?.volumeIsBrowsable) else { continue }
             let name = values?.volumeName ?? url.lastPathComponent
             let symbol = values?.volumeIsInternal == false ? "externaldrive" : "internaldrive"
             places.append(FileLocation(name: name, url: url, symbol: symbol))
         }
         return places
+    }
+
+    /// The startup disk, or a drive mounted directly in /Volumes that is not flagged hidden.
+    public static func isListedVolume(path: String, browsable: Bool?) -> Bool {
+        if path == "/" { return true }
+        guard browsable != false else { return false }
+        let url = URL(fileURLWithPath: path)
+        return url.deletingLastPathComponent().path == "/Volumes" && !url.lastPathComponent.isEmpty
     }
 
     /// The place whose path is the longest prefix of `url`, matching whole path components.
