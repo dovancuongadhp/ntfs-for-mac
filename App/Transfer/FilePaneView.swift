@@ -76,11 +76,16 @@ struct FilePaneView: View {
         return Menu {
             ForEach(session.locations) { location in
                 Button { model.open(location.url) } label: {
-                    Label(location.name, systemImage: location.symbol)
+                    Label { Text(location.name) } icon: { Image(nsImage: FileIcons.icon(for: location.url)) }
+                        .labelStyle(.titleAndIcon)
                 }
             }
         } label: {
-            Label(current?.name ?? model.folder.lastPathComponent, systemImage: current?.symbol ?? "folder")
+            Label {
+                Text(current?.name ?? model.folder.lastPathComponent)
+            } icon: {
+                Image(nsImage: FileIcons.icon(for: current?.url ?? model.folder))
+            }
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -90,29 +95,36 @@ struct FilePaneView: View {
 
     private func table(model: FileBrowserModel) -> some View {
         @Bindable var model = model
+        let up = model.parentURL.map {
+            FileEntry(url: $0, name: "..", isFolder: true, size: 0, modified: .distantPast, isHidden: false)
+        }
+        let rows = (up.map { [$0] } ?? []) + model.entries
         return Table(of: FileEntry.self, selection: $model.selection, sortOrder: $sortOrder) {
             TableColumn("Name", value: \.name) { entry in
                 Label {
                     Text(entry.name).lineLimit(1)
                 } icon: {
-                    Image(systemName: entry.isFolder ? "folder.fill" : "doc")
-                        .foregroundStyle(entry.isFolder ? Color.accentColor : Color.secondary)
+                    if entry == up {
+                        Image(systemName: "arrow.turn.left.up").foregroundStyle(.secondary)
+                    } else {
+                        Image(nsImage: FileIcons.icon(for: entry.url))
+                    }
                 }
             }
             TableColumn("Size", value: \.size) { entry in
-                Text(entry.isFolder ? "—" : TransferText.size(entry.size))
+                Text(entry == up ? "" : entry.isFolder ? "—" : TransferText.size(entry.size))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
             .width(min: 60, ideal: 80, max: 110)
             TableColumn("Date Modified", value: \.modified) { entry in
-                Text(entry.modified.formatted(date: .abbreviated, time: .shortened))
+                Text(entry == up ? "" : entry.modified.formatted(date: .abbreviated, time: .shortened))
                     .foregroundStyle(.secondary)
             }
             .width(min: 100, ideal: 140, max: 190)
         } rows: {
-            ForEach(model.entries) { entry in
-                TableRow(entry).itemProvider { NSItemProvider(object: entry.url as NSURL) }
+            ForEach(rows) { entry in
+                TableRow(entry).itemProvider { entry == up ? nil : NSItemProvider(object: entry.url as NSURL) }
             }
         }
         .contextMenu(forSelectionType: URL.self) { urls in
@@ -137,6 +149,25 @@ struct FilePaneView: View {
             session.activePane = pane
             session.requestDelete()
         }
+        .onKeyPress(keys: [.delete, .deleteForward], phases: .down) { press in
+            let modifiers = press.modifiers.subtracting(.numericPad)
+            if modifiers == .shift || modifiers == [.option, .command] {
+                session.activePane = pane
+                session.requestPermanentDelete()
+                return .handled
+            }
+            if modifiers == .command {
+                session.activePane = pane
+                session.requestDelete()
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.return) {
+            guard model.selection.count == 1 else { return .ignored }
+            open(model.selection, in: model)
+            return .handled
+        }
         .onKeyPress(.space) {
             session.activePane = pane
             session.preview()
@@ -154,7 +185,9 @@ struct FilePaneView: View {
     }
 
     @ViewBuilder
-    private func menu(for urls: Set<URL>) -> some View {
+    private func menu(for clicked: Set<URL>) -> some View {
+        let parent = session.model(for: pane).parentURL
+        let urls = clicked.filter { $0 != parent }
         let protected = urls.contains { ProtectedFolders.isProtected($0) }
         if !urls.isEmpty {
             Button("Open") { open(Array(urls), in: session.model(for: pane)) }
@@ -181,6 +214,13 @@ struct FilePaneView: View {
                 focus(urls)
                 session.requestDelete()
             }
+            .keyboardShortcut(.delete, modifiers: .command)
+            .disabled(protected)
+            Button("Delete Immediately…") {
+                focus(urls)
+                session.requestPermanentDelete()
+            }
+            .keyboardShortcut(.delete, modifiers: [.option, .command])
             .disabled(protected)
             Button("Show in Finder") {
                 focus(urls)
@@ -227,18 +267,22 @@ struct FilePaneView: View {
     }
 
     private func open(_ urls: some Collection<URL>, in model: FileBrowserModel) {
+        if urls.count == 1, let url = urls.first, url == model.parentURL {
+            model.goUp()
+            return
+        }
         if urls.count == 1, let url = urls.first, let entry = model.entries.first(where: { $0.url == url }), entry.isFolder {
             model.open(url)
             return
         }
-        for url in urls { NSWorkspace.shared.open(url) }
+        for url in urls where url != model.parentURL { NSWorkspace.shared.open(url) }
     }
 
     // MARK: Footer
 
     private func footer(_ model: FileBrowserModel) -> some View {
         HStack {
-            if model.selection.isEmpty {
+            if model.actionableSelection.isEmpty {
                 if let free = model.freeBytes {
                     Text("Items: \(model.entries.count) · \(TransferText.size(free)) free")
                 } else {
@@ -246,7 +290,7 @@ struct FilePaneView: View {
                 }
             } else {
                 let size = model.selectedEntries.reduce(Int64(0)) { $0 + ($1.isFolder ? 0 : $1.size) }
-                Text("Selected: \(model.selection.count) · \(TransferText.size(size))")
+                Text("Selected: \(model.actionableSelection.count) · \(TransferText.size(size))")
             }
             Spacer()
         }
@@ -254,6 +298,22 @@ struct FilePaneView: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
+    }
+}
+
+/// Finder's icon for a file, folder or drive, at list size. Kept per path: rows are redrawn often, and asking
+/// the system each time adds up in big folders.
+@MainActor
+private enum FileIcons {
+    private static let cache = NSCache<NSString, NSImage>()
+
+    static func icon(for url: URL) -> NSImage {
+        let key = url.path as NSString
+        if let icon = cache.object(forKey: key) { return icon }
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        icon.size = NSSize(width: 16, height: 16)
+        cache.setObject(icon, forKey: key)
+        return icon
     }
 }
 

@@ -115,11 +115,26 @@ struct TransferTextTests {
     }
 
     @Test func theDeleteWarningNamesOneItemAndCountsSeveral() {
-        let one = TransferText.deleteMessage(for: [URL(fileURLWithPath: "/Volumes/Stick/Report.docx")])
+        let one = TransferText.deleteMessage(
+            for: DeleteRequest(urls: [URL(fileURLWithPath: "/Volumes/Stick/Report.docx")], reason: .noTrash))
         #expect(one.contains("Report.docx"))
-        let many = TransferText.deleteMessage(for: (0..<7).map { URL(fileURLWithPath: "/Volumes/Stick/file\($0).txt") })
+        let many = TransferText.deleteMessage(
+            for: DeleteRequest(urls: (0..<7).map { URL(fileURLWithPath: "/Volumes/Stick/file\($0).txt") }, reason: .noTrash))
         #expect(many.contains("7"))
         #expect(many.contains("file0.txt"))
         #expect(many.contains("Trash"))
+    }
+
+    @Test func deletingOnPurposeWarnsItCantBeUndone() {
+        let one = TransferText.deleteMessage(
+            for: DeleteRequest(urls: [URL(fileURLWithPath: "/Users/me/Report.docx")], reason: .chosen))
+        #expect(one.contains("Report.docx"))
+        #expect(one.contains("undo"))
+        #expect(!one.contains("Trash"))
+        let many = TransferText.deleteMessage(
+            for: DeleteRequest(urls: (0..<5).map { URL(fileURLWithPath: "/Users/me/file\($0).txt") }, reason: .chosen))
+        #expect(many.contains("5"))
+        #expect(many.contains("file0.txt"))
+        #expect(many.contains("undo"))
     }
 }

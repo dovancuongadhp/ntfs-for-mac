@@ -105,6 +105,15 @@ public final class FileBrowserModel {
     public var canGoUp: Bool { folder.standardizedFileURL.path != "/" }
     public var selectedEntries: [FileEntry] { entries.filter { selection.contains($0.url) } }
 
+    /// Where the ".." row at the top of the list leads; nil at the root.
+    public var parentURL: URL? { canGoUp ? folder.standardizedFileURL.deletingLastPathComponent() : nil }
+
+    /// The selection without the ".." row, which is a way up and never an item to copy, rename or delete.
+    public var actionableSelection: Set<URL> {
+        guard let parentURL else { return selection }
+        return selection.filter { $0.standardizedFileURL.path != parentURL.path }
+    }
+
     public func open(_ url: URL) {
         guard url.standardizedFileURL != folder.standardizedFileURL else { return }
         back.append(folder)

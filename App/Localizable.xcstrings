@@ -2314,6 +2314,36 @@
         }
       }
     },
+    "“%@” will be deleted immediately. You can't undo this action." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” sẽ bị xóa ngay lập tức. Bạn không thể hoàn tác thao tác này."
+          }
+        }
+      }
+    },
+    "%lld items will be deleted immediately. You can't undo this action." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld mục sẽ bị xóa ngay lập tức. Bạn không thể hoàn tác thao tác này."
+          }
+        }
+      }
+    },
+    "Delete Immediately…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa ngay…"
+          }
+        }
+      }
+    },
     "A folder can't be copied into itself." : {
       "localizations" : {
         "vi" : {

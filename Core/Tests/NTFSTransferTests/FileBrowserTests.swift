@@ -58,6 +58,21 @@ import Testing
         #expect(model.folder.standardizedFileURL == folder.url.standardizedFileURL)
     }
 
+    @Test func theUpRowPointsAtTheParentExceptAtTheRoot() {
+        let model = FileBrowserModel(folder: URL(fileURLWithPath: "/Users/tester/Photos"))
+        #expect(model.parentURL?.path == "/Users/tester")
+        #expect(FileBrowserModel(folder: URL(fileURLWithPath: "/")).parentURL == nil)
+    }
+
+    @Test func theUpRowIsNeverPartOfWhatActionsUse() {
+        let model = FileBrowserModel(folder: URL(fileURLWithPath: "/Users/tester/Photos"))
+        let photo = URL(fileURLWithPath: "/Users/tester/Photos/a.jpg")
+        model.selection = [URL(fileURLWithPath: "/Users/tester"), photo]
+        #expect(model.actionableSelection == [photo])
+        model.selection = [URL(fileURLWithPath: "/Users/tester")]
+        #expect(model.actionableSelection.isEmpty)
+    }
+
     @Test func aMissingFolderReportsAnErrorAndNoEntries() async throws {
         let folder = try TempFolder()
         let model = FileBrowserModel(folder: folder.path("missing"))

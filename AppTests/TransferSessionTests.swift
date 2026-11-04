@@ -336,6 +336,44 @@ struct TransferSessionTests {
         #expect(session.promptText == "Documents")
     }
 
+    @Test func onlyTheUpRowSelectedMeansNothingToActOn() throws {
+        let session = session()
+        session.activeModel.selection = [try #require(session.activeModel.parentURL)]
+        #expect(!session.canCopy)
+        #expect(!session.canRename)
+        #expect(!session.canDelete)
+        #expect(!session.canPreview)
+    }
+
+    @Test func deletingImmediatelyAsksFirstAndDeletesOnlyAfterConfirming() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let file = rig.src.appending(component: "old.txt")
+        try Data("bye".utf8).write(to: file)
+        rig.session.activeModel.open(rig.src)
+        #expect(await waitFor { rig.session.activeModel.entries.contains { $0.url == file } })
+        rig.session.activeModel.selection = [file]
+
+        rig.session.requestPermanentDelete()
+        #expect(rig.session.deleteRequest == DeleteRequest(urls: [file], reason: .chosen))
+        #expect(FileManager.default.fileExists(atPath: file.path))
+
+        rig.session.confirmDelete()
+        #expect(await waitFor { !FileManager.default.fileExists(atPath: file.path) })
+    }
+
+    @Test func deletingImmediatelyRefusesAProtectedItem() async throws {
+        let (session, root, home, _) = try await sessionBesideHome()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let entry = try #require(session.left.entries.first { $0.name == "me" })
+        session.left.selection = [entry.url]
+
+        session.requestPermanentDelete()
+
+        #expect(session.deleteRequest == nil)
+        #expect(FileManager.default.fileExists(atPath: home.path))
+    }
+
     @Test func deleteRefusesAProtectedItemAndLeavesItAlone() async throws {
         let (session, root, home, _) = try await sessionBesideHome()
         defer { try? FileManager.default.removeItem(at: root) }

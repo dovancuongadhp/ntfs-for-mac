@@ -77,8 +77,8 @@ struct TransferPage: View {
             Button("Delete", role: .destructive) { session.confirmDelete() }
             // Return must NOT confirm a destructive action – put the default action on Cancel.
             Button("Cancel", role: .cancel) {}.keyboardShortcut(.defaultAction)
-        } message: { urls in
-            Text(TransferText.deleteMessage(for: urls))
+        } message: { request in
+            Text(TransferText.deleteMessage(for: request))
         }
         .alert(
             "File Transfer",

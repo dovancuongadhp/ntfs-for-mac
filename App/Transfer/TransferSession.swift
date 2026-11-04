@@ -15,6 +15,19 @@ struct NamePrompt: Identifiable {
     let kind: Kind
 }
 
+/// Items waiting for the person to confirm that they are deleted for good.
+struct DeleteRequest: Equatable {
+    enum Reason: Equatable {
+        /// They were sent to the Trash, but their volume has none.
+        case noTrash
+        /// The person asked to delete them immediately (Shift-Delete, Option-Command-Delete).
+        case chosen
+    }
+
+    let urls: [URL]
+    let reason: Reason
+}
+
 /// A plan that has problems the person must decide about before anything is copied.
 struct PendingTransfer: Identifiable {
     let id = UUID()
@@ -64,7 +77,7 @@ final class TransferSession {
 
     var namePrompt: NamePrompt?
     var promptText = ""
-    var deleteRequest: [URL]?
+    var deleteRequest: DeleteRequest?
     var pendingTransfer: PendingTransfer?
     var previewURL: URL?
     var alertMessage: String?
@@ -222,17 +235,17 @@ final class TransferSession {
 
     // MARK: Toolbar state
 
-    var canCopy: Bool { !activeModel.selection.isEmpty }
+    var canCopy: Bool { !activeModel.actionableSelection.isEmpty }
     /// Delete and Rename refuse volume roots, system folders and the home folder; copying is never restricted.
     var canRename: Bool {
-        let selection = activeModel.selection
+        let selection = activeModel.actionableSelection
         return selection.count == 1 && !ProtectedFolders.containsProtected(selection, home: home)
     }
     var canDelete: Bool {
-        let selection = activeModel.selection
+        let selection = activeModel.actionableSelection
         return !selection.isEmpty && !ProtectedFolders.containsProtected(selection, home: home)
     }
-    var canPreview: Bool { !activeModel.selection.isEmpty }
+    var canPreview: Bool { !activeModel.actionableSelection.isEmpty }
 
     // MARK: Copying
 
@@ -466,12 +479,19 @@ final class TransferSession {
             }.value
             await model.reload()
             if let error = result.error { alertMessage = error.localizedDescription }
-            if !result.stuck.isEmpty { deleteRequest = result.stuck }
+            if !result.stuck.isEmpty { deleteRequest = DeleteRequest(urls: result.stuck, reason: .noTrash) }
         }
     }
 
+    /// Asks before deleting the selection for good, skipping the Trash.
+    func requestPermanentDelete() {
+        let urls = activeModel.selectedEntries.map(\.url)
+        guard canDelete, !urls.isEmpty else { return }
+        deleteRequest = DeleteRequest(urls: urls, reason: .chosen)
+    }
+
     func confirmDelete() {
-        guard let urls = deleteRequest else { return }
+        guard let urls = deleteRequest?.urls else { return }
         deleteRequest = nil
         let model = activeModel
         Task {

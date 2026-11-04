@@ -111,15 +111,24 @@ enum TransferText {
          String(localized: "A file needs your decision. Open NTFS for Mac to continue."))
     }
 
-    /// The warning before items that can't go to the Trash are deleted for good.
-    static func deleteMessage(for urls: [URL]) -> String {
+    /// The warning before items are deleted for good, either because their volume has no Trash or on request.
+    static func deleteMessage(for request: DeleteRequest) -> String {
+        let urls = request.urls
         guard let first = urls.first else { return "" }
         if urls.count == 1 {
-            return String(localized: "“\(first.lastPathComponent)” can't be moved to the Trash. It will be deleted permanently.")
+            let name = first.lastPathComponent
+            return switch request.reason {
+            case .noTrash: String(localized: "“\(name)” can't be moved to the Trash. It will be deleted permanently.")
+            case .chosen: String(localized: "“\(name)” will be deleted immediately. You can't undo this action.")
+            }
         }
         var names = urls.prefix(3).map { "“\($0.lastPathComponent)”" }.joined(separator: ", ")
         if urls.count > 3 { names += " " + String(localized: "…and \(urls.count - 3) more") }
-        return String(localized: "\(urls.count) items can't be moved to the Trash. They will be deleted permanently.") + "\n" + names
+        let summary = switch request.reason {
+        case .noTrash: String(localized: "\(urls.count) items can't be moved to the Trash. They will be deleted permanently.")
+        case .chosen: String(localized: "\(urls.count) items will be deleted immediately. You can't undo this action.")
+        }
+        return summary + "\n" + names
     }
 
     /// One formatter for every size on screen: making one per call was the cost of every list row.
