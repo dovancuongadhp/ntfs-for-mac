@@ -4,6 +4,7 @@ enum SidebarSelection: Hashable {
     case disk(String)
     case partition(String)
     case settings
+    case transfer
 }
 
 struct SidebarView: View {
@@ -13,6 +14,17 @@ struct SidebarView: View {
     var body: some View {
         let disks = model.inventory.sidebarDisks
         List(selection: $selection) {
+            Section {
+                HStack {
+                    Label("File Transfer", systemImage: "arrow.left.arrow.right")
+                    Spacer()
+                    if model.transfer.queue.isBusy {
+                        ProgressView().controlSize(.small)
+                    }
+                    BetaBadge()
+                }
+                .tag(SidebarSelection.transfer)
+            }
             if disks.isEmpty {
                 Section("Drives") {
                     Text("Connect a drive and it will appear here.")

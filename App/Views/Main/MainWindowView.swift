@@ -54,7 +54,9 @@ struct MainWindowView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if selection == .settings {
+        if selection == .transfer {
+            TransferPage(session: model.transfer)
+        } else if selection == .settings {
             SettingsView(model: model)
         } else if let found = selectedPartition {
             PartitionDetailView(model: model, partition: found.partition, disk: found.disk)
@@ -65,10 +67,42 @@ struct MainWindowView: View {
         }
     }
 
-    /// The same four buttons on every page, dimmed when they don't apply, so the
-    /// toolbar keeps one height and one layout like Disk Utility's.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
+        if selection == .transfer {
+            transferToolbar
+        } else {
+            driveToolbar
+        }
+    }
+
+    /// The file copy page has its own buttons, in the same style and height.
+    @ToolbarContentBuilder
+    private var transferToolbar: some ToolbarContent {
+        actionItem(
+            "Copy", systemImage: "doc.on.doc",
+            help: String(localized: "Copy the selection to the other side"),
+            disabled: !model.transfer.canCopy
+        ) { model.transfer.copyActiveToOther() }
+        ToolbarSpacer(.fixed, placement: .primaryAction)
+        actionItem("New Folder", systemImage: "folder.badge.plus") { model.transfer.beginNewFolder() }
+        ToolbarSpacer(.fixed, placement: .primaryAction)
+        actionItem("Rename", systemImage: "pencil", disabled: !model.transfer.canRename) { model.transfer.beginRename() }
+        ToolbarSpacer(.fixed, placement: .primaryAction)
+        actionItem("Delete", systemImage: "trash", disabled: !model.transfer.canDelete) { model.transfer.requestDelete() }
+        // A ToolbarContentBuilder takes at most ten children, so the last buttons sit in a group.
+        Group {
+            ToolbarSpacer(.fixed, placement: .primaryAction)
+            actionItem("Quick Look", systemImage: "eye", disabled: !model.transfer.canPreview) { model.transfer.preview() }
+            ToolbarSpacer(.fixed, placement: .primaryAction)
+            actionItem("Finder", systemImage: "folder", help: String(localized: "Show in Finder")) { model.transfer.revealInFinder() }
+        }
+    }
+
+    /// The same four buttons on every drive page, dimmed when they don't apply, so the
+    /// toolbar keeps one height and one layout like Disk Utility's.
+    @ToolbarContentBuilder
+    private var driveToolbar: some ToolbarContent {
         if let found = selectedPartition, found.partition.mount != nil {
             actionItem("Unmount", systemImage: "externaldrive.badge.minus", disabled: !model.canUnmount(found.partition, on: found.disk)) {
                 model.unmount(found.partition)
@@ -134,7 +168,7 @@ struct MainWindowView: View {
         switch selection {
         case .disk(let name)?: .disk(name)
         case .partition(let name)?: .partition(name)
-        case .settings?, nil: nil
+        case .settings?, .transfer?, nil: nil
         }
     }
 
@@ -152,7 +186,7 @@ struct MainWindowView: View {
         switch selection {
         case .disk(let name)?: model.inventory.physicalDisk(named: name)
         case .partition(let name)?: model.inventory.partition(named: name)?.disk
-        case .settings?, nil: nil
+        case .settings?, .transfer?, nil: nil
         }
     }
 
@@ -171,7 +205,7 @@ struct MainWindowView: View {
         let isValid = switch selection {
         case .partition(let name)?: model.inventory.partition(named: name) != nil
         case .disk(let name)?: model.inventory.physicalDisk(named: name) != nil
-        case .settings?: true
+        case .settings?, .transfer?: true
         case nil: false
         }
         if !isValid {
