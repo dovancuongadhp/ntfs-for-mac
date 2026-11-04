@@ -63,6 +63,8 @@ public final class TransferQueue {
     public var progressInterval: Duration = .milliseconds(125)
     public private(set) var conflict: ConflictRequest?
     public private(set) var errorPrompt: ErrorRequest?
+    /// How the queue waits before a held-back report; tests replace it.
+    @ObservationIgnored public var sleep: @Sendable (Duration) async -> Void = { try? await Task.sleep(for: $0) }
     /// Read when a batch starts, so changes apply to the next batch.
     public var options = TransferOptions()
 
@@ -266,8 +268,9 @@ public final class TransferQueue {
         reportOwed = true
         guard reportTask == nil else { return }
         let wait = progressInterval - (now - last)
+        let sleep = sleep
         reportTask = Task { [weak self] in
-            try? await Task.sleep(for: wait)
+            await sleep(wait)
             guard !Task.isCancelled, let self else { return }
             reportTask = nil
             if reportOwed { reportProgress() }

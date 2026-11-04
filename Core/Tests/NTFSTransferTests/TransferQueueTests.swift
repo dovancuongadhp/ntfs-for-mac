@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Testing
 @testable import NTFSTransfer
 
@@ -375,6 +376,30 @@ private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool
         #expect(queue.lastStop == nil)
     }
 
+    /// The engine says "finished" when the cancel arrives during its last file; the queue must still read it as
+    /// a cancel and drop the batches that were waiting behind it.
+    @Test func aCancelDuringTheLastFileOfABatchAlsoDropsTheBatchesBehindIt() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.txt", "x")
+        try source.file("later.txt", "y")
+        try destination.file("a.txt", "old")
+        let queue = TransferQueue()
+        queue.enqueue(try plan([source.path("a.txt")], into: destination.url))
+        queue.enqueue(try plan([source.path("later.txt")], into: destination.url))
+
+        #expect(await waitUntil { queue.conflict != nil })
+        await queue.cancelAndWait()
+
+        #expect(queue.phase == .finished)
+        #expect(queue.lastStop == .cancelled)
+        #expect(queue.summary != nil)
+        #expect(!destination.has("later.txt"))
+        #expect(try destination.text("a.txt") == "old")
+        #expect(queue.progress.items.count == 2)
+        #expect(queue.progress.items.allSatisfy { $0.state == .skipped })
+    }
+
     @Test func aCopyStoppedByTheUserRemembersThat() async throws {
         let source = try TempFolder()
         let destination = try TempFolder()
@@ -451,6 +476,38 @@ private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool
         #expect(reports.value >= 80, "reports: \(reports.value)")
     }
 
+    /// Stands in for `Task.sleep`: notes how long it was asked to wait and returns only when opened.
+    private final class SleepGate: Sendable {
+        private struct State {
+            var requested: [Duration] = []
+            var waiters: [CheckedContinuation<Void, Never>] = []
+            var isOpen = false
+        }
+        private let state = OSAllocatedUnfairLock(initialState: State())
+        var requested: [Duration] { state.withLock { $0.requested } }
+
+        func sleep(_ duration: Duration) async {
+            await withCheckedContinuation { continuation in
+                let resumeNow = state.withLock { state -> Bool in
+                    state.requested.append(duration)
+                    if state.isOpen { return true }
+                    state.waiters.append(continuation)
+                    return false
+                }
+                if resumeNow { continuation.resume() }
+            }
+        }
+
+        func open() {
+            let waiters = state.withLock { state -> [CheckedContinuation<Void, Never>] in
+                state.isOpen = true
+                defer { state.waiters = [] }
+                return state.waiters
+            }
+            for waiter in waiters { waiter.resume() }
+        }
+    }
+
     @Test func aReportThatWasHeldBackStillArrivesAfterTheInterval() async throws {
         let source = try TempFolder()
         let destination = try TempFolder()
@@ -465,7 +522,10 @@ private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool
             }
         }
         let queue = TransferQueue(access: flaky)
-        queue.progressInterval = .milliseconds(300)
+        let interval = Duration.seconds(3600)
+        queue.progressInterval = interval
+        let sleeps = SleepGate()
+        queue.sleep = { await sleeps.sleep($0) }
         let reports = Counter()
         let doneInLastReport = Counter()
         queue.onProgress = { progress in
@@ -474,10 +534,18 @@ private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool
         }
         queue.enqueue(try plan(["a.txt", "b.txt"].map { source.path($0) }, into: destination.url))
 
-        // The engine is held before b; a's events came within one interval of the first report.
+        // a's events came within one interval of the last report, so they are held back and a wait is scheduled.
         #expect(await waitUntil { gate.hasArrived })
-        #expect(await waitUntil(timeout: .seconds(5)) { doneInLastReport.value == 1 })
-        #expect(reports.value >= 2)
+        #expect(await waitUntil { !sleeps.requested.isEmpty })
+        let wait = try #require(sleeps.requested.first)
+        #expect(wait > .zero && wait <= interval, "waits \(wait)")
+        let before = reports.value
+        #expect(doneInLastReport.value == 0)
+
+        // When the wait is over the held-back report arrives, with a already counted.
+        sleeps.open()
+        #expect(await waitUntil { doneInLastReport.value == 1 })
+        #expect(reports.value > before)
         gate.open()
         #expect(await waitUntil { queue.phase == .finished })
         #expect(doneInLastReport.value == 2)
