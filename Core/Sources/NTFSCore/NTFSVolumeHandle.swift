@@ -163,7 +163,7 @@ public final class NTFSVolumeHandle: @unchecked Sendable {
             guard let context, let name else { return 0 }
             let collector = Unmanaged<Collector>.fromOpaque(context).takeUnretainedValue()
             collector.entries.append(DirectoryEntry(
-                name: String(cString: name), id: id, type: ItemType(bridgeValue: type)))
+                name: NTFSFileName.forMac(String(cString: name)), id: id, type: ItemType(bridgeValue: type)))
             return 0
         }
         try check(result)
@@ -193,7 +193,7 @@ public final class NTFSVolumeHandle: @unchecked Sendable {
     public func readLink(_ id: ItemID) throws(NTFSError) -> String {
         var buffer = [CChar](repeating: 0, count: Int(PATH_MAX) * 4)
         let length = try check(nb_read_link(try mounted(), id, &buffer, UInt32(buffer.count)))
-        return decodeUTF8(buffer, length: Int(length))
+        return NTFSFileName.forMacPath(decodeUTF8(buffer, length: Int(length)))
     }
 
     // MARK: Data
@@ -234,9 +234,10 @@ public final class NTFSVolumeHandle: @unchecked Sendable {
         try check(nb_set_flag(try mounted(), id, flags.rawValue, on ? 1 : 0))
     }
 
-    /// Names are stored in NFC, the form Windows uses.
+    /// Names are stored in NFC, the form Windows uses, with characters NTFS
+    /// rejects rewritten so the file can still be created.
     static func diskName(_ name: String) -> String {
-        name.precomposedStringWithCanonicalMapping
+        NTFSFileName.forDisk(name)
     }
 }
 

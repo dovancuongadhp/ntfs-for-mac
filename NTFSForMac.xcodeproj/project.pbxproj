@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		006F37E15905B032E52D35F4 /* NTFSVolume+Operations.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3093C3CB59870E472CD6316 /* NTFSVolume+Operations.swift */; };
 		13E226E2539DD40C14F6AEE2 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4553E4B4FCAE427951A7B71 /* SettingsView.swift */; };
+		A11D0A7E5C4B49F08E2D6A31 /* AppUpdate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22E1B8F6D5C40A19F3E7B42 /* AppUpdate.swift */; };
+		C33F2C9A7E6D41B20A4F8C53 /* AppUpdateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4403D0B8F7E42C31B5A9D64 /* AppUpdateTests.swift */; };
 		1410F59EDB503027B22543DD /* FormatSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3521D956FFA553C5068254BC /* FormatSheet.swift */; };
 		16E8117290008DFF282C370C /* VolumeNameRuleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C814D3D41ACE4A2AEA810A /* VolumeNameRuleTests.swift */; };
 		1A915EE13C8845DAF2F39018 /* WindowPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDFD749A4B9B1A12C2E7E3D7 /* WindowPresenter.swift */; };
@@ -101,6 +103,8 @@
 		0942A4EAAAA02062814B7446 /* NTFSVolume.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSVolume.swift; sourceTree = "<group>"; };
 		15071AB9EFF277E01AC8899C /* NTFSFileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSFileSystem.swift; sourceTree = "<group>"; };
 		152F6BD3911476B9A38B33A4 /* ExtensionStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionStatus.swift; sourceTree = "<group>"; };
+		B22E1B8F6D5C40A19F3E7B42 /* AppUpdate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdate.swift; sourceTree = "<group>"; };
+		D4403D0B8F7E42C31B5A9D64 /* AppUpdateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdateTests.swift; sourceTree = "<group>"; };
 		1622A7178AC2ABED3DA77F47 /* NTFSDisk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NTFSDisk.swift; sourceTree = "<group>"; };
 		182A7F6CAB26DC6F2D12873C /* Fixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fixtures.swift; sourceTree = "<group>"; };
 		18DD09D1D354C6A9483B65B0 /* FormatSafetyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormatSafetyTests.swift; sourceTree = "<group>"; };
@@ -230,6 +234,7 @@
 			isa = PBXGroup;
 			children = (
 				1E3ACD854255F0A0A62DAA7D /* AppLog.swift */,
+				B22E1B8F6D5C40A19F3E7B42 /* AppUpdate.swift */,
 				152F6BD3911476B9A38B33A4 /* ExtensionStatus.swift */,
 				BA3CD2C8A24164BE3F5F6FA8 /* Notifier.swift */,
 				53F1337D82B88081886B0D90 /* StatusText.swift */,
@@ -300,6 +305,7 @@
 		81BF884191EC7E3B7EC8E0A7 /* AppTests */ = {
 			isa = PBXGroup;
 			children = (
+				D4403D0B8F7E42C31B5A9D64 /* AppUpdateTests.swift */,
 				56DAD8FE64D69A167F4500F2 /* DiskTreeBuilderTests.swift */,
 				182A7F6CAB26DC6F2D12873C /* Fixtures.swift */,
 				B84570017E9BBECF4EF540AA /* FormatPlannerTests.swift */,
@@ -505,6 +511,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D415DBDDE25A28937614B01F /* AllowWritingConfirmation.swift in Sources */,
+				A11D0A7E5C4B49F08E2D6A31 /* AppUpdate.swift in Sources */,
 				CF296E88434033FDE632AB82 /* AppLog.swift in Sources */,
 				A2455424DF7B24B8AC4BFA0A /* AppModel.swift in Sources */,
 				CD9E1A395328A88D1158A8DE /* Components.swift in Sources */,
@@ -545,6 +552,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C33F2C9A7E6D41B20A4F8C53 /* AppUpdateTests.swift in Sources */,
 				AE53E445D585A4E8F4FD97C7 /* DiskTreeBuilderTests.swift in Sources */,
 				A4AC856B6694E9030BABAAA8 /* Fixtures.swift in Sources */,
 				53AF96EC184255CBB3A1593E /* FormatPlannerTests.swift in Sources */,

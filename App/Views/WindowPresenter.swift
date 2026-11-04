@@ -33,6 +33,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
+        window.toolbar?.displayMode = .iconAndLabel
     }
 
     func showSettings() {

@@ -59,6 +59,7 @@ struct SettingsView: View {
 
             Section("About") {
                 LabeledContent("Version", value: Bundle.main.versionString)
+                updateStatus
                 LabeledContent("Author", value: "Đỗ Văn Cường")
                 LabeledContent("Source code") {
                     Link("github.com/dovancuongadhp/ntfs-for-mac",
@@ -79,7 +80,54 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(maxWidth: 620)
         .frame(maxWidth: .infinity)
-        .onAppear { model.extensionStatus.refresh() }
+        .onAppear {
+            model.extensionStatus.refresh()
+            Task { await model.updates.check() }
+        }
+    }
+
+    @ViewBuilder private var updateStatus: some View {
+        switch model.updates.phase {
+        case .available(let version):
+            Button("Update to \(version.text)") { Task { await model.updates.install() } }
+                .disabled(model.isFormatting)
+        case .downloading:
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("Updating NTFS for Mac…")
+            }
+        case .checking:
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("Checking for updates…")
+            }
+        case .upToDate:
+            updateRow("NTFS for Mac is up to date.", systemImage: "checkmark.circle.fill", tint: .green)
+        case .checkFailed:
+            updateRow("Couldn't check for updates.", systemImage: "exclamationmark.triangle.fill", tint: .orange)
+        case .failed:
+            updateRow("The update could not be installed.", systemImage: "exclamationmark.triangle.fill", tint: .orange)
+        case .idle:
+            HStack {
+                Spacer()
+                checkButton
+            }
+        }
+    }
+
+    private func updateRow(_ title: LocalizedStringKey, systemImage: String, tint: Color) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: systemImage)
+                .foregroundStyle(tint)
+            Text(title)
+            Spacer(minLength: 12)
+            checkButton
+        }
+    }
+
+    private var checkButton: some View {
+        Button("Check for Updates…") { Task { await model.updates.check(reportFailure: true) } }
+            .disabled(model.isFormatting)
     }
 
     @ViewBuilder private var extensionBadge: some View {

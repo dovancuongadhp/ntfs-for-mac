@@ -10,6 +10,7 @@ final class AppModel {
     let extensionStatus = ExtensionStatus()
     let preferences = VolumePreferences()
     let launchAtLogin = LaunchAtLogin()
+    let updates = AppUpdater()
     /// Disks and partitions with a mount, unmount or eject in progress.
     private(set) var busy: Set<String> = []
     /// Physical disks being formatted.
@@ -41,6 +42,7 @@ final class AppModel {
             self?.reasons[bsdName] = nil
         }
         extensionStatus.refresh()
+        Task { await updates.check() }
         for disk in inventory.disks {
             diskChanged(disk)
         }

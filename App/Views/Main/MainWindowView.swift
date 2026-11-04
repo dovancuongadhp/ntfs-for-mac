@@ -27,6 +27,7 @@ struct MainWindowView: View {
             }
         }
         .toolbar { toolbar }
+        .background { ToolbarLabelStyleFix() }
         .sheet(item: $formatTarget) { target in
             FormatSheet(model: model, target: target)
         }
@@ -59,38 +60,66 @@ struct MainWindowView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            if selection != .settings {
-                driveActions
+        if selection != .settings {
+            if let found = selectedPartition {
+                if found.partition.mount != nil {
+                    actionItem("Unmount", systemImage: "externaldrive.badge.minus", disabled: !model.canUnmount(found.partition, on: found.disk)) {
+                        model.unmount(found.partition)
+                    }
+                } else {
+                    actionItem(
+                        "Mount", systemImage: "externaldrive.badge.plus",
+                        disabled: !found.partition.isRecognized
+                            || (model.isProtected(found.disk) && found.partition.ntfsDisk == nil)
+                            || model.busy.contains(found.partition.bsdName)
+                            || model.formatting.contains(found.disk.bsdName)
+                    ) { model.mount(found.partition) }
+                }
+                ToolbarSpacer(.fixed, placement: .primaryAction)
             }
+            actionItem("Eject", systemImage: "eject", disabled: !(selectedDisk.map { model.canEject($0) } ?? false)) {
+                if let disk = selectedDisk { model.eject(disk) }
+            }
+            ToolbarSpacer(.fixed, placement: .primaryAction)
+            actionItem(
+                "Finder", systemImage: "folder", help: String(localized: "Show in Finder"),
+                disabled: selectedPartition?.partition.mount == nil
+            ) {
+                if let partition = selectedPartition?.partition { model.reveal(partition) }
+            }
+            ToolbarSpacer(.fixed, placement: .primaryAction)
+            actionItem(
+                "Format", systemImage: "eraser",
+                help: formatBlock?.message ?? String(localized: "Erase and format"),
+                disabled: currentFormatTarget == nil || formatBlock != nil
+            ) { formatTarget = currentFormatTarget }
+        }
+    }
+
+    /// One system toolbar button. A fixed spacer between them gives each its own round glass control, with the name underneath.
+    private func actionItem(
+        _ title: LocalizedStringKey, systemImage: String, help: String? = nil,
+        disabled: Bool = false, action: @escaping () -> Void
+    ) -> some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            toolbarButton(title, systemImage: systemImage, help: help, disabled: disabled, action: action)
         }
     }
 
     @ViewBuilder
-    private var driveActions: some View {
-        if let found = selectedPartition {
-            if found.partition.mount != nil {
-                Button("Unmount", systemImage: "eject.circle") { model.unmount(found.partition) }
-                    .disabled(!model.canUnmount(found.partition, on: found.disk))
-            } else {
-                Button("Mount", systemImage: "arrow.up.circle") { model.mount(found.partition) }
-                    .disabled(!found.partition.isRecognized
-                              || (model.isProtected(found.disk) && found.partition.ntfsDisk == nil)
-                              || model.busy.contains(found.partition.bsdName)
-                              || model.formatting.contains(found.disk.bsdName))
-            }
+    private func toolbarButton(
+        _ title: LocalizedStringKey, systemImage: String, help: String?,
+        disabled: Bool, action: @escaping () -> Void
+    ) -> some View {
+        if let help {
+            Button(title, systemImage: systemImage, action: action)
+                .disabled(disabled)
+                .help(help)
+        } else {
+            Button(title, systemImage: systemImage, action: action)
+                .disabled(disabled)
+                .help(Text(title))
         }
-        Button("Eject", systemImage: "eject") {
-            if let disk = selectedDisk { model.eject(disk) }
-        }
-        .disabled(!(selectedDisk.map { model.canEject($0) } ?? false))
-        Button("Show in Finder", systemImage: "folder") {
-            if let partition = selectedPartition?.partition { model.reveal(partition) }
-        }
-        .disabled(selectedPartition?.partition.mount == nil)
-        Button("Format…", systemImage: "eraser") { formatTarget = currentFormatTarget }
-            .disabled(currentFormatTarget == nil || formatBlock != nil)
-            .help(formatBlock?.message ?? String(localized: "Erase and format"))
     }
 
     private var selectedPartition: (partition: Partition, disk: PhysicalDisk)? {
@@ -140,6 +169,18 @@ struct MainWindowView: View {
         if !isValid {
             selection = nil
             selectDefault()
+        }
+    }
+}
+
+/// Keeps the toolbar on icon-and-title, the same arrangement Disk Utility uses.
+private struct ToolbarLabelStyleFix: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { NSView(frame: .zero) }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        DispatchQueue.main.async {
+            guard let toolbar = view.window?.toolbar, toolbar.displayMode != .iconAndLabel else { return }
+            toolbar.displayMode = .iconAndLabel
         }
     }
 }

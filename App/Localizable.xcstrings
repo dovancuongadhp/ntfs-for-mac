@@ -471,6 +471,16 @@
         }
       }
     },
+    "Finder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finder"
+          }
+        }
+      }
+    },
     "File system extension" : {
       "localizations" : {
         "vi" : {
@@ -527,6 +537,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đang định dạng…"
+          }
+        }
+      }
+    },
+    "Format" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Định dạng"
           }
         }
       }
@@ -1574,6 +1594,56 @@
         }
       }
     },
+    "Check for Updates…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kiểm tra bản cập nhật…"
+          }
+        }
+      }
+    },
+    "Checking for updates…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang kiểm tra bản cập nhật…"
+          }
+        }
+      }
+    },
+    "Couldn't check for updates." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không kiểm tra được bản cập nhật."
+          }
+        }
+      }
+    },
+    "NTFS for Mac is up to date." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NTFS for Mac đang là bản mới nhất."
+          }
+        }
+      }
+    },
+    "The update could not be installed." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không cài được bản cập nhật."
+          }
+        }
+      }
+    },
     "To uninstall, quit the app and move it to the Trash." : {
       "localizations" : {
         "vi" : {
@@ -1680,6 +1750,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đã dùng %@"
+          }
+        }
+      }
+    },
+    "Update to %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cập nhật lên %@"
+          }
+        }
+      }
+    },
+    "Updating NTFS for Mac…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang cập nhật NTFS for Mac…"
           }
         }
       }

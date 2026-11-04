@@ -1,8 +1,8 @@
 // Shared build settings. Signing identity lives in Local.xcconfig, which is
 // not committed: copy Local.xcconfig.example and fill in your Team ID.
 
-MARKETING_VERSION = 2.0.1
-CURRENT_PROJECT_VERSION = 4
+MARKETING_VERSION = 2.0.2
+CURRENT_PROJECT_VERSION = 5
 // A new flower for each major version, kept by its minor and patch updates.
 APP_CODENAME = Lotus
 MACOSX_DEPLOYMENT_TARGET = 26.0
