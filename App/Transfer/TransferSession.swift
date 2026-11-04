@@ -340,10 +340,6 @@ final class TransferSession {
         NSPasteboard.general.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true])
     }
 
-    func copyProviders(for pane: TransferPane) -> [NSItemProvider] {
-        model(for: pane).selectedEntries.map { NSItemProvider(object: $0.url as NSURL) }
-    }
-
     // MARK: Progress and finish
 
     /// A copy stops at a question until it is answered. If nobody is looking at the page, say so: a

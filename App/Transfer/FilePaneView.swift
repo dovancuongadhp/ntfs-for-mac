@@ -1,5 +1,6 @@
 import NTFSTransfer
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// One side of the page: where you are, what's there, and what's selected.
 struct FilePaneView: View {
@@ -26,9 +27,9 @@ struct FilePaneView: View {
                 RoundedRectangle(cornerRadius: 6).strokeBorder(Color.accentColor, lineWidth: 2).padding(2)
             }
         }
-        .dropDestination(for: URL.self) { urls, _ in
-            session.drop(urls, onto: pane)
-        } isTargeted: { isTargeted = $0 }
+        .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
+            receiveDrop(providers)
+        }
         .simultaneousGesture(TapGesture().onEnded { session.activePane = pane })
     }
 
@@ -111,7 +112,7 @@ struct FilePaneView: View {
             .width(min: 100, ideal: 140, max: 190)
         } rows: {
             ForEach(model.entries) { entry in
-                TableRow(entry).draggable(entry.url)
+                TableRow(entry).itemProvider { NSItemProvider(object: entry.url as NSURL) }
             }
         }
         .contextMenu(forSelectionType: URL.self) { urls in
@@ -126,8 +127,10 @@ struct FilePaneView: View {
             if !selection.isEmpty { session.activePane = pane }
         }
         .onCopyCommand {
+            // Providers handed back here are added to the clipboard as copies in SwiftUI's cache folder,
+            // which a paste would then copy a second time.
             session.copyToPasteboard(from: pane)
-            return session.copyProviders(for: pane)
+            return []
         }
         .onPasteCommand(of: [.fileURL]) { _ in session.pasteFromPasteboard(into: pane) }
         .onDeleteCommand {
@@ -200,6 +203,27 @@ struct FilePaneView: View {
         session.activePane = pane
         let model = session.model(for: pane)
         if model.selection != urls { model.selection = urls }
+    }
+
+    /// Reads the file addresses themselves: decoding `URL` as a transferable copies every dropped item into
+    /// SwiftUI's cache folder first, and the copy would be what gets copied.
+    private func receiveDrop(_ providers: [NSItemProvider]) -> Bool {
+        let files = providers.filter { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }
+        guard !files.isEmpty else { return false }
+        Task {
+            var urls: [URL] = []
+            for provider in files {
+                if let url = await Self.fileURL(from: provider) { urls.append(url) }
+            }
+            session.drop(urls, onto: pane)
+        }
+        return true
+    }
+
+    private static func fileURL(from provider: NSItemProvider) async -> URL? {
+        await withCheckedContinuation { continuation in
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in continuation.resume(returning: url) }
+        }
     }
 
     private func open(_ urls: some Collection<URL>, in model: FileBrowserModel) {
