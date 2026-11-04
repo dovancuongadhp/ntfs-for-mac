@@ -185,3 +185,16 @@ struct DriveIcon: View {
             .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
     }
 }
+
+/// Marks a feature that is still being tested.
+struct BetaBadge: View {
+    var body: some View {
+        Text(verbatim: "BETA")
+            .font(.system(size: 9, weight: .bold))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1.5)
+            .foregroundStyle(.orange)
+            .background(.orange.opacity(0.2), in: .capsule)
+            .accessibilityLabel("Beta")
+    }
+}
