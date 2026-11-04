@@ -25,7 +25,18 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 - Before copying, names that the destination cannot hold (such as `a:b.txt` on exFAT) and files too large for FAT32 are listed, and you can copy the rest.
 - New Folder, Rename, Delete (to the Trash) and Quick Look in either pane. Drives, system folders and your home folder are protected from Rename and Delete. The copy keeps the Mac awake, shows its progress on the Dock icon and in the menu bar menu, and asks before quitting while it runs.
 - The File Transfer row in the sidebar shows an orange dot when the copy needs an answer, even from another page.
+- Each pane starts with a **..** row to go up, and shows Finder's icons for files, folders and drives, in the list and in the places menu.
+- Click a pane's path, or press ⌘L, to type a folder. Matching folders are listed as you type: Tab completes the highlighted one, ↑ ↓ pick another, Return opens it.
+- Copying a folder where one of the same name exists asks: **Keep Both** (adds a number, the default), Merge, Skip or Cancel, with an option to apply the choice to every folder.
+- ⌘⌫ moves items to the Trash, as in Finder; Shift+⌫ and ⌥⌘⌫ delete them immediately after you confirm.
+- The progress list groups files by copy, newest first. Each copy is a row you can open, with its start time, **From**, **To**, size and result. The log is kept, even after quitting, until you press **Clear**.
+- The progress panel folds down to one status line with the percentage and any errors, and stays as you left it.
+- A **Welcome** page heads the sidebar: whether the NTFS driver is on, the drives plugged in, and shortcuts to File Transfer and Settings.
 - The page, panel and prompts are available in Vietnamese.
+
+### Changed
+
+- The main window opens on the Welcome page, the first time too, instead of the first drive or Settings.
 
 ## [2.1.0] Lotus - 2026-11-04
 

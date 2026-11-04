@@ -114,10 +114,10 @@ The app takes care not to erase the wrong thing:
 
 ## File Transfer (beta)
 
-NTFS for Mac **2.2.0**, available as a [beta](https://github.com/dovancuongadhp/ntfs-for-mac/releases), adds a
-**File Transfer** page: two file browsers side by side for copying between any drives and folders, with a
-progress list, pause and resume, retry of failed files, and a choice when a file or folder already exists.
-It's a beta: try it with files you have a backup of.
+New in 2.2.0, the **File Transfer** page in the main window has two file browsers side by side for copying
+between any drives and folders: drag from one side to the other, or copy and paste. A progress list shows
+every copy and file, with pause and resume, retry of failed files, and a choice when a file or folder already
+exists. The list is kept until you press **Clear**. The feature is a beta: try it with files you have a backup of.
 
 ## When a drive opens read-only
 
