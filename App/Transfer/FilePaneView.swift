@@ -12,7 +12,7 @@ struct FilePaneView: View {
         @Bindable var model = session.model(for: pane)
         let isActive = session.activePane == pane
         VStack(spacing: 0) {
-            header(model)
+            header(model, isActive: isActive)
                 .overlay(alignment: .top) {
                     if isActive { Color.accentColor.frame(height: 2) }
                 }
@@ -28,27 +28,36 @@ struct FilePaneView: View {
         }
         .dropDestination(for: URL.self) { urls, _ in
             session.drop(urls, onto: pane)
-            return true
         } isTargeted: { isTargeted = $0 }
         .simultaneousGesture(TapGesture().onEnded { session.activePane = pane })
     }
 
     // MARK: Header
 
-    private func header(_ model: FileBrowserModel) -> some View {
+    private func header(_ model: FileBrowserModel, isActive: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Button { model.goBack() } label: { Image(systemName: "chevron.left") }
                     .disabled(!model.canGoBack)
                     .help("Back")
+                    .accessibilityLabel("Back")
                 Button { model.goForward() } label: { Image(systemName: "chevron.right") }
                     .disabled(!model.canGoForward)
                     .help("Forward")
+                    .accessibilityLabel("Forward")
                 Button { model.goUp() } label: { Image(systemName: "arrow.up") }
                     .disabled(!model.canGoUp)
                     .help("Enclosing Folder")
+                    .accessibilityLabel("Enclosing Folder")
                 locationMenu(model)
                 Spacer(minLength: 0)
+                Button {
+                    session.activePane = pane
+                    Task { await session.refresh(pane) }
+                } label: { Image(systemName: "arrow.clockwise") }
+                    .keyboardShortcut(isActive ? KeyboardShortcut("r", modifiers: .command) : nil)
+                    .help("Refresh")
+                    .accessibilityLabel("Refresh")
             }
             .buttonStyle(.borderless)
             Text(model.folder.path)

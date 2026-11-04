@@ -52,12 +52,20 @@ struct TransferProgressPanel: View {
             }
             ProgressView(value: progress.fraction)
             HStack(spacing: 12) {
-                Text("\(TransferText.size(progress.processedBytes)) of \(TransferText.size(progress.totalBytes))")
-                if let seconds = progress.secondsRemaining, queue.phase == .running {
-                    Text("About \(TransferText.duration(seconds)) left")
-                }
-                if progress.readRate > 0 || progress.writeRate > 0, queue.isBusy {
-                    Text("Read \(TransferText.rate(progress.readRate)) · Write \(TransferText.rate(progress.writeRate))")
+                if let detail = TransferText.detail(phase: queue.phase, lastStop: queue.lastStop, summary: queue.summary) {
+                    // Over: what was copied and how long it took, or what to do about a halt.
+                    Text(detail)
+                } else {
+                    Text("\(TransferText.size(progress.processedBytes)) of \(TransferText.size(progress.totalBytes))")
+                    if queue.phase == .running {
+                        if let seconds = progress.secondsRemaining {
+                            Text("About \(TransferText.duration(seconds)) left")
+                        }
+                        // Speeds belong to a copy that is moving; paused or waiting on a question they are stale.
+                        if progress.readRate > 0 || progress.writeRate > 0 {
+                            Text("Read \(TransferText.rate(progress.readRate)) · Write \(TransferText.rate(progress.writeRate))")
+                        }
+                    }
                 }
                 Spacer()
                 controls
@@ -69,20 +77,9 @@ struct TransferProgressPanel: View {
     }
 
     private var statusText: String {
-        switch queue.phase {
-        case .idle, .running:
-            String(localized: "Copying files: \(progress.doneCount) of \(progress.fileCount)")
-        case .paused:
-            String(localized: "Paused")
-        case .stopped(let stop):
-            summaryTitle(stop)
-        case .finished:
-            summaryTitle(.finished)
-        }
-    }
-
-    private func summaryTitle(_ stop: TransferStop) -> String {
-        TransferText.notice(for: queue.summary ?? progress.summary(), stop: stop).title
+        TransferText.headline(
+            phase: queue.phase, lastStop: queue.lastStop, summary: queue.summary ?? progress.summary(),
+            done: progress.doneCount, total: progress.fileCount)
     }
 
     @ViewBuilder
@@ -140,7 +137,7 @@ struct TransferProgressPanel: View {
             .frame(maxWidth: 280)
             .padding(.vertical, 6)
             List(visibleItems) { item in
-                TransferRow(item: item)
+                TransferRow(item: item).equatable()
             }
             .listStyle(.plain)
         }
@@ -150,7 +147,7 @@ struct TransferProgressPanel: View {
 
     private var footer: some View {
         HStack {
-            let failed = progress.failedItems.count
+            let failed = progress.failedCount
             if failed > 0 {
                 Label("Errors: \(failed)", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.red)
@@ -171,7 +168,8 @@ struct TransferProgressPanel: View {
     }
 }
 
-private struct TransferRow: View {
+/// Equatable, so a progress tick redraws only the rows whose item changed.
+private struct TransferRow: View, Equatable {
     let item: TransferItem
 
     var body: some View {
