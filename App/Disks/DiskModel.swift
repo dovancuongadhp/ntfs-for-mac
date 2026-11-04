@@ -89,7 +89,11 @@ enum FileSystemKind: Hashable, Sendable {
     case other(String)
     case unknown
 
-    init(volumeKind: String?, content: String?) {
+    init(volumeKind: String?, content: String?, mountedAs: String? = nil) {
+        if NTFSDisk.isNTFSFileSystem(mountedAs) {
+            self = .ntfs
+            return
+        }
         switch volumeKind {
         case Identifiers.systemDriverTypeName?, Identifiers.fileSystemTypeName?: self = .ntfs
         case "exfat"?: self = .exfat
@@ -145,12 +149,14 @@ struct Partition: Identifiable, Equatable, Sendable {
     /// stored on, or `nil` if no container was found.
     var containerStoreCount: Int?
 
-    var isRecognized: Bool { volumeKind != nil }
+    var isRecognized: Bool { volumeKind != nil || NTFSDisk.isNTFSFileSystem(mount?.fileSystemType) }
     var isAPFSStore: Bool { DiskContent.isAPFSStore(content) }
 
     /// The view the NTFS mount logic works with, for NTFS partitions.
     var ntfsDisk: NTFSDisk? {
-        guard NTFSDisk.isCandidate(content: content, volumeKind: volumeKind) else { return nil }
+        guard NTFSDisk.isCandidate(content: content, volumeKind: volumeKind, mountedAs: mount?.fileSystemType) else {
+            return nil
+        }
         return NTFSDisk(
             bsdName: bsdName, name: name, preferenceKey: preferenceKey,
             isRecognized: isRecognized, isWritableMedia: isWritable, mount: mount)

@@ -63,6 +63,11 @@ struct MountPolicyTests {
         #expect(NTFSDisk.isCandidate(content: "Windows_NTFS", volumeKind: nil))
         #expect(NTFSDisk.isCandidate(content: "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", volumeKind: "ntfs"))
         #expect(!NTFSDisk.isCandidate(content: "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", volumeKind: "exfat"))
+        #expect(NTFSDisk.isCandidate(
+            content: "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", volumeKind: "exfat", mountedAs: "ntfsrw"))
+        #expect(FileSystemKind(volumeKind: "exfat", content: "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", mountedAs: "ntfsrw") == .ntfs)
+        #expect(FileSystemKind(volumeKind: "msdos", content: nil, mountedAs: "ntfs") == .ntfs)
+        #expect(FileSystemKind(volumeKind: "exfat", content: "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7") == .exfat)
         #expect(!NTFSDisk.isCandidate(content: "Apple_APFS", volumeKind: nil))
     }
 }

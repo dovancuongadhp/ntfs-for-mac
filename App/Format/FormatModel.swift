@@ -117,11 +117,13 @@ struct DiskFingerprint: Equatable, Sendable {
         return DiskFingerprint(info: info, whole: whole, children: children)
     }
 
-    /// The same drive, and the same partition name, offset and size on it,
-    /// whatever GUID erasing gave the partition.
+    /// The same drive and the same partition on it, whatever GUID and file-system
+    /// size erasing left. `diskutil` reports the new file system, which is smaller
+    /// than the partition it was written on.
     func matchesErased(_ current: DiskFingerprint) -> Bool {
         var current = current
         current.mediaUUID = mediaUUID
+        current.size = size
         return current == self
     }
 

@@ -79,7 +79,8 @@ final class FormatRunner {
             progress(.formatting)
             // Also after diskutil re-typed the partition: it must still be the confirmed one.
             try checkFingerprint(job.fingerprint, erased: erased)
-            try await environment.runNTFSFormat(request)
+            // Erasing reports the new file system's size, so the helper must see that size.
+            try await environment.runNTFSFormat(measured(request))
         case .ntfsFormatNewPartition(let whole, let label, let clusterSize, let quick):
             progress(.formatting)
             // The partitions are new, so only the drive itself can be compared.
@@ -92,6 +93,16 @@ final class FormatRunner {
                 FormatRequest(device: partition.bsdName, size: partition.size, offset: offset,
                               label: label, clusterSize: clusterSize, quick: quick))
         }
+    }
+
+    /// The partition as it is now. Its size after `diskutil` can differ from the size the plan recorded.
+    private func measured(_ request: FormatRequest) -> FormatRequest {
+        guard let info = environment.freshInfo(request.device), info.size > 0, let offset = info.offset else {
+            return request
+        }
+        return FormatRequest(
+            device: request.device, size: info.size, offset: offset,
+            label: request.label, clusterSize: request.clusterSize, quick: request.quick)
     }
 
     private func checkFingerprint(_ fingerprint: DiskFingerprint, erased: Bool = false) throws {

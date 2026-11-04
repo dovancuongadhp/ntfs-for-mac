@@ -111,7 +111,8 @@ enum DiskTreeBuilder {
             bsdName: info.bsdName,
             wholeBSDName: info.wholeBSDName,
             name: info.displayName,
-            fileSystem: FileSystemKind(volumeKind: info.volumeKind, content: info.content),
+            fileSystem: FileSystemKind(
+                volumeKind: info.volumeKind, content: info.content, mountedAs: info.mount?.fileSystemType),
             size: info.size,
             offset: info.offset,
             partitionID: info.partitionID,

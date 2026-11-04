@@ -51,8 +51,11 @@ final class FakeFormatEnvironment: FormatEnvironment {
         afterDiskutil?()
     }
 
+    var lastNTFS: FormatRequest?
+
     func runNTFSFormat(_ request: FormatRequest) async throws {
         log.append("ntfs-format " + request.device)
+        lastNTFS = request
         if let ntfsError { throw ntfsError }
     }
 
@@ -240,6 +243,33 @@ struct FormatRunnerTests {
             "ntfs-format disk6s3",
         ])
         #expect(stages == [.checking, .unmounting, .formatting, .unmounting, .formatting, .finishing])
+    }
+
+    /// `eraseVolume` reports the new file system, a little smaller than the partition. That is still the same partition.
+    @Test func smallerVolumeAfterTheRetypeIsStillFormattedAsNTFS() async throws {
+        let infos = hfsPartition
+        let environment = FakeFormatEnvironment(infos)
+        let shrunk = infos[3].size - 655_360
+        environment.afterDiskutil = { [unowned environment] in
+            self.retype(environment, "disk6s3")
+            environment.infos["disk6s3"]?.size = shrunk
+        }
+        try await FormatRunner(environment: environment).run(retypeJob(infos[3], in: infos)) { _ in }
+        #expect(environment.lastNTFS?.size == shrunk)
+        #expect(environment.lastNTFS?.offset == infos[3].offset)
+    }
+
+    @Test func movedPartitionAfterTheRetypeIsNotFormattedAsNTFS() async {
+        let infos = hfsPartition
+        let environment = FakeFormatEnvironment(infos)
+        environment.afterDiskutil = { [unowned environment] in
+            self.retype(environment, "disk6s3")
+            environment.infos["disk6s3"]?.offset = 0
+        }
+        await #expect(throws: FormatError.ntfsFailedAfterErase("the drive changed", partition: true)) {
+            try await FormatRunner(environment: environment).run(self.retypeJob(infos[3], in: infos)) { _ in }
+        }
+        #expect(environment.lastNTFS == nil)
     }
 
     @Test func retypedPartitionUnmountIsRetried() async throws {

@@ -36,12 +36,20 @@ struct NTFSDisk: Identifiable, Equatable, Sendable {
     /// Microsoft Basic Data type (shared with FAT and exFAT).
     static let contentHints: Set<String> = ["Windows_NTFS", "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7"]
 
+    /// A live mount reports this when the volume is NTFS, whichever driver claimed it.
+    static func isNTFSFileSystem(_ type: String?) -> Bool {
+        type == Identifiers.systemDriverTypeName
+            || type == Identifiers.fileSystemTypeName
+            || type == Identifiers.fileSystemShortName
+    }
+
     /// Whether a partition with this content hint and volume kind should be listed.
-    static func isCandidate(content: String?, volumeKind: String?) -> Bool {
+    /// `mountedAs` wins: DiskArbitration can keep the previous kind (exFAT, FAT)
+    /// after `mkntfs` until something mounts the new file system.
+    static func isCandidate(content: String?, volumeKind: String?, mountedAs: String? = nil) -> Bool {
+        if isNTFSFileSystem(mountedAs) { return true }
         if let volumeKind {
-            return volumeKind == Identifiers.systemDriverTypeName
-                || volumeKind == Identifiers.fileSystemTypeName
-                || volumeKind == Identifiers.fileSystemShortName
+            return isNTFSFileSystem(volumeKind)
         }
         return content.map(contentHints.contains) ?? false
     }
