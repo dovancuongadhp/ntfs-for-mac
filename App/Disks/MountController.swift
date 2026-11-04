@@ -4,7 +4,20 @@ import NTFSShared
 
 struct DiskOperationError: LocalizedError {
     let message: String
+    /// DiskArbitration status, when this error came from a dissenter.
+    var status: Int32? = nil
     var errorDescription: String? { message }
+
+    /// `kDAReturnBusy` (0xF8DA0002): a mount is already underway or finished.
+    var isBusy: Bool { status == Int32(bitPattern: 0xF8DA0002) }
+}
+
+/// How to mount with the extension when DiskArbitration picked another driver.
+/// The directory is created as an administrator; `mount` itself must run as the
+/// logged-in user or FSKit answers "Unable to invoke task".
+struct ExtensionMountCommand: Equatable {
+    var prepareScript: String
+    var arguments: [String]
 }
 
 /// Mounts, remounts and ejects disks through DiskArbitration.
@@ -31,6 +44,11 @@ final class MountController {
         // extension enabled it should pick ours ahead of Apple's driver.
         do {
             try await mount(disk, arguments: readOnly ? ["rdonly"] : [])
+        } catch let error as DiskOperationError where error.isBusy {
+            // The volume is already being mounted. Starting `mount -F` now makes
+            // FSKit fail with "Unable to invoke task". Wait, then keep a mount
+            // that is not Apple's read-only NTFS driver.
+            if await waitUntilForeignMountSettles(disk) { return }
         } catch {
             appLog.notice("DiskArbitration mount of \(bsdName, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
         }
@@ -38,12 +56,24 @@ final class MountController {
             return
         }
 
-        // macOS chose its own driver (or none): mount explicitly with mount(8),
-        // which needs administrator rights to create the mount point.
+        // macOS chose its own NTFS driver, or nothing mounted. Create the
+        // directory as an administrator, then mount as this user.
         if mountPath(disk) != nil {
             try await unmount(disk, options: DADiskUnmountOptions(kDADiskUnmountOptionDefault))
         }
-        try runPrivilegedMount(bsdName: bsdName, volumeName: volumeName, readOnly: readOnly)
+        try await runExtensionMount(bsdName: bsdName, volumeName: volumeName, readOnly: readOnly)
+    }
+
+    /// `true` when the in-progress mount is exFAT, APFS, or this extension, so it
+    /// must be left alone. Apple's read-only NTFS mount returns `false`.
+    private func waitUntilForeignMountSettles(_ disk: DADisk) async -> Bool {
+        for _ in 0..<12 {
+            if let path = mountPath(disk) {
+                return Self.fileSystemType(at: path) != Identifiers.systemDriverTypeName
+            }
+            try? await Task.sleep(nanoseconds: 250_000_000)
+        }
+        return false
     }
 
     /// Unmounts every volume on the physical disk and ejects it.
@@ -102,20 +132,43 @@ final class MountController {
         }
     }
 
-    private func runPrivilegedMount(bsdName: String, volumeName: String, readOnly: Bool) throws {
+    private func runExtensionMount(bsdName: String, volumeName: String, readOnly: Bool) async throws {
         let mountPoint = Self.freeMountPoint(for: volumeName)
-        let options = readOnly ? "-o rdonly " : ""
-        let command = "/bin/mkdir -p \(Self.shellQuoted(mountPoint)) && "
-            + "/sbin/mount -F -t \(Identifiers.fileSystemShortName) \(options)/dev/\(bsdName) \(Self.shellQuoted(mountPoint))"
-            + " || { /bin/rmdir \(Self.shellQuoted(mountPoint)); exit 1; }"
-        let source = "do shell script \(Self.appleScriptQuoted(command)) with administrator privileges"
+        let command = Self.extensionMountCommand(
+            bsdName: bsdName, mountPoint: mountPoint, readOnly: readOnly, uid: getuid(), gid: getgid())
+        try runAdministrator(command.prepareScript)
+        let result = try await CommandLineTool.run("/sbin/mount", command.arguments)
+        guard result.status == 0 else {
+            _ = try? await CommandLineTool.run("/bin/rmdir", [mountPoint])
+            let output = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+            throw DiskOperationError(message: output.isEmpty
+                ? String(localized: "The disk could not be mounted.")
+                : output)
+        }
+    }
 
+    private func runAdministrator(_ script: String) throws {
+        let source = "do shell script \(Self.appleScriptQuoted(script)) with administrator privileges"
         var errorInfo: NSDictionary?
         NSAppleScript(source: source)?.executeAndReturnError(&errorInfo)
         if let errorInfo {
             let message = errorInfo[NSAppleScript.errorMessage] as? String
             throw DiskOperationError(message: message ?? String(localized: "The disk could not be mounted."))
         }
+    }
+
+    nonisolated static func extensionMountCommand(
+        bsdName: String, mountPoint: String, readOnly: Bool, uid: uid_t, gid: gid_t
+    ) -> ExtensionMountCommand {
+        let quoted = shellQuoted(mountPoint)
+        var arguments = ["-F", "-t", Identifiers.fileSystemShortName]
+        if readOnly {
+            arguments += ["-o", "rdonly"]
+        }
+        arguments += ["/dev/\(bsdName)", mountPoint]
+        return ExtensionMountCommand(
+            prepareScript: "/bin/mkdir -p \(quoted) && /usr/sbin/chown \(uid):\(gid) \(quoted)",
+            arguments: arguments)
     }
 
     private nonisolated static func fileSystemType(at path: URL) -> String? {
@@ -168,7 +221,8 @@ private final class CallbackBox {
             let status = DADissenterGetStatus(dissenter)
             let text = DADissenterGetStatusString(dissenter) as String?
             box.continuation.resume(throwing: DiskOperationError(
-                message: text ?? String(localized: "The operation failed (code \(status)).")))
+                message: text ?? String(localized: "The operation failed (code \(status))."),
+                status: status))
         } else {
             box.continuation.resume()
         }

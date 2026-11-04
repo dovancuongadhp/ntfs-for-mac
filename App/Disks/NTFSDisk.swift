@@ -47,7 +47,11 @@ struct NTFSDisk: Identifiable, Equatable, Sendable {
     /// `mountedAs` wins: DiskArbitration can keep the previous kind (exFAT, FAT)
     /// after `mkntfs` until something mounts the new file system.
     static func isCandidate(content: String?, volumeKind: String?, mountedAs: String? = nil) -> Bool {
-        if isNTFSFileSystem(mountedAs) { return true }
+        // A live mount is decisive. exFAT and NTFS share the Microsoft Basic Data
+        // partition type, and that type is known before the file system is.
+        if let mountedAs {
+            return isNTFSFileSystem(mountedAs)
+        }
         if let volumeKind {
             return isNTFSFileSystem(volumeKind)
         }

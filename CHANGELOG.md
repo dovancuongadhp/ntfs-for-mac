@@ -11,6 +11,14 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 
 ## [Unreleased]
 
+## [2.0.3] Lotus - 2026-11-04
+
+### Fixed
+
+- Plugging in a drive showed “mount: Unable to invoke task”. The app started its own mount while macOS was already mounting, and it ran that command as an administrator. The file system extension only starts for the logged-in user, so the mount failed every time. NTFS for Mac now waits for the mount that is already underway, then mounts as the logged-in user.
+- An exFAT partition on the same disk was treated as NTFS before macOS had identified it, and it hit the same error. A partition that is already mounted as exFAT stays exFAT.
+- The main window was blank in Light Mode. The drive list was drawn in white on white because the window was created while the app was still only a menu-bar item. The list is visible now.
+
 ## [2.0.2] Lotus - 2026-11-04
 
 ### Added
@@ -91,7 +99,8 @@ First public release.
 - English and Vietnamese user interface.
 - Drag-to-install DMG, and `scripts/build-local.sh` to build an ad hoc signed copy without an Apple Developer account.
 
-[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.2...HEAD
+[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.3...HEAD
+[2.0.3]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.1...v2.0.0
