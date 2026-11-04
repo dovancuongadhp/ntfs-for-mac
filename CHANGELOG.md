@@ -11,6 +11,17 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 
 ## [Unreleased]
 
+## [2.0.1] Lotus - 2026-11-04
+
+### Fixed
+
+- Formatting a removable drive as NTFS failed with “Creating the NTFS file system failed. The partition may not be usable; format it again.” macOS refuses a direct open of a removable disk, even for an administrator, so the NTFS formatter never started and the partition was left as an empty exFAT volume. NTFS for Mac now opens the drive through macOS’s own permission prompt and formats it with that access.
+- If macOS still blocks the drive, the error says where to allow it: System Settings → Privacy & Security → Files & Folders, then allow NTFS for Mac to access removable volumes.
+
+### Changed
+
+- The NTFS options that were only labeled “Advanced” now say what they are: cluster size and quick format, with a short explanation of each. The defaults are unchanged (Automatic cluster size, quick format on).
+
 ## [2.0.0] Lotus - 2026-11-04
 
 ### Added
@@ -66,7 +77,8 @@ First public release.
 - English and Vietnamese user interface.
 - Drag-to-install DMG, and `scripts/build-local.sh` to build an ad hoc signed copy without an Apple Developer account.
 
-[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/dovancuongadhp/ntfs-for-mac/releases/tag/v1.0.0

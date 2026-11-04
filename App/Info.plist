@@ -37,5 +37,7 @@
 	<string>$(APP_CODENAME)</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Free software under GPL-2.0-or-later. NTFS support by ntfs-3g.</string>
+	<key>NSRemovableVolumesUsageDescription</key>
+	<string>NTFS for Mac needs access to removable drives to format them as NTFS.</string>
 </dict>
 </plist>

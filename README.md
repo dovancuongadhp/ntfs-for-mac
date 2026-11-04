@@ -132,7 +132,7 @@ status; select a drive to see its model, connection, partition table and a parti
 | --- | --- |
 | Format | NTFS, exFAT, FAT32, APFS |
 | Scheme (whole drive only) | GUID Partition Map (GPT) or Master Boot Record (MBR) |
-| NTFS options | Cluster size; **Quick format** (turn off to write zeros over the whole partition, which takes much longer) |
+| NTFS options | Cluster size (Automatic fits almost every drive; a larger size wastes space on small files); **Quick format** (turn off to write zeros over the whole partition, which takes much longer) |
 
 Formatting is built to never erase the wrong thing:
 
@@ -142,7 +142,8 @@ Formatting is built to never erase the wrong thing:
 - **Internal drives, the drive macOS runs from and the drive NTFS for Mac runs from are protected.** They are shown,
   but can't be unmounted, ejected or formatted. Disk images can't be formatted either.
 - NTFS formatting runs a small helper with administrator rights, which you grant in the standard macOS password
-  dialog. NTFS for Mac never sees your password.
+  dialog. NTFS for Mac never sees your password. The first time, macOS may also ask you to allow access to
+  removable volumes.
 - Erasing a **whole drive** as NTFS happens in two steps: macOS first erases the drive as exFAT, then asks for your
   password to turn the partition into NTFS. If you cancel that dialog, the drive stays exFAT.
 - Formatting a Mac partition (APFS or Mac OS Extended) as NTFS also changes its partition type, so Windows recognizes it.
@@ -261,7 +262,7 @@ log show --last 10m --predicate 'subsystem BEGINSWITH "com.docuong.ntfsformac"'
 ```
 NTFS for Mac.app
 ├── Contents/MacOS/NTFS for Mac                ← menu bar app and drive manager (SwiftUI)
-├── Contents/Helpers/ntfs-format, ntfs-mkfs    ← NTFS formatting helpers, run with administrator rights
+├── Contents/Helpers/ntfs-format, ntfs-mkfs, libNTFSDiskOpen.dylib    ← NTFS formatting helpers
 └── Contents/Extensions/NTFSExtension.appex    ← FSKit file system extension
         └── NTFSCore → libntfs-3g              ← NTFS engine
 ```
@@ -271,7 +272,8 @@ NTFS for Mac.app
 - The **FSKit extension** (`ntfsrw`) runs in user space and translates Finder's file operations into calls to
   libntfs-3g, which reads and writes the NTFS structures directly on the block device.
 - **Formatting** uses `diskutil` for exFAT, FAT32, APFS and partition tables. For NTFS, the `ntfs-format` helper
-  re-checks the partition, blocks it from being mounted while it works and runs ntfs-3g's `mkntfs`.
+  re-checks the partition, blocks it from being mounted while it works, and opens the removable disk through
+  macOS before running ntfs-3g's `mkntfs`. macOS refuses a direct open of that disk, even for an administrator.
 
 ## Building from source
 

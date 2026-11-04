@@ -30,7 +30,12 @@ cp Extension/NTFSExtension.entitlements "$ENTITLEMENTS"
 
 # Inside out: helpers and the extension first, then the app that seals them.
 for tool in "$APP/Contents/Helpers/"*; do
-    codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp=none "$tool"
+    extra=()
+    # An ad hoc signature has no Team ID, so ntfs-mkfs cannot load the library beside it.
+    if [[ "$SIGN_IDENTITY" == "-" && "$(basename "$tool")" == "ntfs-mkfs" ]]; then
+        extra=(--entitlements scripts/ntfs-mkfs-adhoc.entitlements)
+    fi
+    codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp=none "${extra[@]}" "$tool"
 done
 codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp=none \
     --entitlements "$ENTITLEMENTS" "$APP/Contents/Extensions/NTFSExtension.appex"

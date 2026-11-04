@@ -20,6 +20,9 @@ let package = Package(
         .executable(name: "ntfs-mkfs", targets: ["ntfs-mkfs"]),
         .executable(name: "ntfs-format", targets: ["ntfs-format"]),
     ],
+    dependencies: [
+        .package(path: "Packages/NTFSDiskOpen"),
+    ],
     targets: [
         .target(
             name: "CNTFS",
@@ -38,16 +41,28 @@ let package = Package(
         ),
         .executableTarget(
             name: "ntfs-mkfs",
-            dependencies: ["CNTFS"],
+            dependencies: [
+                "CNTFS",
+                .product(name: "NTFSDiskOpen", package: "NTFSDiskOpen"),
+            ],
             path: "Sources/ntfs-mkfs",
             exclude: ["ntfs-3g", "config"],
-            cSettings: vendorCSettings
+            cSettings: vendorCSettings,
+            linkerSettings: [
+                .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path"])
+            ]
         ),
         .target(name: "NTFSProbe"),
         .target(name: "NTFSShared"),
         .target(name: "NTFSCore", dependencies: ["CNTFS", "NTFSProbe", "NTFSShared"]),
         .target(name: "NTFSFormat"),
-        .executableTarget(name: "ntfs-format", dependencies: ["NTFSFormat"]),
+        .target(
+            name: "NTFSAuthOpen",
+            path: "Sources/NTFSAuthOpen",
+            publicHeadersPath: "include",
+            linkerSettings: [.linkedFramework("Security")]
+        ),
+        .executableTarget(name: "ntfs-format", dependencies: ["NTFSFormat", "NTFSAuthOpen"]),
         .testTarget(
             name: "NTFSCoreTests",
             dependencies: ["NTFSCore", "NTFSProbe", "NTFSShared", "NTFSFormat", "ntfs-mkfs"]

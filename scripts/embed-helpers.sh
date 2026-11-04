@@ -22,11 +22,19 @@ swiftpm --product ntfs-format
 BIN="$(swiftpm --show-bin-path)"
 
 mkdir -p "$HELPERS"
-for tool in ntfs-format ntfs-mkfs; do
+for tool in ntfs-format ntfs-mkfs libNTFSDiskOpen.dylib; do
     # A new file, not one rewritten in place: the kernel caches the signature of a signed binary.
     rm -f "$HELPERS/$tool"
     cp "$BIN/$tool" "$HELPERS/$tool"
-    if [[ "${CODE_SIGNING_ALLOWED:-NO}" == "YES" && -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]]; then
-        codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --options runtime --timestamp=none "$HELPERS/$tool"
-    fi
 done
+# mkntfs only sees the authopen descriptor if this library sits beside it.
+install_name_tool -id "@executable_path/libNTFSDiskOpen.dylib" "$HELPERS/libNTFSDiskOpen.dylib"
+CURRENT="$(otool -L "$HELPERS/ntfs-mkfs" | awk '/libNTFSDiskOpen.dylib/ { print $1; exit }')"
+if [[ -n "$CURRENT" && "$CURRENT" != "@executable_path/libNTFSDiskOpen.dylib" ]]; then
+    install_name_tool -change "$CURRENT" "@executable_path/libNTFSDiskOpen.dylib" "$HELPERS/ntfs-mkfs"
+fi
+if [[ "${CODE_SIGNING_ALLOWED:-NO}" == "YES" && -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]]; then
+    for tool in ntfs-format ntfs-mkfs libNTFSDiskOpen.dylib; do
+        codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --options runtime --timestamp=none "$HELPERS/$tool"
+    done
+fi
