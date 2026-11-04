@@ -66,6 +66,18 @@
 		E821D2286390570252337521 /* PartitionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A52B22FA008670DF3CE8C37F /* PartitionDetailView.swift */; };
 		F2E9E7093C63134CB71BE0CE /* NTFSVolume+ReadWrite.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1CE78FD83C2790D1867F6AF /* NTFSVolume+ReadWrite.swift */; };
 		FC65D83494D59ABE67C2B321 /* DiskInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = D497A6647E3D1551CDF0EC4D /* DiskInventory.swift */; };
+		6260D8BACF3D39F23D7ED412 /* NTFSTransfer in Frameworks */ = {isa = PBXBuildFile; productRef = 9610059714590265FE3843DF /* NTFSTransfer */; };
+		51136932EFAEA88E7E138696 /* TransferText.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC14C4237756362B9AA6FE0D /* TransferText.swift */; };
+		C9C26388B177B4F9CB720705 /* TransferSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 882ECD249DF21C05324A1586 /* TransferSession.swift */; };
+		DDE71A44A24E391496CB39CC /* ProtectedFolders.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9C0F061E55A099EBA8E3EEA /* ProtectedFolders.swift */; };
+		31472D3F314716C91306B270 /* TransferTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7583D05B08BD3985C6A308A /* TransferTextTests.swift */; };
+		A768AC60AF9DE373F1CF8141 /* ProtectedFoldersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D93513823EDAF297F6530BAF /* ProtectedFoldersTests.swift */; };
+		AAE64AF671271C86BA089B34 /* TransferSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EFF31B24A5A0F070F8B0AFB /* TransferSessionTests.swift */; };
+		90558CF20C1AC4E7EBE3B268 /* TransferPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAABFAF47582F106E450922D /* TransferPage.swift */; };
+		E1359AAA4E096ACFA4B1B2C4 /* FilePaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AFB2417156D447AE1A39D4 /* FilePaneView.swift */; };
+		2D851B546A7DB9F48CC133F6 /* TransferProgressPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDF402FAE9264A6DF4065021 /* TransferProgressPanel.swift */; };
+		A17AF2554964F4E9ADF0DAD0 /* TransferPrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C39FD9537FB1574636ED07 /* TransferPrompts.swift */; };
+		7E2D9A4C1B5F38A60D4E9F12 /* TransferLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1C7E0A93D24F6E8A1B3C70 /* TransferLocalizationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -164,6 +176,17 @@
 		F2E8743B781D098EBF4ADF46 /* FormatSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormatSafety.swift; sourceTree = "<group>"; };
 		F3093C3CB59870E472CD6316 /* NTFSVolume+Operations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NTFSVolume+Operations.swift"; sourceTree = "<group>"; };
 		FDFD749A4B9B1A12C2E7E3D7 /* WindowPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPresenter.swift; sourceTree = "<group>"; };
+		DC14C4237756362B9AA6FE0D /* TransferText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferText.swift; sourceTree = "<group>"; };
+		882ECD249DF21C05324A1586 /* TransferSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferSession.swift; sourceTree = "<group>"; };
+		A9C0F061E55A099EBA8E3EEA /* ProtectedFolders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtectedFolders.swift; sourceTree = "<group>"; };
+		B7583D05B08BD3985C6A308A /* TransferTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferTextTests.swift; sourceTree = "<group>"; };
+		D93513823EDAF297F6530BAF /* ProtectedFoldersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtectedFoldersTests.swift; sourceTree = "<group>"; };
+		0EFF31B24A5A0F070F8B0AFB /* TransferSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferSessionTests.swift; sourceTree = "<group>"; };
+		BAABFAF47582F106E450922D /* TransferPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferPage.swift; sourceTree = "<group>"; };
+		40AFB2417156D447AE1A39D4 /* FilePaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePaneView.swift; sourceTree = "<group>"; };
+		CDF402FAE9264A6DF4065021 /* TransferProgressPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferProgressPanel.swift; sourceTree = "<group>"; };
+		92C39FD9537FB1574636ED07 /* TransferPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferPrompts.swift; sourceTree = "<group>"; };
+		5B1C7E0A93D24F6E8A1B3C70 /* TransferLocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferLocalizationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -173,6 +196,7 @@
 			files = (
 				83A6BC4C5267BA4785468290 /* NTFSShared in Frameworks */,
 				76A74AB98350B85C8DA6A609 /* NTFSFormat in Frameworks */,
+				6260D8BACF3D39F23D7ED412 /* NTFSTransfer in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,6 +280,7 @@
 				B212CF71655E10F9F544A629 /* Settings */,
 				40B46F6BB81D43B4B496BF24 /* Support */,
 				C7318E081DE3D49A624B6AFD /* Views */,
+				08AA1539137147F3C141DEEC /* Transfer */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -313,6 +338,10 @@
 				18DD09D1D354C6A9483B65B0 /* FormatSafetyTests.swift */,
 				C5C5720C2030DBA3BEB6B901 /* MountPolicyTests.swift */,
 				A7C814D3D41ACE4A2AEA810A /* VolumeNameRuleTests.swift */,
+				B7583D05B08BD3985C6A308A /* TransferTextTests.swift */,
+				D93513823EDAF297F6530BAF /* ProtectedFoldersTests.swift */,
+				0EFF31B24A5A0F070F8B0AFB /* TransferSessionTests.swift */,
+				5B1C7E0A93D24F6E8A1B3C70 /* TransferLocalizationTests.swift */,
 			);
 			path = AppTests;
 			sourceTree = "<group>";
@@ -362,6 +391,20 @@
 			path = Format;
 			sourceTree = "<group>";
 		};
+		08AA1539137147F3C141DEEC /* Transfer */ = {
+			isa = PBXGroup;
+			children = (
+				DC14C4237756362B9AA6FE0D /* TransferText.swift */,
+				882ECD249DF21C05324A1586 /* TransferSession.swift */,
+				A9C0F061E55A099EBA8E3EEA /* ProtectedFolders.swift */,
+				BAABFAF47582F106E450922D /* TransferPage.swift */,
+				40AFB2417156D447AE1A39D4 /* FilePaneView.swift */,
+				CDF402FAE9264A6DF4065021 /* TransferProgressPanel.swift */,
+				92C39FD9537FB1574636ED07 /* TransferPrompts.swift */,
+			);
+			path = Transfer;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -402,6 +445,7 @@
 			packageProductDependencies = (
 				9091DDCAC0085BCCFDA9BBB5 /* NTFSShared */,
 				F9F62E2E3A487429EA637CD2 /* NTFSFormat */,
+				9610059714590265FE3843DF /* NTFSTransfer */,
 			);
 			productName = NTFSForMac;
 			productReference = 510C89BA49A9EF5A36B48D87 /* NTFSForMac.app */;
@@ -545,6 +589,13 @@
 				C222D3734DD298286360196A /* VolumeNameRule.swift in Sources */,
 				98042B7BA8B0C2F551ED66B3 /* VolumePreferences.swift in Sources */,
 				1A915EE13C8845DAF2F39018 /* WindowPresenter.swift in Sources */,
+				51136932EFAEA88E7E138696 /* TransferText.swift in Sources */,
+				C9C26388B177B4F9CB720705 /* TransferSession.swift in Sources */,
+				DDE71A44A24E391496CB39CC /* ProtectedFolders.swift in Sources */,
+				90558CF20C1AC4E7EBE3B268 /* TransferPage.swift in Sources */,
+				E1359AAA4E096ACFA4B1B2C4 /* FilePaneView.swift in Sources */,
+				2D851B546A7DB9F48CC133F6 /* TransferProgressPanel.swift in Sources */,
+				A17AF2554964F4E9ADF0DAD0 /* TransferPrompts.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -560,6 +611,10 @@
 				6E8CE484740EA8ADC692F2FC /* FormatSafetyTests.swift in Sources */,
 				8FD2503D008C45F79C1469D9 /* MountPolicyTests.swift in Sources */,
 				16E8117290008DFF282C370C /* VolumeNameRuleTests.swift in Sources */,
+				31472D3F314716C91306B270 /* TransferTextTests.swift in Sources */,
+				A768AC60AF9DE373F1CF8141 /* ProtectedFoldersTests.swift in Sources */,
+				AAE64AF671271C86BA089B34 /* TransferSessionTests.swift in Sources */,
+				7E2D9A4C1B5F38A60D4E9F12 /* TransferLocalizationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -880,6 +935,10 @@
 		F9F62E2E3A487429EA637CD2 /* NTFSFormat */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = NTFSFormat;
+		};
+		9610059714590265FE3843DF /* NTFSTransfer */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NTFSTransfer;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

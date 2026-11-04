@@ -54,21 +54,49 @@ struct MainWindowView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if selection == .settings {
+        if selection == .transfer {
+            TransferPage(session: model.transfer)
+        } else if selection == .settings {
             SettingsView(model: model)
         } else if let found = selectedPartition {
             PartitionDetailView(model: model, partition: found.partition, disk: found.disk)
         } else if case .disk = selection, let disk = selectedDisk {
             DiskDetailView(model: model, disk: disk)
         } else {
-            ContentUnavailableView("Select a drive or partition", systemImage: "externaldrive")
+            WelcomeView(model: model) { selection = $0 }
         }
     }
 
-    /// The same four buttons on every page, dimmed when they don't apply, so the
-    /// toolbar keeps one height and one layout like Disk Utility's.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
+        if selection == .transfer {
+            transferToolbar
+        } else {
+            driveToolbar
+        }
+    }
+
+    /// The file copy page has its own buttons, in the same style and height.
+    @ToolbarContentBuilder
+    private var transferToolbar: some ToolbarContent {
+        actionItem("New Folder", systemImage: "folder.badge.plus") { model.transfer.beginNewFolder() }
+        ToolbarSpacer(.fixed, placement: .primaryAction)
+        actionItem("Rename", systemImage: "pencil", disabled: !model.transfer.canRename) { model.transfer.beginRename() }
+        ToolbarSpacer(.fixed, placement: .primaryAction)
+        actionItem("Delete", systemImage: "trash", disabled: !model.transfer.canDelete) { model.transfer.requestDelete() }
+        // A ToolbarContentBuilder takes at most ten children, so the last buttons sit in a group.
+        Group {
+            ToolbarSpacer(.fixed, placement: .primaryAction)
+            actionItem("Quick Look", systemImage: "eye", disabled: !model.transfer.canPreview) { model.transfer.preview() }
+            ToolbarSpacer(.fixed, placement: .primaryAction)
+            actionItem("Finder", systemImage: "folder", help: String(localized: "Show in Finder")) { model.transfer.revealInFinder() }
+        }
+    }
+
+    /// The same four buttons on every drive page, dimmed when they don't apply, so the
+    /// toolbar keeps one height and one layout like Disk Utility's.
+    @ToolbarContentBuilder
+    private var driveToolbar: some ToolbarContent {
         if let found = selectedPartition, found.partition.mount != nil {
             actionItem("Unmount", systemImage: "externaldrive.badge.minus", disabled: !model.canUnmount(found.partition, on: found.disk)) {
                 model.unmount(found.partition)
@@ -134,7 +162,7 @@ struct MainWindowView: View {
         switch selection {
         case .disk(let name)?: .disk(name)
         case .partition(let name)?: .partition(name)
-        case .settings?, nil: nil
+        case .settings?, .transfer?, .welcome?, nil: nil
         }
     }
 
@@ -152,32 +180,128 @@ struct MainWindowView: View {
         switch selection {
         case .disk(let name)?: model.inventory.physicalDisk(named: name)
         case .partition(let name)?: model.inventory.partition(named: name)?.disk
-        case .settings?, nil: nil
+        case .settings?, .transfer?, .welcome?, nil: nil
         }
     }
 
     private func selectDefault() {
-        guard selection == nil else { return }
-        let disks = model.inventory.sidebarDisks
-        let disk = disks.first { !$0.isInternal } ?? disks.first
-        if let partition = disk?.sidebarPartitions.first {
-            selection = .partition(partition.bsdName)
-        } else if let disk {
-            selection = .disk(disk.bsdName)
-        }
+        if selection == nil { selection = .welcome }
     }
 
     private func keepSelectionValid() {
         let isValid = switch selection {
         case .partition(let name)?: model.inventory.partition(named: name) != nil
         case .disk(let name)?: model.inventory.physicalDisk(named: name) != nil
-        case .settings?: true
+        case .settings?, .transfer?, .welcome?: true
         case nil: false
         }
         if !isValid {
             selection = nil
             selectDefault()
         }
+    }
+}
+
+/// Where the window opens: whether the driver is on, the drives plugged in, and the way to the other pages.
+private struct WelcomeView: View {
+    let model: AppModel
+    let open: (SidebarSelection) -> Void
+
+    var body: some View {
+        Form {
+            PageBanners(model: model, showsExtensionWarning: false)
+            Section {
+                HStack(spacing: 14) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .frame(width: 64, height: 64)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("NTFS for Mac").font(.title2.weight(.semibold))
+                        Text("Read and write Windows drives right in Finder.").foregroundStyle(.secondary)
+                        Text("Version \(Bundle.main.versionString)").font(.caption).foregroundStyle(.tertiary)
+                    }
+                }
+                driverStatus
+            }
+
+            Section("Drives") {
+                let partitions = model.inventory.sidebarDisks.filter { !$0.isInternal }.flatMap(\.sidebarPartitions)
+                if partitions.isEmpty {
+                    Text("Connect a drive and it will appear here.").foregroundStyle(.secondary)
+                }
+                ForEach(partitions, id: \.bsdName) { partition in
+                    shortcut(systemImage: partition.mount == nil ? "externaldrive" : "externaldrive.fill") {
+                        Text(partition.name).lineLimit(1)
+                        Spacer()
+                        Text(partition.fileSystem.label).foregroundStyle(.secondary)
+                        Text((partition.mount?.totalBytes ?? partition.size).formatted(.byteCount(style: .file)))
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    } action: {
+                        open(.partition(partition.bsdName))
+                    }
+                }
+            }
+
+            Section("Get started") {
+                shortcut(systemImage: "arrow.left.arrow.right") {
+                    page("File Transfer", "Copy files between drives in a two-sided browser.")
+                } action: {
+                    open(.transfer)
+                }
+                shortcut(systemImage: "gearshape") {
+                    page("Settings", "The NTFS driver, language, updates and more.")
+                } action: {
+                    open(.settings)
+                }
+            }
+        }
+        .detailColumn()
+        .onAppear { model.extensionStatus.refresh() }
+    }
+
+    @ViewBuilder private var driverStatus: some View {
+        switch model.extensionStatus.isEnabled {
+        case true?:
+            Label("The NTFS driver is on. Plug in a Windows drive and use it like any other.", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        case false?:
+            HStack {
+                Label("The NTFS driver is off, so Windows drives are read-only.", systemImage: "exclamationmark.circle.fill")
+                    .foregroundStyle(.orange)
+                Spacer()
+                Button("Turn It On") { open(.settings) }
+            }
+        case nil:
+            EmptyView()
+        }
+    }
+
+    private func page(_ title: LocalizedStringKey, _ detail: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+            Text(detail).font(.caption).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// A whole row that opens a page, with an arrow like a link in System Settings.
+    private func shortcut(
+        systemImage: String, @ViewBuilder label: () -> some View, action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 20)
+                label()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

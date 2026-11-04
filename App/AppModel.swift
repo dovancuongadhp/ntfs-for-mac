@@ -11,6 +11,10 @@ final class AppModel {
     let preferences = VolumePreferences()
     let launchAtLogin = LaunchAtLogin()
     let updates = AppUpdater()
+    /// The two-sided file copy page.
+    @ObservationIgnored private(set) lazy var transfer = TransferSession(
+        notify: { [notifier] title, body in notifier.post(title: title, body: body) },
+        logURL: TransferSession.defaultLogURL)
     /// Disks and partitions with a mount, unmount or eject in progress.
     private(set) var busy: Set<String> = []
     /// Physical disks being formatted.

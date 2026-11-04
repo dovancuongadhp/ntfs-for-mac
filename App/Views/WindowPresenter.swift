@@ -6,7 +6,7 @@ import SwiftUI
 @MainActor
 @Observable
 final class MainNavigation {
-    var selection: SidebarSelection?
+    var selection: SidebarSelection? = .welcome
 }
 
 /// Shows the main window, which also holds settings and setup. The app has no
@@ -81,6 +81,10 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         guard (notification.object as? NSWindow) === mainWindow else { return }
         mainWindow = nil
+        // The window opens on the welcome page each time.
+        navigation.selection = .welcome
+        // Closing the window may not tell the page it left, and a copy question must then ask for attention.
+        model.transfer.pageVisible = false
         NSApp.setActivationPolicy(.accessory)
     }
 

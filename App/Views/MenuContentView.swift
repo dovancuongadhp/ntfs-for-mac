@@ -27,6 +27,19 @@ struct MenuContentView: View {
                 }
             }
 
+            switch model.transfer.menuStatus {
+            case .waiting:
+                Button {
+                    windows.showMain()
+                } label: {
+                    transferLine("Waiting for you", symbol: "exclamationmark.bubble.fill")
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.orange)
+            case .none, .copying, .paused:
+                EmptyView()
+            }
+
             if let error = model.lastError {
                 HStack(alignment: .top) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -43,6 +56,17 @@ struct MenuContentView: View {
                     .buttonStyle(.borderless)
                     .accessibilityLabel("Dismiss")
                 }
+            }
+
+            switch model.transfer.menuStatus {
+            case .copying:
+                transferLine("Copying files…", symbol: "arrow.left.arrow.right", showsProgress: true)
+                    .foregroundStyle(.secondary)
+            case .paused:
+                transferLine("Paused", symbol: "pause.circle", showsProgress: true)
+                    .foregroundStyle(.secondary)
+            case .none, .waiting:
+                EmptyView()
             }
 
             Divider()
@@ -79,5 +103,18 @@ struct MenuContentView: View {
                 try? await Task.sleep(for: .seconds(2))
             }
         }
+    }
+    /// One line about the copy. The symbol only decorates; the line reads as a single phrase to VoiceOver.
+    private func transferLine(_ title: LocalizedStringKey, symbol: String, showsProgress: Bool = false) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: symbol)
+                .accessibilityHidden(true)
+            Text(title)
+            if showsProgress {
+                Text(model.transfer.queue.progress.fraction, format: .percent.precision(.fractionLength(0)))
+                    .monospacedDigit()
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 }

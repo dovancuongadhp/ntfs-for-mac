@@ -561,16 +561,6 @@
         }
       }
     },
-    "Format" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Định dạng"
-          }
-        }
-      }
-    },
     "Format…" : {
       "localizations" : {
         "vi" : {
@@ -2010,6 +2000,1376 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%1$@”: %2$@"
+          }
+        }
+      }
+    },
+    "Can't read this file. It may be damaged." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không đọc được tệp này. Tệp có thể bị hỏng."
+          }
+        }
+      }
+    },
+    "Couldn't write to the destination." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không ghi được vào thư mục đích."
+          }
+        }
+      }
+    },
+    "The destination is full." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục đích đã đầy."
+          }
+        }
+      }
+    },
+    "The drive was disconnected." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đã bị ngắt kết nối."
+          }
+        }
+      }
+    },
+    "No permission to read or write here." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có quyền đọc hoặc ghi ở đây."
+          }
+        }
+      }
+    },
+    "The name isn't allowed on the destination." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tên này không được phép trên thư mục đích."
+          }
+        }
+      }
+    },
+    "The copy didn't match the original." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bản sao không khớp với bản gốc."
+          }
+        }
+      }
+    },
+    "The file changed while copying." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tệp đã thay đổi trong lúc sao chép."
+          }
+        }
+      }
+    },
+    "The file was removed before it could be copied." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tệp đã bị xóa trước khi kịp sao chép."
+          }
+        }
+      }
+    },
+    "A folder and a file have the same name." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một thư mục và một tệp trùng tên."
+          }
+        }
+      }
+    },
+    "The file is too large for the destination's file system." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tệp quá lớn đối với hệ tệp của thư mục đích."
+          }
+        }
+      }
+    },
+    "Copy complete" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã sao chép xong"
+          }
+        }
+      }
+    },
+    "Files copied: %lld · %@ · %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã sao chép: %1$lld tệp · %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "Copy finished with errors" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép xong nhưng có lỗi"
+          }
+        }
+      }
+    },
+    "Files copied: %lld · Failed: %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã sao chép: %1$lld tệp · Lỗi: %2$lld"
+          }
+        }
+      }
+    },
+    "Copy cancelled" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã hủy sao chép"
+          }
+        }
+      }
+    },
+    "Files copied: %lld · Skipped: %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã sao chép: %1$lld tệp · Bỏ qua: %2$lld"
+          }
+        }
+      }
+    },
+    "The destination is full" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục đích đã đầy"
+          }
+        }
+      }
+    },
+    "Free some space, then resume the copy." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy giải phóng dung lượng rồi tiếp tục sao chép."
+          }
+        }
+      }
+    },
+    "A drive was disconnected" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một ổ đã bị ngắt kết nối"
+          }
+        }
+      }
+    },
+    "Reconnect it, then resume the copy." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hãy cắm lại ổ rồi tiếp tục sao chép."
+          }
+        }
+      }
+    },
+    "Copy stopped" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã dừng sao chép"
+          }
+        }
+      }
+    },
+    "Copying is waiting for you" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Việc sao chép đang chờ bạn"
+          }
+        }
+      }
+    },
+    "A file needs your decision. Open NTFS for Mac to continue." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Một tệp cần bạn quyết định. Hãy mở NTFS for Mac để tiếp tục."
+          }
+        }
+      }
+    },
+    "Not enough space on the destination. Needed %@, available %@." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục đích không đủ dung lượng. Cần %1$@, còn %2$@."
+          }
+        }
+      }
+    },
+    "“%@” can't be stored on this drive: the name isn't allowed." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” không thể lưu trên ổ này: tên không được phép."
+          }
+        }
+      }
+    },
+    "“%@” is too large for this drive's file system." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” quá lớn đối với hệ tệp của ổ này."
+          }
+        }
+      }
+    },
+    "…and %lld more" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "…và %lld mục nữa"
+          }
+        }
+      }
+    },
+    "“%@” can't be moved to the Trash. It will be deleted permanently." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể chuyển “%@” vào Thùng rác. Mục này sẽ bị xóa vĩnh viễn."
+          }
+        }
+      }
+    },
+    "%lld items can't be moved to the Trash. They will be deleted permanently." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể chuyển %lld mục vào Thùng rác. Các mục này sẽ bị xóa vĩnh viễn."
+          }
+        }
+      }
+    },
+    "“%@” will be deleted immediately. You can't undo this action." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” sẽ bị xóa ngay lập tức. Bạn không thể hoàn tác thao tác này."
+          }
+        }
+      }
+    },
+    "%lld items will be deleted immediately. You can't undo this action." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld mục sẽ bị xóa ngay lập tức. Bạn không thể hoàn tác thao tác này."
+          }
+        }
+      }
+    },
+    "A folder named “%@” already exists in “%@”" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục “%1$@” đã có trong “%2$@”"
+          }
+        }
+      }
+    },
+    "Keep Both copies it under a new name with a number. Merge puts its contents into the folder that is there and asks about files with the same name." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giữ cả hai sẽ chép thư mục này thành tên mới có thêm số. Gộp sẽ chép nội dung vào thư mục đang có và hỏi khi gặp file trùng tên."
+          }
+        }
+      }
+    },
+    "Merge" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gộp"
+          }
+        }
+      }
+    },
+    "Go to folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đến thư mục"
+          }
+        }
+      }
+    },
+    "Copy at %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lần sao chép lúc %@"
+          }
+        }
+      }
+    },
+    "Files: %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tệp: %lld"
+          }
+        }
+      }
+    },
+    "Tab completes the highlighted folder, ↑ ↓ pick another, Return opens it" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tab điền thư mục đang chọn, ↑ ↓ để chọn thư mục khác, Return để mở"
+          }
+        }
+      }
+    },
+    "Click, or press ⌘L, to type a folder's path" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bấm, hoặc nhấn ⌘L, để gõ đường dẫn thư mục"
+          }
+        }
+      }
+    },
+    "No copies yet" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa có lần copy nào"
+          }
+        }
+      }
+    },
+    "Show progress" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện tiến trình"
+          }
+        }
+      }
+    },
+    "Hide progress" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ẩn tiến trình"
+          }
+        }
+      }
+    },
+    "From" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Từ"
+          }
+        }
+      }
+    },
+    "To" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đến"
+          }
+        }
+      }
+    },
+    "Delete Immediately…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa ngay…"
+          }
+        }
+      }
+    },
+    "A folder can't be copied into itself." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể sao chép một thư mục vào chính nó."
+          }
+        }
+      }
+    },
+    "That name can't be used." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không dùng được tên này."
+          }
+        }
+      }
+    },
+    "An item named “%@” already exists." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã có mục tên “%@”."
+          }
+        }
+      }
+    },
+    "About %@ left" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Còn khoảng %@"
+          }
+        }
+      }
+    },
+    "Read %@ · Write %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đọc %1$@ · Ghi %2$@"
+          }
+        }
+      }
+    },
+    "%@ of %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ / %2$@"
+          }
+        }
+      }
+    },
+    "File Transfer" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép tệp"
+          }
+        }
+      }
+    },
+    "File Transfer is in beta. Keep a second copy of anything important." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép tệp đang ở bản Beta. Hãy giữ thêm một bản sao của dữ liệu quan trọng."
+          }
+        }
+      }
+    },
+    "Beta" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beta"
+          }
+        }
+      }
+    },
+    "Copy" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép"
+          }
+        }
+      }
+    },
+    "New Folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục mới"
+          }
+        }
+      }
+    },
+    "Rename" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đổi tên"
+          }
+        }
+      }
+    },
+    "Delete" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa"
+          }
+        }
+      }
+    },
+    "Quick Look" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xem nhanh"
+          }
+        }
+      }
+    },
+    "Copy the selection to the other side" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép mục đã chọn sang bên kia"
+          }
+        }
+      }
+    },
+    "Size" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kích thước"
+          }
+        }
+      }
+    },
+    "Date Modified" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ngày sửa đổi"
+          }
+        }
+      }
+    },
+    "Open" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mở"
+          }
+        }
+      }
+    },
+    "Copy to the Other Side" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép sang bên kia"
+          }
+        }
+      }
+    },
+    "Move to Trash" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển vào Thùng rác"
+          }
+        }
+      }
+    },
+    "Selected: %lld · %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã chọn: %1$lld · %2$@"
+          }
+        }
+      }
+    },
+    "Items: %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mục: %lld"
+          }
+        }
+      }
+    },
+    "Items: %lld · %@ free" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mục: %1$lld · còn trống %2$@"
+          }
+        }
+      }
+    },
+    "Can't open this folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không mở được thư mục này"
+          }
+        }
+      }
+    },
+    "This folder is empty" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục này trống"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quay lại"
+          }
+        }
+      }
+    },
+    "Forward" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiến tới"
+          }
+        }
+      }
+    },
+    "Enclosing Folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục chứa"
+          }
+        }
+      }
+    },
+    "Refresh" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Làm mới"
+          }
+        }
+      }
+    },
+    "Paste Here" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dán vào đây"
+          }
+        }
+      }
+    },
+    "Can't copy everything" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể sao chép tất cả"
+          }
+        }
+      }
+    },
+    "Not enough space" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không đủ dung lượng"
+          }
+        }
+      }
+    },
+    "This drive is read-only. Turn on writing for it in its drive page." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đĩa này chỉ đọc. Hãy bật tính năng ghi trong trang ổ đĩa của nó."
+          }
+        }
+      }
+    },
+    "Copy Anyway" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vẫn sao chép"
+          }
+        }
+      }
+    },
+    "Copy the Rest" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép phần còn lại"
+          }
+        }
+      }
+    },
+    "Create" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạo"
+          }
+        }
+      }
+    },
+    "untitled folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "thư mục chưa đặt tên"
+          }
+        }
+      }
+    },
+    "Delete permanently?" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa vĩnh viễn?"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "Drag files between the two sides, or select files and press Copy." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kéo tệp giữa hai bên, hoặc chọn tệp rồi bấm Sao chép."
+          }
+        }
+      }
+    },
+    "Copying files: %lld of %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang sao chép: %1$lld / %2$lld tệp"
+          }
+        }
+      }
+    },
+    "Paused" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã tạm dừng"
+          }
+        }
+      }
+    },
+    "Pause" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tạm dừng"
+          }
+        }
+      }
+    },
+    "Resume" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiếp tục"
+          }
+        }
+      }
+    },
+    "Skip This File" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bỏ qua tệp này"
+          }
+        }
+      }
+    },
+    "All" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tất cả"
+          }
+        }
+      }
+    },
+    "Copying" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang sao chép"
+          }
+        }
+      }
+    },
+    "Errors" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lỗi"
+          }
+        }
+      }
+    },
+    "Waiting" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chờ"
+          }
+        }
+      }
+    },
+    "Failed" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lỗi"
+          }
+        }
+      }
+    },
+    "Skipped" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã bỏ qua"
+          }
+        }
+      }
+    },
+    "Errors: %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lỗi: %lld"
+          }
+        }
+      }
+    },
+    "Retry Failed" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thử lại tệp lỗi"
+          }
+        }
+      }
+    },
+    "Export Error List…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xuất danh sách lỗi…"
+          }
+        }
+      }
+    },
+    "Clear" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa danh sách"
+          }
+        }
+      }
+    },
+    "Options" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tùy chọn"
+          }
+        }
+      }
+    },
+    "Verify after copy" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xác minh sau khi sao chép"
+          }
+        }
+      }
+    },
+    "Ask what to do on errors" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hỏi khi gặp lỗi"
+          }
+        }
+      }
+    },
+    "Prevent sleep while copying" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chặn máy ngủ khi đang chép"
+          }
+        }
+      }
+    },
+    "“%@” already exists" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” đã tồn tại"
+          }
+        }
+      }
+    },
+    "Already there" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã có ở đây"
+          }
+        }
+      }
+    },
+    "Being copied" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang sao chép"
+          }
+        }
+      }
+    },
+    "Apply to all" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áp dụng cho tất cả"
+          }
+        }
+      }
+    },
+    "Replace" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thay thế"
+          }
+        }
+      }
+    },
+    "Keep Both" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giữ cả hai"
+          }
+        }
+      }
+    },
+    "Skip" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bỏ qua"
+          }
+        }
+      }
+    },
+    "Replace If Newer" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chỉ thay nếu mới hơn"
+          }
+        }
+      }
+    },
+    "Couldn't copy “%@”" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không sao chép được “%@”"
+          }
+        }
+      }
+    },
+    "Retry" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thử lại"
+          }
+        }
+      }
+    },
+    "Stop" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dừng"
+          }
+        }
+      }
+    },
+    "Copying files…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang sao chép tệp…"
+          }
+        }
+      }
+    },
+    "File copy is waiting for your answer" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Việc sao chép tệp đang chờ câu trả lời của bạn"
+          }
+        }
+      }
+    },
+    "Files are still being copied" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các tệp vẫn đang được sao chép"
+          }
+        }
+      }
+    },
+    "Quitting now cancels the copy and removes the unfinished files." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thoát bây giờ sẽ hủy việc sao chép và xóa các tệp chưa xong."
+          }
+        }
+      }
+    },
+    "Keep Copying" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiếp tục sao chép"
+          }
+        }
+      }
+    },
+    "Needs your answer" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cần bạn trả lời"
+          }
+        }
+      }
+    },
+    "Transfer errors" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lỗi sao chép tệp"
+          }
+        }
+      }
+    },
+    "Copying files" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang sao chép tệp"
+          }
+        }
+      }
+    },
+    "Waiting for you" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chờ bạn"
+          }
+        }
+      }
+    },
+    "Nothing is being copied." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có gì đang sao chép."
+          }
+        }
+      }
+    },
+    "No errors." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có lỗi."
+          }
+        }
+      }
+    },
+    "Earlier copies: %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các lần sao chép trước: %lld"
+          }
+        }
+      }
+    },
+    "Empty the copy log" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoá nhật ký sao chép"
+          }
+        }
+      }
+    },
+    "Welcome" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chào mừng"
+          }
+        }
+      }
+    },
+    "Get started" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bắt đầu"
+          }
+        }
+      }
+    },
+    "Copy files between drives in a two-sided browser." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép tệp giữa các ổ bằng trình duyệt hai bên."
+          }
+        }
+      }
+    },
+    "The NTFS driver, language, updates and more." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trình điều khiển NTFS, ngôn ngữ, cập nhật và hơn thế nữa."
+          }
+        }
+      }
+    },
+    "The NTFS driver is on. Plug in a Windows drive and use it like any other." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trình điều khiển NTFS đang bật. Cắm ổ Windows vào và dùng như mọi ổ khác."
+          }
+        }
+      }
+    },
+    "The NTFS driver is off, so Windows drives are read-only." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trình điều khiển NTFS đang tắt nên ổ Windows chỉ đọc được."
+          }
+        }
+      }
+    },
+    "Turn It On" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bật lên"
+          }
+        }
+      }
+    },
+    "Version %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phiên bản %@"
           }
         }
       }

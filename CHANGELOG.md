@@ -11,6 +11,33 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 
 ## [Unreleased]
 
+## [2.2.0] Lotus - 2026-11-04
+
+### Added
+
+- **File Transfer (Beta).** A new page in the main window with two file browsers side by side, each showing any drive or folder of the Mac. Drag files from one side to the other, right-click and choose **Copy to the Other Side**, or copy and paste with ⌘C and ⌘V (also within one side, and with Finder). A panel underneath shows the progress, the read and write speed, the time left, every file and its state, and the files that failed with the reason. This is a Beta, and it only copies: there is no Move yet, so the originals always stay where they are.
+- Copying can be paused, resumed, skipped file by file, cancelled, and retried for the files that failed. Errors can be exported as a list. A notification says when the copy is done or needs you.
+- Name conflicts offer Replace, Keep Both, Skip or Replace If Newer, with an option to apply the choice to every file.
+- **Verify after copy** compares a checksum of each file with its original. **Ask what to do on errors** turns a failed file into a Skip, Retry or Stop prompt.
+- Files are written under a temporary name and renamed when complete, so a half-written file never appears under its real name. A drive that runs out of space or is removed pauses the copy until you resume it.
+- Copying to a read-only drive is refused before anything starts, with a clear message pointing to the drive page.
+- Pressing Copy or ⌘V when both panes show the same folder produces a "Photos 2" duplicate beside the original (Finder-style), instead of merging into it.
+- Before copying, names that the destination cannot hold (such as `a:b.txt` on exFAT) and files too large for FAT32 are listed, and you can copy the rest.
+- New Folder, Rename, Delete (to the Trash) and Quick Look in either pane. Drives, system folders and your home folder are protected from Rename and Delete. The copy keeps the Mac awake, shows its progress on the Dock icon and in the menu bar menu, and asks before quitting while it runs.
+- The File Transfer row in the sidebar shows an orange dot when the copy needs an answer, even from another page.
+- Each pane starts with a **..** row to go up, and shows Finder's icons for files, folders and drives, in the list and in the places menu.
+- Click a pane's path, or press ⌘L, to type a folder. Matching folders are listed as you type: Tab completes the highlighted one, ↑ ↓ pick another, Return opens it.
+- Copying a folder where one of the same name exists asks: **Keep Both** (adds a number, the default), Merge, Skip or Cancel, with an option to apply the choice to every folder.
+- ⌘⌫ moves items to the Trash, as in Finder; Shift+⌫ and ⌥⌘⌫ delete them immediately after you confirm.
+- The progress list groups files by copy, newest first. Each copy is a row you can open, with its start time, **From**, **To**, size and result. The log is kept, even after quitting, until you press **Clear**.
+- The progress panel folds down to one status line with the percentage and any errors, and stays as you left it.
+- A **Welcome** page heads the sidebar: whether the NTFS driver is on, the drives plugged in, and shortcuts to File Transfer and Settings.
+- The page, panel and prompts are available in Vietnamese.
+
+### Changed
+
+- The main window opens on the Welcome page, the first time too, instead of the first drive or Settings.
+
 ## [2.1.0] Lotus - 2026-11-04
 
 ### Added
@@ -120,7 +147,8 @@ First public release.
 - English and Vietnamese user interface.
 - Drag-to-install DMG, and `scripts/build-local.sh` to build an ad hoc signed copy without an Apple Developer account.
 
-[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.3...v2.1.0
 [2.0.3]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.1...v2.0.2

@@ -7,8 +7,11 @@ import UserNotifications
 @MainActor
 final class Notifier {
     private var tokens: [Int32] = []
+    /// The center only keeps a weak reference to its delegate.
+    private let presenter = NotificationPresenter()
 
     func requestAuthorization() {
+        UNUserNotificationCenter.current().delegate = presenter
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, error in
             if let error {
                 appLog.error("Notification permission failed: \(error.localizedDescription, privacy: .public)")
@@ -35,5 +38,17 @@ final class Notifier {
         content.body = body
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
+    }
+}
+
+/// Lets a notification show while the app is the active one. Without this the system keeps quiet for a
+/// foreground app, and a copy waiting for an answer on another page of the window would go unnoticed.
+final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
+    static let foregroundOptions: UNNotificationPresentationOptions = [.banner, .sound]
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        Self.foregroundOptions
     }
 }

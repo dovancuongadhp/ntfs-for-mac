@@ -114,10 +114,10 @@ App cẩn thận để không xoá nhầm:
 
 ## File Transfer (beta)
 
-NTFS for Mac **2.2.0**, đang có bản [beta](https://github.com/dovancuongadhp/ntfs-for-mac/releases), thêm trang
-**File Transfer**: hai ngăn duyệt tệp cạnh nhau để chép qua lại giữa mọi ổ và thư mục, có danh sách tiến trình,
-tạm dừng và tiếp tục, thử lại tệp lỗi, và hỏi bạn khi tệp hay thư mục đã có sẵn. Đây là bản beta: hãy thử với
-những tệp bạn đã có bản sao lưu.
+Mới trong bản 2.2.0, trang **File Transfer** trong cửa sổ chính có hai ngăn duyệt tệp cạnh nhau để chép qua lại
+giữa mọi ổ và thư mục: kéo từ bên này sang bên kia, hoặc copy rồi dán. Danh sách tiến trình hiện từng lần chép và
+từng tệp, có tạm dừng và tiếp tục, thử lại tệp lỗi, và hỏi bạn khi tệp hay thư mục đã có sẵn. Danh sách được giữ
+cho tới khi bạn bấm **Xoá**. Tính năng này đang ở dạng beta: hãy thử với những tệp bạn đã có bản sao lưu.
 
 ## Khi ổ chỉ mở được ở chế độ chỉ đọc
 
