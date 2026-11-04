@@ -55,9 +55,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard model.isFormatting else { return .terminateNow }
-        WindowPresenter.showFormattingInProgress()
-        return .terminateCancel
+        if model.isFormatting {
+            WindowPresenter.showFormattingInProgress()
+            return .terminateCancel
+        }
+        guard model.transfer.queue.isBusy else { return .terminateNow }
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Files are still being copied")
+        alert.informativeText = String(localized: "Quitting now cancels the copy and removes the unfinished files.")
+        alert.addButton(withTitle: String(localized: "Keep Copying"))
+        alert.addButton(withTitle: String(localized: "Quit"))
+        if alert.runModal() == .alertFirstButtonReturn { return .terminateCancel }
+        Task {
+            await model.transfer.queue.cancelAndWait()
+            NSApp.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
     }
 
     /// Started by "Open at login" rather than by the user.

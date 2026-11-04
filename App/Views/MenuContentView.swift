@@ -55,6 +55,16 @@ struct MenuContentView: View {
                 }
             }
 
+            if model.transfer.queue.isBusy {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.left.arrow.right")
+                    Text("Copying files…")
+                    Text(model.transfer.queue.progress.fraction, format: .percent.precision(.fractionLength(0)))
+                        .monospacedDigit()
+                }
+                .foregroundStyle(.secondary)
+            }
+
             Divider()
 
             Button {

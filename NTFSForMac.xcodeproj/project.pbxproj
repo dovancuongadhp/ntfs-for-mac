@@ -77,6 +77,7 @@
 		E1359AAA4E096ACFA4B1B2C4 /* FilePaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AFB2417156D447AE1A39D4 /* FilePaneView.swift */; };
 		2D851B546A7DB9F48CC133F6 /* TransferProgressPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDF402FAE9264A6DF4065021 /* TransferProgressPanel.swift */; };
 		A17AF2554964F4E9ADF0DAD0 /* TransferPrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92C39FD9537FB1574636ED07 /* TransferPrompts.swift */; };
+		7E2D9A4C1B5F38A60D4E9F12 /* TransferLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1C7E0A93D24F6E8A1B3C70 /* TransferLocalizationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -185,6 +186,7 @@
 		40AFB2417156D447AE1A39D4 /* FilePaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePaneView.swift; sourceTree = "<group>"; };
 		CDF402FAE9264A6DF4065021 /* TransferProgressPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferProgressPanel.swift; sourceTree = "<group>"; };
 		92C39FD9537FB1574636ED07 /* TransferPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferPrompts.swift; sourceTree = "<group>"; };
+		5B1C7E0A93D24F6E8A1B3C70 /* TransferLocalizationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferLocalizationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -339,6 +341,7 @@
 				B7583D05B08BD3985C6A308A /* TransferTextTests.swift */,
 				D93513823EDAF297F6530BAF /* ProtectedFoldersTests.swift */,
 				0EFF31B24A5A0F070F8B0AFB /* TransferSessionTests.swift */,
+				5B1C7E0A93D24F6E8A1B3C70 /* TransferLocalizationTests.swift */,
 			);
 			path = AppTests;
 			sourceTree = "<group>";
@@ -611,6 +614,7 @@
 				31472D3F314716C91306B270 /* TransferTextTests.swift in Sources */,
 				A768AC60AF9DE373F1CF8141 /* ProtectedFoldersTests.swift in Sources */,
 				AAE64AF671271C86BA089B34 /* TransferSessionTests.swift in Sources */,
+				7E2D9A4C1B5F38A60D4E9F12 /* TransferLocalizationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
