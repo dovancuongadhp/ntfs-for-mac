@@ -117,13 +117,25 @@ public final class TransferQueue {
     public func skipCurrent() { control.skipCurrent() }
 
     public func cancel() {
+        guard isBusy || isHalted else { return }
         control.cancel()
         answer(ConflictDecision(choice: .skip))
         answerError(ErrorDecision(choice: .skip))
         if task == nil {
+            if isHalted { removeLeftoverTemporaryFiles() }
             batches.removeAll()
             progress.cancelRemaining()
             finish(.cancelled)
+        }
+    }
+
+    /// Best effort: a stopped run leaves nothing behind for files that never started, but a
+    /// half-written copy may have been left by a drive that was pulled out.
+    private func removeLeftoverTemporaryFiles() {
+        for job in batches.joined() where job.kind == .file {
+            let folder = job.destination.deletingLastPathComponent()
+            let temp = folder.appending(component: ".\(job.destination.lastPathComponent).ntfs-part")
+            if access.exists(temp) { try? access.remove(temp) }
         }
     }
 
@@ -172,10 +184,10 @@ public final class TransferQueue {
         let engine = TransferEngine(access: access, options: options)
         let prompts = TransferPrompts(
             conflict: { [weak self] info in
-                await self?.askConflict(info) ?? ConflictDecision(choice: .skip)
+                await self?.askConflict(info, control: control) ?? ConflictDecision(choice: .skip)
             },
             error: { [weak self] info in
-                await self?.askError(info) ?? ErrorDecision(choice: .skip)
+                await self?.askError(info, control: control) ?? ErrorDecision(choice: .skip)
             })
         task = Task { [weak self] in
             let (events, continuation) = AsyncStream<TransferEvent>.makeStream()
@@ -197,14 +209,17 @@ public final class TransferQueue {
         onProgress?(progress)
     }
 
-    private func askConflict(_ info: ConflictInfo) async -> ConflictDecision {
-        await withCheckedContinuation { continuation in
+    /// A prompt that reaches the main actor after `cancel()` has nobody left to answer it.
+    private func askConflict(_ info: ConflictInfo, control: TransferControl) async -> ConflictDecision {
+        if control.isCancelled { return ConflictDecision(choice: .skip) }
+        return await withCheckedContinuation { continuation in
             conflict = ConflictRequest(info: info) { continuation.resume(returning: $0) }
         }
     }
 
-    private func askError(_ info: ErrorInfo) async -> ErrorDecision {
-        await withCheckedContinuation { continuation in
+    private func askError(_ info: ErrorInfo, control: TransferControl) async -> ErrorDecision {
+        if control.isCancelled { return ErrorDecision(choice: .skip) }
+        return await withCheckedContinuation { continuation in
             errorPrompt = ErrorRequest(info: info) { continuation.resume(returning: $0) }
         }
     }

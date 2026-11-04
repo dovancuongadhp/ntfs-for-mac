@@ -266,6 +266,89 @@ import Testing
         #expect(result.outcome.remaining.map(\.name) == ["next.bin"])
     }
 
+    private func failureReasons(_ events: [TransferEvent]) -> [TransferFailureReason] {
+        events.compactMap { event in
+            if case .failed(_, let failure) = event { failure.reason } else { nil }
+        }
+    }
+
+    @Test func aFolderThatCannotBeCreatedFailsItsContentsWithoutStoppingTheRun() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("tree/top.txt", "t")
+        try source.file("tree/locked/a.txt", "a")
+        try source.file("tree/locked/deep/b.txt", "b")
+        try source.file("after.txt", "z")
+        let flaky = Flaky()
+        flaky.update { $0.failMakingDirectory = ["locked": .EACCES] }
+        let jobs = try plan([source.path("tree"), source.path("after.txt")], into: destination.url)
+
+        let result = await run(jobs, access: flaky)
+
+        #expect(result.outcome.stop == .finished)
+        #expect(result.outcome.remaining.isEmpty)
+        // The folder, the folder inside it, and the two files below.
+        #expect(result.outcome.failed == 4)
+        #expect(result.outcome.copied == 2)
+        #expect(!failureReasons(result.events).contains(.driveRemoved))
+        #expect(Set(failureReasons(result.events)) == [.permissionDenied])
+        #expect(try destination.text("tree/top.txt") == "t")
+        #expect(try destination.text("after.txt") == "z")
+        #expect(!destination.has("tree/locked"))
+    }
+
+    @Test func aMissingDriveIsStillDetectedWhenTheDestinationRootDisappears() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.bin", "data")
+        let missing = destination.path("gone")
+        let jobs = [
+            TransferJob(id: 0, kind: .file, source: source.path("a.bin"), destination: missing.appending(component: "a.bin"), size: 4)
+        ]
+        let result = await run(jobs)
+        #expect(result.outcome.stop == .driveRemoved)
+        #expect(result.outcome.remaining.map(\.name) == ["a.bin"])
+    }
+
+    @Test func aFailureWhileSyncingTheCopyIsAWriteErrorNotAReadError() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.bin", "data")
+        let flaky = Flaky()
+        flaky.update { $0.failSync = ["a.bin": .EIO] }
+
+        let result = await run(try plan([source.path("a.bin")], into: destination.url), access: flaky)
+
+        #expect(failureReasons(result.events) == [.writeFailed])
+        #expect(try destination.names().isEmpty)
+    }
+
+    @Test func aFailureWhileClosingTheCopyIsAWriteErrorNotAReadError() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.bin", "data")
+        let flaky = Flaky()
+        flaky.update { $0.failClose = ["a.bin": .EIO] }
+
+        let result = await run(try plan([source.path("a.bin")], into: destination.url), access: flaky)
+
+        #expect(failureReasons(result.events) == [.writeFailed])
+        #expect(try destination.names().isEmpty)
+    }
+
+    @Test func aFailureWhileReReadingTheCopyForVerifyIsAWriteError() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.bin", "data")
+        let flaky = Flaky()
+        flaky.update { $0.onTemporaryRead = { throw POSIXError(.EIO) } }
+
+        let result = await run(try plan([source.path("a.bin")], into: destination.url), access: flaky, verify: true)
+
+        #expect(failureReasons(result.events) == [.writeFailed])
+        #expect(try destination.names().isEmpty)
+    }
+
     // MARK: Verification
 
     @Test func verifyAcceptsAnIdenticalCopy() async throws {
@@ -363,5 +446,148 @@ import Testing
         #expect(result.outcome.skipped == 1)
         #expect(result.outcome.copied == 1)
         #expect(try destination.names() == ["small.txt"])
+    }
+
+    @Test func cancellingWhileVerifyingStopsPromptlyAndRemovesTheTemporaryFile() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.data("big.bin", count: 100_000)
+        let control = TransferControl()
+        let reads = Counter()
+        let flaky = Flaky()
+        flaky.update {
+            $0.onTemporaryRead = {
+                reads.increment()
+                if reads.value == 2 { control.cancel() }
+            }
+        }
+        let jobs = try plan([source.path("big.bin")], into: destination.url)
+
+        let result = await run(jobs, access: flaky, verify: true, chunk: 1000, control: control)
+
+        #expect(result.outcome.stop == .cancelled)
+        #expect(reads.value <= 3)
+        #expect(result.outcome.remaining.count == 1)
+        #expect(try destination.names().isEmpty)
+    }
+
+    @Test func skippingWhileVerifyingDropsTheFileAndMovesOn() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.data("big.bin", count: 100_000)
+        try source.file("small.txt", "ok")
+        let control = TransferControl()
+        let reads = Counter()
+        let flaky = Flaky()
+        flaky.update {
+            $0.onTemporaryRead = {
+                reads.increment()
+                if reads.value == 2 { control.skipCurrent() }
+            }
+        }
+        let jobs = try plan(["big.bin", "small.txt"].map { source.path($0) }, into: destination.url)
+
+        let result = await run(jobs, access: flaky, verify: true, chunk: 1000, control: control)
+
+        #expect(result.outcome.skipped == 1)
+        #expect(result.outcome.copied == 1)
+        #expect(try destination.names() == ["small.txt"])
+    }
+
+    @Test func verifyReportsProgressWhileReReadingTheCopy() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.data("f.bin", count: 3000)
+        let result = await run(try plan([source.path("f.bin")], into: destination.url), verify: true, chunk: 1000)
+        let progress = result.events.filter { if case .progress = $0 { true } else { false } }
+        // Three while copying and at least one while checking.
+        #expect(progress.count > 3)
+    }
+
+    /// Runs the engine and gives up (cancelling) if it does not finish by itself.
+    private func runUnlessStuck(
+        _ jobs: [TransferJob], control: TransferControl, onEvent: (@Sendable (TransferEvent) -> Void)? = nil
+    ) async -> (EngineRun, stuck: Bool) {
+        let finished = Counter()
+        let task = Task {
+            let result = await run(jobs, chunk: 1000, control: control, onEvent: onEvent)
+            finished.increment()
+            return result
+        }
+        let deadline = ContinuousClock.now + .seconds(5)
+        while finished.value == 0, ContinuousClock.now < deadline { try? await Task.sleep(for: .milliseconds(10)) }
+        let stuck = finished.value == 0
+        if stuck { control.cancel() }
+        return (await task.value, stuck)
+    }
+
+    @Test func aSkipPressedWhilePausedAppliesWithoutResuming() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.data("big.bin", count: 10_000)
+        try source.file("small.txt", "ok")
+        let control = TransferControl()
+        let jobs = try plan(["big.bin", "small.txt"].map { source.path($0) }, into: destination.url)
+
+        let (result, stuck) = await runUnlessStuck(jobs, control: control) { event in
+            guard case .progress(_, let bytes, _, _) = event, bytes == 2000 else { return }
+            control.pause()
+            Task {
+                try? await Task.sleep(for: .milliseconds(100))
+                control.skipCurrent()
+                try? await Task.sleep(for: .milliseconds(100))
+                control.resume()
+            }
+        }
+
+        #expect(!stuck)
+        #expect(result.outcome.skipped == 1)
+        #expect(result.outcome.copied == 1)
+        #expect(try destination.names() == ["small.txt"])
+    }
+
+    @Test func aSkipPressedWhilePausedDoesNotCopyAnotherChunkAfterResuming() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.data("big.bin", count: 10_000)
+        let control = TransferControl()
+        let jobs = try plan([source.path("big.bin")], into: destination.url)
+        let lastBytes = Counter()
+
+        let result = await run(jobs, chunk: 1000, control: control) { event in
+            guard case .progress(_, let bytes, _, _) = event else { return }
+            lastBytes.set(Int(bytes))
+            if bytes == 2000 {
+                control.pause()
+                control.skipCurrent()
+                Task {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    control.resume()
+                }
+            }
+        }
+
+        #expect(result.outcome.skipped == 1)
+        #expect(lastBytes.value == 2000)
+    }
+
+    @Test func replaceIfNewerTreatsDatesWithinTwoSecondsAsEqual() async throws {
+        let base = Date(timeIntervalSince1970: 1_600_000_000)
+        func outcome(sourceIsAhead seconds: TimeInterval) async throws -> (String, Int) {
+            let source = try TempFolder()
+            let destination = try TempFolder()
+            try source.file("a.txt", "new")
+            try destination.file("a.txt", "old")
+            try source.setModified("a.txt", base.addingTimeInterval(seconds))
+            try destination.setModified("a.txt", base)
+            let jobs = try plan([source.path("a.txt")], into: destination.url)
+            let result = await run(jobs, prompts: choosing(.replaceIfNewer))
+            return (try destination.text("a.txt"), result.outcome.skipped)
+        }
+        let within = try await outcome(sourceIsAhead: 1.5)
+        #expect(within.0 == "old")
+        #expect(within.1 == 1)
+        let beyond = try await outcome(sourceIsAhead: 3)
+        #expect(beyond.0 == "new")
     }
 }

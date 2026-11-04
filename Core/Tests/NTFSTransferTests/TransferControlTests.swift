@@ -20,6 +20,42 @@ import Testing
         #expect(!control.isPaused)
     }
 
+    @Test func pausingAfterCancellingDoesNothing() {
+        let control = TransferControl()
+        control.cancel()
+        control.pause()
+        #expect(!control.isPaused)
+    }
+
+    @Test func waitingReturnsAtOnceWhenCancelled() async throws {
+        let control = TransferControl()
+        control.pause()
+        control.cancel()
+        control.pause()
+        let returned = Counter()
+        let waiter = Task {
+            await control.waitWhilePaused()
+            returned.increment()
+        }
+        let deadline = ContinuousClock.now + .seconds(2)
+        while returned.value == 0, ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        let stuck = returned.value == 0
+        waiter.cancel()
+        await waiter.value
+        #expect(!stuck)
+    }
+
+    @Test func waitingCanBeInterruptedBySkip() async throws {
+        let control = TransferControl()
+        control.pause()
+        let waiter = Task { await control.waitWhilePaused(interruptedBySkip: true) }
+        try await Task.sleep(for: .milliseconds(80))
+        control.skipCurrent()
+        await waiter.value
+        #expect(control.isPaused)
+        #expect(control.takeSkip())
+    }
+
     @Test func skipIsTakenOnceAndCanBeCleared() {
         let control = TransferControl()
         control.skipCurrent()

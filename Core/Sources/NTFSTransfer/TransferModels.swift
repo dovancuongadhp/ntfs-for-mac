@@ -55,6 +55,7 @@ public enum TransferFailureReason: Sendable, Equatable {
     case sizeMismatch
     case sourceMissing
     case conflictingKind
+    case fileTooLarge
 
     /// These end the whole run, not just the file they happened on.
     public var stopsTransfer: Bool { self == .noSpace || self == .driveRemoved }
@@ -80,6 +81,7 @@ public struct TransferFailure: Error, Sendable, Equatable {
         case ENXIO, ENODEV, ENOTCONN, ESTALE: return TransferFailure(.driveRemoved, detail: detail)
         case EACCES, EPERM, EROFS: return TransferFailure(.permissionDenied, detail: detail)
         case EILSEQ, ENAMETOOLONG: return TransferFailure(.invalidName, detail: detail)
+        case EFBIG: return TransferFailure(.fileTooLarge, detail: detail)
         case ENOENT where reading: return TransferFailure(.sourceMissing, detail: detail)
         default: return TransferFailure(fallback, detail: detail)
         }

@@ -143,6 +143,8 @@ public struct TransferEngine: Sendable {
         var outcome = TransferOutcome()
         var conflictMemo: ConflictChoice?
         var errorMemo: ErrorChoice?
+        var failedFolders: [(path: String, failure: TransferFailure)] = []
+        let roots = Roots(jobs)
         var index = 0
         while index < jobs.count {
             if control.isCancelled {
@@ -154,9 +156,17 @@ public struct TransferEngine: Sendable {
             if control.isCancelled { continue }
 
             let job = jobs[index]
+            if let inherited = failure(inheritedBy: job, from: failedFolders) {
+                // The folder this belongs in was never created, so there is nothing to try.
+                emit(.failed(job: job.id, inherited))
+                outcome.failed += 1
+                if job.isDirectory { failedFolders.append((Self.path(of: job.destination), inherited)) }
+                index += 1
+                continue
+            }
             control.clearSkip()
             emit(.started(job: job.id))
-            let step = await perform(job, control: control, prompts: prompts, conflictMemo: &conflictMemo, emit: emit)
+            let step = await perform(job, roots: roots, control: control, prompts: prompts, conflictMemo: &conflictMemo, emit: emit)
             switch step {
             case .done(let bytes):
                 emit(.finished(job: job.id, bytes: bytes))
@@ -193,6 +203,7 @@ public struct TransferEngine: Sendable {
                 case .skip:
                     emit(.failed(job: job.id, failure))
                     outcome.failed += 1
+                    if job.isDirectory { failedFolders.append((Self.path(of: job.destination), failure)) }
                 case .stop:
                     emit(.failed(job: job.id, failure))
                     outcome.failed += 1
@@ -209,7 +220,7 @@ public struct TransferEngine: Sendable {
     // MARK: One job
 
     private func perform(
-        _ job: TransferJob, control: TransferControl, prompts: TransferPrompts,
+        _ job: TransferJob, roots: Roots, control: TransferControl, prompts: TransferPrompts,
         conflictMemo: inout ConflictChoice?, emit: @Sendable (TransferEvent) -> Void
     ) async -> Step {
         switch job.kind {
@@ -221,7 +232,7 @@ public struct TransferEngine: Sendable {
                 try access.makeDirectory(job.destination)
                 return .done(0)
             } catch {
-                return .failed(adjusted(.classify(error, reading: false), for: job))
+                return .failed(adjusted(.classify(error, reading: false), roots: roots))
             }
         case .file, .symlink:
             let destination: URL
@@ -236,10 +247,10 @@ public struct TransferEngine: Sendable {
                     try access.makeLink(at: destination, target: target)
                     return .done(0)
                 } catch {
-                    return .failed(adjusted(.classify(error, reading: false), for: job))
+                    return .failed(adjusted(.classify(error, reading: false), roots: roots))
                 }
             }
-            return await copy(job, to: destination, control: control, emit: emit)
+            return await copy(job, to: destination, roots: roots, control: control, emit: emit)
         }
     }
 
@@ -267,18 +278,21 @@ public struct TransferEngine: Sendable {
         case .replace: return .proceed(job.destination)
         case .keepBoth: return .proceed(UniqueName.make(for: job.destination, exists: access.exists))
         case .skip: return .skip
-        case .replaceIfNewer: return job.modified > existing.modified ? .proceed(job.destination) : .skip
+        case .replaceIfNewer:
+            // FAT and exFAT keep dates to two seconds, so a smaller difference means the same date.
+            return job.modified.timeIntervalSince(existing.modified) > Self.dateTolerance ? .proceed(job.destination) : .skip
         }
     }
 
     private func copy(
-        _ job: TransferJob, to destination: URL, control: TransferControl,
+        _ job: TransferJob, to destination: URL, roots: Roots, control: TransferControl,
         emit: @Sendable (TransferEvent) -> Void
     ) async -> Step {
         let temp = destination.deletingLastPathComponent().appending(component: ".\(destination.lastPathComponent).ntfs-part")
         var reader: (any FileReading)?
         var writer: (any FileWriting)?
-        var reading = true
+        // Only true while the source is being opened or read, so everything else counts as a write error.
+        var reading = false
 
         func cleanUp() {
             reader?.close()
@@ -289,6 +303,7 @@ public struct TransferEngine: Sendable {
         }
 
         do {
+            reading = true
             reader = try access.openForReading(job.source)
             reading = false
             writer = try access.createForWriting(temp)
@@ -307,17 +322,21 @@ public struct TransferEngine: Sendable {
                     cleanUp()
                     return .skipped
                 }
-                await control.waitWhilePaused()
+                await control.waitWhilePaused(interruptedBySkip: true)
                 if control.isCancelled { continue }
+                if control.takeSkip() {
+                    cleanUp()
+                    return .skipped
+                }
 
                 reading = true
                 let readStart = clock.now
                 let chunk = try reader!.read(upTo: options.chunkSize)
+                reading = false
                 meter.addRead(bytes: chunk.count, seconds: Self.seconds(clock.now - readStart))
                 if chunk.isEmpty { break }
                 if options.verify { hasher.update(data: chunk) }
 
-                reading = false
                 let writeStart = clock.now
                 try writer!.write(chunk)
                 meter.addWrite(bytes: chunk.count, seconds: Self.seconds(clock.now - writeStart))
@@ -336,46 +355,113 @@ public struct TransferEngine: Sendable {
             reader?.close()
             reader = nil
             if done != job.size { throw TransferFailure(.sizeMismatch) }
-            if options.verify, try hash(of: temp) != Data(hasher.finalize()) {
-                throw TransferFailure(.checksumMismatch)
+            if options.verify {
+                let copied = try await hash(of: temp, job: job, size: done, control: control, emit: emit)
+                if copied != Data(hasher.finalize()) { throw TransferFailure(.checksumMismatch) }
             }
             try access.rename(temp, to: destination)
             access.copyMetadata(from: job.source, to: destination)
             return .done(done)
+        } catch let interruption as Interruption {
+            cleanUp()
+            return interruption == .cancelled ? .cancelled : .skipped
         } catch let failure as TransferFailure {
             cleanUp()
             return .failed(failure)
         } catch {
             cleanUp()
-            return .failed(adjusted(.classify(error, reading: reading), for: job, destination: destination))
+            return .failed(adjusted(.classify(error, reading: reading), roots: roots))
         }
     }
 
-    private func hash(of url: URL) throws -> Data {
+    private enum Interruption: Error { case cancelled, skipped }
+
+    /// Reads the finished copy back from the destination. It answers to Pause, Skip and Cancel like the copy does.
+    private func hash(
+        of url: URL, job: TransferJob, size: Int64, control: TransferControl,
+        emit: @Sendable (TransferEvent) -> Void
+    ) async throws -> Data {
         let reader = try access.openForReading(url)
         defer { reader.close() }
         var hasher = SHA256()
+        var meter = RateMeter()
+        let clock = ContinuousClock()
+        var lastEmit = clock.now
         while true {
+            try checkInterruption(control)
+            await control.waitWhilePaused(interruptedBySkip: true)
+            try checkInterruption(control)
+
+            let readStart = clock.now
             let chunk = try reader.read(upTo: options.chunkSize)
+            meter.addRead(bytes: chunk.count, seconds: Self.seconds(clock.now - readStart))
             if chunk.isEmpty { break }
             hasher.update(data: chunk)
+
+            if clock.now - lastEmit >= options.progressInterval {
+                // The file is already fully written; only the read rate says something here.
+                let rates = meter.takeRates()
+                emit(.progress(job: job.id, bytes: size, readRate: rates.read, writeRate: 0))
+                lastEmit = clock.now
+            }
         }
         return Data(hasher.finalize())
     }
 
-    /// An I/O error on a folder that has vanished means a drive was pulled out.
-    private func adjusted(_ failure: TransferFailure, for job: TransferJob, destination: URL? = nil) -> TransferFailure {
+    private func checkInterruption(_ control: TransferControl) throws {
+        if control.isCancelled { throw Interruption.cancelled }
+        if control.takeSkip() { throw Interruption.skipped }
+    }
+
+    /// Folders that failed are remembered so what they should have held fails with them.
+    private func failure(
+        inheritedBy job: TransferJob, from folders: [(path: String, failure: TransferFailure)]
+    ) -> TransferFailure? {
+        guard !folders.isEmpty else { return nil }
+        let path = Self.path(of: job.destination)
+        return folders.first { path.hasPrefix($0.path + "/") }?.failure
+    }
+
+    private static func path(of url: URL) -> String { url.standardizedFileURL.path }
+
+    /// The folders every job sits in, source side and destination side.
+    private struct Roots {
+        let source: URL?
+        let destination: URL?
+
+        init(_ jobs: [TransferJob]) {
+            source = Self.commonAncestor(jobs.map { $0.source.deletingLastPathComponent() })
+            destination = Self.commonAncestor(jobs.map { $0.destination.deletingLastPathComponent() })
+        }
+
+        private static func commonAncestor(_ urls: [URL]) -> URL? {
+            guard let first = urls.first else { return nil }
+            var shared = first.standardizedFileURL.pathComponents
+            for url in urls.dropFirst() {
+                let parts = url.standardizedFileURL.pathComponents
+                let length = zip(shared, parts).prefix { $0 == $1 }.count
+                shared = Array(shared.prefix(length))
+            }
+            guard !shared.isEmpty else { return nil }
+            return URL(fileURLWithPath: NSString.path(withComponents: shared), isDirectory: true)
+        }
+    }
+
+    /// An I/O error that comes with the drive's folder gone means the drive was pulled out. A folder that
+    /// only some jobs sit in does not count: those are handled when the folder itself fails.
+    private func adjusted(_ failure: TransferFailure, roots: Roots) -> TransferFailure {
         switch failure.reason {
         case .unreadable, .writeFailed, .sourceMissing:
-            let destinationFolder = (destination ?? job.destination).deletingLastPathComponent()
-            if !access.exists(job.source.deletingLastPathComponent()) || !access.exists(destinationFolder) {
-                return TransferFailure(.driveRemoved, detail: failure.detail)
+            let gone = [roots.source, roots.destination].contains { root in
+                if let root { !access.exists(root) } else { false }
             }
-            return failure
+            return gone ? TransferFailure(.driveRemoved, detail: failure.detail) : failure
         default:
             return failure
         }
     }
+
+    private static let dateTolerance: TimeInterval = 2
 
     private static func seconds(_ duration: Duration) -> Double {
         Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18

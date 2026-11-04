@@ -16,7 +16,7 @@ public final class TransferControl: Sendable {
     public var isPaused: Bool { state.withLock { $0.paused } }
     public var isCancelled: Bool { state.withLock { $0.cancelled } }
 
-    public func pause() { state.withLock { $0.paused = true } }
+    public func pause() { state.withLock { if !$0.cancelled { $0.paused = true } } }
     public func resume() { state.withLock { $0.paused = false } }
     public func cancel() { state.withLock { $0.cancelled = true; $0.paused = false } }
     public func skipCurrent() { state.withLock { $0.skip = true } }
@@ -31,10 +31,16 @@ public final class TransferControl: Sendable {
         }
     }
 
-    func waitWhilePaused() async {
-        while isPaused, !Task.isCancelled {
+    /// Returns when the run is no longer paused, or at once when it is cancelled.
+    /// With `interruptedBySkip` it also returns when a skip is waiting, leaving the flag for `takeSkip()`.
+    func waitWhilePaused(interruptedBySkip: Bool = false) async {
+        while shouldKeepWaiting(interruptedBySkip: interruptedBySkip), !Task.isCancelled {
             try? await Task.sleep(for: .milliseconds(50))
         }
+    }
+
+    private func shouldKeepWaiting(interruptedBySkip: Bool) -> Bool {
+        state.withLock { $0.paused && !$0.cancelled && !(interruptedBySkip && $0.skip) }
     }
 }
 

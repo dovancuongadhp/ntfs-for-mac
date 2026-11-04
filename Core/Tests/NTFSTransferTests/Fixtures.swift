@@ -70,9 +70,23 @@ final class EventLog: Sendable {
     var events: [TransferEvent] { storage.withLock { $0 } }
 }
 
+/// Holds a background thread at a chosen point until the test lets it go.
+final class Gate: Sendable {
+    private let semaphore = DispatchSemaphore(value: 0)
+    private let arrived = Counter()
+    var hasArrived: Bool { arrived.value > 0 }
+    /// Called on the thread that must wait.
+    func arriveAndWait() {
+        arrived.increment()
+        semaphore.wait()
+    }
+    func open() { semaphore.signal() }
+}
+
 final class Counter: Sendable {
     private let storage = OSAllocatedUnfairLock(initialState: 0)
     func increment() { storage.withLock { $0 += 1 } }
+    func set(_ value: Int) { storage.withLock { $0 = value } }
     var value: Int { storage.withLock { $0 } }
 }
 
@@ -82,6 +96,17 @@ final class Flaky: FileAccess, @unchecked Sendable {
         var failReading: Set<String> = []
         var failWriting: [String: POSIXErrorCode] = [:]
         var corrupt: Set<String> = []
+        /// Errors thrown by `sync` / `close` of the writer, keyed by the file's own name.
+        var failSync: [String: POSIXErrorCode] = [:]
+        var failClose: [String: POSIXErrorCode] = [:]
+        /// Folders (by name) that cannot be created.
+        var failMakingDirectory: [String: POSIXErrorCode] = [:]
+        /// Runs before every read of a temporary copy, which is how verification re-reads the file.
+        var onTemporaryRead: (@Sendable () throws -> Void)?
+        /// Runs before every read of a source file; throwing makes the read fail.
+        var onSourceRead: (@Sendable () throws -> Void)?
+        /// Runs before `attributes(of:)` answers.
+        var beforeAttributes: (@Sendable (URL) -> Void)?
         /// Makes every `exists` answer false, as if the drives were gone.
         var vanished = false
     }
@@ -104,10 +129,17 @@ final class Flaky: FileAccess, @unchecked Sendable {
         return name
     }
 
-    func attributes(of url: URL) throws -> FileAttributes { try base.attributes(of: url) }
+    func attributes(of url: URL) throws -> FileAttributes {
+        let hook = rules.withLock { $0.beforeAttributes }
+        hook?(url)
+        return try base.attributes(of: url)
+    }
     func children(of url: URL) throws -> [URL] { try base.children(of: url) }
     func exists(_ url: URL) -> Bool { rules.withLock { $0.vanished } ? false : base.exists(url) }
-    func makeDirectory(_ url: URL) throws { try base.makeDirectory(url) }
+    func makeDirectory(_ url: URL) throws {
+        if let error = rules.withLock({ $0.failMakingDirectory[url.lastPathComponent] }) { throw POSIXError(error) }
+        try base.makeDirectory(url)
+    }
     func readLink(_ url: URL) throws -> String { try base.readLink(url) }
     func makeLink(at url: URL, target: String) throws { try base.makeLink(at: url, target: target) }
     func rename(_ from: URL, to: URL) throws { try base.rename(from, to: to) }
@@ -117,15 +149,23 @@ final class Flaky: FileAccess, @unchecked Sendable {
 
     func openForReading(_ url: URL) throws -> any FileReading {
         let reader = try base.openForReading(url)
-        let fails = rules.withLock { $0.failReading.contains(original(of: url)) }
-        return fails ? FailingReader(wrapping: reader) : reader
+        let isTemporary = url.lastPathComponent.hasSuffix(".ntfs-part")
+        let state = rules.withLock {
+            (fails: $0.failReading.contains(original(of: url)), hook: isTemporary ? $0.onTemporaryRead : $0.onSourceRead)
+        }
+        if state.fails { return FailingReader(wrapping: reader) }
+        if let hook = state.hook { return HookedReader(wrapping: reader, before: hook) }
+        return reader
     }
 
     func createForWriting(_ url: URL) throws -> any FileWriting {
         let writer = try base.createForWriting(url)
         let name = original(of: url)
-        let rule = rules.withLock { (error: $0.failWriting[name], corrupt: $0.corrupt.contains(name)) }
-        return FlakyWriter(wrapping: writer, error: rule.error, corrupt: rule.corrupt)
+        let rule = rules.withLock {
+            (error: $0.failWriting[name], corrupt: $0.corrupt.contains(name), sync: $0.failSync[name], close: $0.failClose[name])
+        }
+        return FlakyWriter(
+            wrapping: writer, error: rule.error, corrupt: rule.corrupt, syncError: rule.sync, closeError: rule.close)
     }
 }
 
@@ -136,15 +176,36 @@ final class FailingReader: FileReading, @unchecked Sendable {
     func close() { inner.close() }
 }
 
+final class HookedReader: FileReading, @unchecked Sendable {
+    private let inner: any FileReading
+    private let before: @Sendable () throws -> Void
+    init(wrapping inner: any FileReading, before: @escaping @Sendable () throws -> Void) {
+        self.inner = inner
+        self.before = before
+    }
+    func read(upTo count: Int) throws -> Data {
+        try before()
+        return try inner.read(upTo: count)
+    }
+    func close() { inner.close() }
+}
+
 final class FlakyWriter: FileWriting, @unchecked Sendable {
     private let inner: any FileWriting
     private let error: POSIXErrorCode?
     private let corrupt: Bool
+    private let syncError: POSIXErrorCode?
+    private let closeError: POSIXErrorCode?
 
-    init(wrapping inner: any FileWriting, error: POSIXErrorCode?, corrupt: Bool) {
+    init(
+        wrapping inner: any FileWriting, error: POSIXErrorCode?, corrupt: Bool,
+        syncError: POSIXErrorCode? = nil, closeError: POSIXErrorCode? = nil
+    ) {
         self.inner = inner
         self.error = error
         self.corrupt = corrupt
+        self.syncError = syncError
+        self.closeError = closeError
     }
 
     func write(_ data: Data) throws {
@@ -155,8 +216,15 @@ final class FlakyWriter: FileWriting, @unchecked Sendable {
         try inner.write(changed)
     }
 
-    func sync() throws { try inner.sync() }
-    func close() throws { try inner.close() }
+    func sync() throws {
+        if let syncError { throw POSIXError(syncError) }
+        try inner.sync()
+    }
+
+    func close() throws {
+        try inner.close()
+        if let closeError { throw POSIXError(closeError) }
+    }
 }
 
 struct EngineRun {

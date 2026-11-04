@@ -35,6 +35,11 @@ import Testing
         #expect(TransferFailure.classify(POSIXError(.ENAMETOOLONG), reading: false).reason == .invalidName)
     }
 
+    @Test func aFileTooBigForTheDestinationHasItsOwnReason() {
+        #expect(TransferFailure.classify(POSIXError(.EFBIG), reading: false).reason == .fileTooLarge)
+        #expect(!TransferFailureReason.fileTooLarge.stopsTransfer)
+    }
+
     @Test func aMissingSourceFile() {
         #expect(TransferFailure.classify(POSIXError(.ENOENT), reading: true).reason == .sourceMissing)
     }
