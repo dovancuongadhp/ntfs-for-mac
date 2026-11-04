@@ -126,16 +126,25 @@ struct ProtectedFoldersTests {
         // Items INSIDE /System/Volumes/Data must remain reachable
         #expect(!isProtected("/System/Volumes/Data/Users/tester/Documents/x.pdf"))
         #expect(!isProtected("/System/Volumes/Data/Applications/Safari.app"))
-        // /System/Volumes/Data/Users and /System/Volumes/Data/Applications themselves are
-        // not volume roots and must not be blocked
-        #expect(!isProtected("/System/Volumes/Data/Users"))
-        #expect(!isProtected("/System/Volumes/Data/Applications"))
+    }
+
+    @Test func theDataVolumeFormsOfProtectedFoldersAreProtected() {
+        for path in ["/System/Volumes/Data/Users", "/System/Volumes/Data/Applications",
+                     "/System/Volumes/Data/Library", "/System/Volumes/Data/Users/tester"] {
+            #expect(isProtected(path), "\(path) should be protected")
+        }
+        #expect(!isProtected("/System/Volumes/Data/Users/tester/Documents"))
     }
 
     @Test func systemVolumesAreCaseInsensitive() {
         #expect(isProtected("/system/volumes/data"))
         #expect(isProtected("/SYSTEM/VOLUMES/DATA"))
-        #expect(!isProtected("/system/volumes/data/users"))
+        #expect(isProtected("/system/volumes/data/users"))
+    }
+
+    @Test func aVolumeMountedOutsideVolumesIsARoot() {
+        #expect(isProtected("/dev"))
+        #expect(!isProtected("/dev/null"))
     }
 
     @Test func aVolumeReachedThroughALinkedFolderIsStillARoot() throws {

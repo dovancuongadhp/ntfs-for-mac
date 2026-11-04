@@ -8,6 +8,8 @@ enum ProtectedFolders {
         "/", "/System", "/Library", "/usr", "/bin", "/sbin", "/private", "/etc", "/var",
         "/Applications", "/Users", "/Volumes",
     ]
+    /// The Data volume: `/Users` and `/Applications` are also reachable under it.
+    private static let dataVolume = "/System/Volumes/Data"
 
     /// The protected paths for one home folder, lowercased, in every form they can be reached by.
     /// Building it resolves about a dozen links on disk, so it is built once and shared.
@@ -20,7 +22,9 @@ enum ProtectedFolders {
                 let url = URL(fileURLWithPath: path)
                 for form in ProtectedFolders.forms(of: url) { protected.insert(form.lowercased()) }
                 protected.insert(url.resolvingSymlinksInPath().path.lowercased())
+                if path != "/" { protected.insert((dataVolume + path).lowercased()) }
             }
+            protected.insert(dataVolume.lowercased())
             paths = protected
         }
     }
@@ -71,7 +75,7 @@ enum ProtectedFolders {
                 let lowered = candidate.lowercased()
                 if rules.paths.contains(lowered) || ProtectedFolders.isVolumeRoot(lowered) { return true }
             }
-            return false
+            return ProtectedFolders.isMountPoint(resolved)
         }
     }
 
@@ -105,6 +109,14 @@ enum ProtectedFolders {
             if !rest.isEmpty && !rest.contains("/") { return true }
         }
         return false
+    }
+
+    /// Whether a volume is mounted exactly at `path`, wherever that is. A link is not a mount point.
+    fileprivate static func isMountPoint(_ path: String) -> Bool {
+        var info = statfs()
+        guard statfs(path, &info) == 0 else { return false }
+        let mountedOn = withUnsafeBytes(of: &info.f_mntonname) { String(decoding: $0.prefix { $0 != 0 }, as: UTF8.self) }
+        return mountedOn == path
     }
 
     /// The standardized path, and the same path with the folders above the item resolved.
