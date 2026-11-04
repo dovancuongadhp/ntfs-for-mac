@@ -212,9 +212,38 @@ final class AppModel {
         do {
             try await formatter.run(job, progress: progress)
             appLog.notice("Formatting \(diskName, privacy: .public) finished")
+            // DiskArbitration often keeps the old exFAT kind until the volume is mounted.
+            if options.fileSystem == .ntfs {
+                await mountFormattedNTFS(preparation, name: options.name)
+            }
         } catch {
             appLog.error("Formatting \(diskName, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
             throw error
+        }
+    }
+
+    /// Mounts what was just formatted as NTFS. The probe of the whole disk can fail
+    /// while other partitions stay mounted, so the kind stays exFAT until this mount.
+    private func mountFormattedNTFS(_ preparation: FormatPreparation, name: String) async {
+        let targets: [String]
+        switch preparation.target {
+        case .partition(let bsdName):
+            targets = [bsdName]
+        case .disk(let whole):
+            inventory.refresh(bsdName: whole)
+            targets = inventory.childNames(ofWhole: whole).filter { child in
+                guard let info = inventory.freshInfo(child) else { return false }
+                return !DiskContent.hidden.contains(info.content ?? "")
+            }
+        }
+        for bsdName in targets {
+            let key = inventory.freshInfo(bsdName)?.preferenceKey ?? preparation.device.preferenceKey
+            do {
+                try await mounter.mountWithExtension(
+                    bsdName: bsdName, volumeName: name, readOnly: !preferences.isWriteEnabled(key))
+            } catch {
+                appLog.error("Mounting \(bsdName, privacy: .public) after format failed: \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 
