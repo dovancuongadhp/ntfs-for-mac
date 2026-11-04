@@ -571,6 +571,57 @@ import Testing
         #expect(lastBytes.value == 2000)
     }
 
+    // MARK: I1 – symlink replacement must not destroy the destination on makeLink failure
+
+    /// When the destination has a file and the source is a symlink, and makeLink fails
+    /// (e.g. the destination file system does not support symlinks), the existing
+    /// destination file must survive unchanged (data-loss prevention).
+    @Test func symlinkReplacementSurvivesWhenMakeLinkFails() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try destination.file("report.docx", "the only copy")
+        // Source is a symlink pointing elsewhere
+        try FileManager.default.createSymbolicLink(
+            atPath: source.path("report.docx").path,
+            withDestinationPath: "/original/report.docx")
+        let jobs = try plan([source.path("report.docx")], into: destination.url)
+
+        // NoLinks access simulates exFAT/FAT32: makeLink always throws ENOTSUP
+        let result = await run(jobs, access: NoLinks(), prompts: TransferPrompts(
+            conflict: { _ in ConflictDecision(choice: .replace, applyToAll: true) },
+            error: { _ in ErrorDecision(choice: .skip) }))
+
+        // The job must fail (link not created) but the destination must be intact
+        #expect(result.outcome.failed == 1)
+        #expect(try destination.text("report.docx") == "the only copy",
+                "Destination must survive when makeLink fails")
+    }
+
+    // MARK: I2 – copying a folder into the folder it already sits in produces a duplicate
+
+    @Test func copyingIntoSameFolderDuplicatesUnderUniqueName() async throws {
+        let folder = try TempFolder()
+        try folder.folder("Photos")
+        try folder.file("Photos/a.jpg", "photo")
+
+        let jobs = try TransferPlanner.plan(
+            sources: [folder.path("Photos")],
+            into: folder.url,
+            access: PosixFileAccess(),
+            duplicate: true)
+
+        // The top-level destination must be the unique name, not the original
+        #expect(jobs.first?.destination.lastPathComponent == "Photos 2")
+        let result = await run(jobs)
+        #expect(result.outcome.stop == .finished)
+        #expect(folder.has("Photos 2"))
+        #expect(folder.has("Photos 2/a.jpg"))
+        // Original is untouched
+        #expect(folder.has("Photos"))
+        #expect(folder.has("Photos/a.jpg"))
+        #expect(try folder.text("Photos/a.jpg") == "photo")
+    }
+
     @Test func replaceIfNewerTreatsDatesWithinTwoSecondsAsEqual() async throws {
         let base = Date(timeIntervalSince1970: 1_600_000_000)
         func outcome(sourceIsAhead seconds: TimeInterval) async throws -> (String, Int) {

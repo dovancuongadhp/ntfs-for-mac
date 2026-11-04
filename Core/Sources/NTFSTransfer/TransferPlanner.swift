@@ -6,7 +6,14 @@ public enum TransferPlanner {
     }
 
     /// Lists, in copy order, everything needed to put `sources` inside `folder`.
-    public static func plan(sources: [URL], into folder: URL, access: any FileAccess) throws -> [TransferJob] {
+    ///
+    /// When `duplicate` is true (Copy button, Paste), a source whose planned destination
+    /// is the same path as the source itself is renamed to a unique name beside it –
+    /// "Photos" becomes "Photos 2", matching Finder behaviour. When false (Drop), sources
+    /// that land in the same folder they already live in are left out by the caller.
+    public static func plan(
+        sources: [URL], into folder: URL, access: any FileAccess, duplicate: Bool = false
+    ) throws -> [TransferJob] {
         var jobs: [TransferJob] = []
         let target = folder.standardizedFileURL.path
         for source in sources {
@@ -15,10 +22,13 @@ public enum TransferPlanner {
             if attributes.kind == .directory, target == sourcePath || target.hasPrefix(sourcePath + "/") {
                 throw PlanError.destinationInsideSource(source.lastPathComponent)
             }
-            try add(
-                source, attributes: attributes,
-                destination: folder.appending(component: source.lastPathComponent),
-                access: access, jobs: &jobs)
+            var destination = folder.appending(component: source.lastPathComponent)
+            // Finder-style duplicate: when the planned destination IS the source, pick a
+            // unique name next to it so the whole item is copied rather than merged.
+            if duplicate, destination.standardizedFileURL.path == sourcePath {
+                destination = UniqueName.make(for: destination, exists: access.exists)
+            }
+            try add(source, attributes: attributes, destination: destination, access: access, jobs: &jobs)
         }
         return jobs
     }

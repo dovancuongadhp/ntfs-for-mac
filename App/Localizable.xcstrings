@@ -2614,6 +2614,26 @@
         }
       }
     },
+    "Not enough space" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không đủ dung lượng"
+          }
+        }
+      }
+    },
+    "This drive is read-only. Turn on writing for it in its drive page." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ổ đĩa này chỉ đọc. Hãy bật tính năng ghi trong trang ổ đĩa của nó."
+          }
+        }
+      }
+    },
     "Copy Anyway" : {
       "localizations" : {
         "vi" : {

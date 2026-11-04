@@ -242,11 +242,17 @@ public struct TransferEngine: Sendable {
             case .failed(let failure): return .failed(failure)
             }
             if case .symlink(let target) = job.kind {
+                // Create the link under a temporary name first, then atomically rename it
+                // over the destination. This way, if makeLink fails (e.g. ENOTSUP on
+                // exFAT/FAT32), the existing destination file is never touched.
+                let temp = destination.deletingLastPathComponent()
+                    .appending(component: ".ntfs-link-\(job.id)")
                 do {
-                    if access.exists(destination) { try access.remove(destination) }
-                    try access.makeLink(at: destination, target: target)
+                    try access.makeLink(at: temp, target: target)
+                    try access.rename(temp, to: destination)
                     return .done(0)
                 } catch {
+                    try? access.remove(temp)
                     return .failed(adjusted(.classify(error, reading: false), roots: roots))
                 }
             }
@@ -288,7 +294,7 @@ public struct TransferEngine: Sendable {
         _ job: TransferJob, to destination: URL, roots: Roots, control: TransferControl,
         emit: @Sendable (TransferEvent) -> Void
     ) async -> Step {
-        let temp = destination.deletingLastPathComponent().appending(component: ".\(destination.lastPathComponent).ntfs-part")
+        let temp = job.tempURL
         var reader: (any FileReading)?
         var writer: (any FileWriting)?
         // Only true while the source is being opened or read, so everything else counts as a write error.

@@ -42,6 +42,21 @@ public struct TransferJob: Sendable, Equatable, Identifiable {
 
     public var name: String { destination.lastPathComponent }
     public var isDirectory: Bool { kind == .directory }
+
+    /// The temporary URL used while this file is being written.
+    ///
+    /// For short names the form is `.<name>.ntfs-part`.  When the name is long enough that
+    /// appending the prefix and suffix would exceed 255 bytes the form is `.ntfs-part-<id>`
+    /// so the path stays valid on every file system.
+    public var tempURL: URL {
+        let folder = destination.deletingLastPathComponent()
+        let name = destination.lastPathComponent
+        let proposed = ".\(name).ntfs-part"
+        if proposed.utf8.count <= 255 {
+            return folder.appending(component: proposed)
+        }
+        return folder.appending(component: ".ntfs-part-\(id)")
+    }
 }
 
 public enum TransferFailureReason: Sendable, Equatable {

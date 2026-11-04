@@ -124,7 +124,11 @@ final class Flaky: FileAccess, @unchecked Sendable {
     private func original(of url: URL) -> String {
         var name = url.lastPathComponent
         if name.hasPrefix("."), name.hasSuffix(".ntfs-part") {
+            // .<name>.ntfs-part → <name>
             name = String(name.dropFirst().dropLast(".ntfs-part".count))
+        } else if name.hasPrefix(".ntfs-part-") {
+            // Short form .ntfs-part-<id> – no original name recoverable; return as-is for rule lookup
+            // (rules key on original name, so this form won't match any injection rule, which is fine)
         }
         return name
     }
@@ -225,6 +229,23 @@ final class FlakyWriter: FileWriting, @unchecked Sendable {
         try inner.close()
         if let closeError { throw POSIXError(closeError) }
     }
+}
+
+/// A FileAccess that delegates everything to POSIX but refuses to create symbolic links (like exFAT/FAT32).
+struct NoLinks: FileAccess, @unchecked Sendable {
+    private let base = PosixFileAccess()
+    func attributes(of url: URL) throws -> FileAttributes { try base.attributes(of: url) }
+    func children(of url: URL) throws -> [URL] { try base.children(of: url) }
+    func exists(_ url: URL) -> Bool { base.exists(url) }
+    func makeDirectory(_ url: URL) throws { try base.makeDirectory(url) }
+    func readLink(_ url: URL) throws -> String { try base.readLink(url) }
+    func makeLink(at url: URL, target: String) throws { throw POSIXError(.ENOTSUP) }
+    func openForReading(_ url: URL) throws -> any FileReading { try base.openForReading(url) }
+    func createForWriting(_ url: URL) throws -> any FileWriting { try base.createForWriting(url) }
+    func rename(_ from: URL, to: URL) throws { try base.rename(from, to: to) }
+    func remove(_ url: URL) throws { try base.remove(url) }
+    func copyMetadata(from: URL, to: URL) { base.copyMetadata(from: from, to: to) }
+    func volumeInfo(at url: URL) throws -> VolumeInfo { try base.volumeInfo(at: url) }
 }
 
 struct EngineRun {

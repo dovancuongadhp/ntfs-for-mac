@@ -16,10 +16,13 @@ public protocol FileWriting: AnyObject, Sendable {
 public struct VolumeInfo: Sendable, Equatable {
     public var fileSystemType: String
     public var freeBytes: Int64
+    /// True when the volume is mounted read-only (MNT_RDONLY in statfs f_flags).
+    public var isReadOnly: Bool
 
-    public init(fileSystemType: String, freeBytes: Int64) {
+    public init(fileSystemType: String, freeBytes: Int64, isReadOnly: Bool = false) {
         self.fileSystemType = fileSystemType
         self.freeBytes = freeBytes
+        self.isReadOnly = isReadOnly
     }
 }
 
@@ -120,7 +123,8 @@ public struct PosixFileAccess: FileAccess {
         let type = withUnsafePointer(to: &info.f_fstypename) {
             $0.withMemoryRebound(to: CChar.self, capacity: Int(MFSTYPENAMELEN)) { String(cString: $0) }
         }
-        return VolumeInfo(fileSystemType: type, freeBytes: Int64(info.f_bavail) * Int64(info.f_bsize))
+        let rdonly = info.f_flags & UInt32(MNT_RDONLY) != 0
+        return VolumeInfo(fileSystemType: type, freeBytes: Int64(info.f_bavail) * Int64(info.f_bsize), isReadOnly: rdonly)
     }
 }
 

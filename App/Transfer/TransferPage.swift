@@ -56,7 +56,7 @@ struct TransferPage: View {
             Button(namePromptButton) { session.commitNamePrompt() }
         }
         .alert(
-            "Can't copy everything",
+            session.pendingTransferTitle,
             isPresented: Binding(get: { session.pendingTransfer != nil }, set: { if !$0 { session.pendingTransfer = nil } }),
             presenting: session.pendingTransfer
         ) { pending in
@@ -75,7 +75,8 @@ struct TransferPage: View {
             presenting: session.deleteRequest
         ) { _ in
             Button("Delete", role: .destructive) { session.confirmDelete() }
-            Button("Cancel", role: .cancel) {}
+            // Return must NOT confirm a destructive action – put the default action on Cancel.
+            Button("Cancel", role: .cancel) {}.keyboardShortcut(.defaultAction)
         } message: { urls in
             Text(TransferText.deleteMessage(for: urls))
         }

@@ -154,8 +154,7 @@ public final class TransferQueue {
     /// half-written copy may have been left by a drive that was pulled out.
     private func removeLeftoverTemporaryFiles() {
         for job in batches.joined() where job.kind == .file {
-            let folder = job.destination.deletingLastPathComponent()
-            let temp = folder.appending(component: ".\(job.destination.lastPathComponent).ntfs-part")
+            let temp = job.tempURL
             if access.exists(temp) { try? access.remove(temp) }
         }
     }
@@ -217,6 +216,9 @@ public final class TransferQueue {
         guard task == nil, !batches.isEmpty else { return }
         let jobs = batches.removeFirst()
         control = TransferControl()
+        // Carry the paused state across batches so a pause issued during one batch
+        // also holds the next batch until the person explicitly resumes.
+        if phase == .paused { control.pause() }
         let control = control
         phase = .running
         reportProgress()

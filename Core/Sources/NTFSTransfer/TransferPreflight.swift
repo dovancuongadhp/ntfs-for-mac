@@ -48,23 +48,34 @@ public enum TransferProblem: Sendable, Equatable {
     case notEnoughSpace(needed: Int64, available: Int64)
     case invalidName(job: Int, name: String)
     case fileTooLarge(job: Int, name: String)
+    /// The destination volume is mounted read-only; writing is impossible until the user enables writing.
+    case destinationReadOnly
 
     /// A blocking problem means nothing should be copied; the others can be skipped.
+    /// notEnoughSpace is a warning only: the copy may still start and run until the drive fills.
     public var isBlocking: Bool {
-        if case .notEnoughSpace = self { true } else { false }
+        if case .destinationReadOnly = self { return true }
+        return false
     }
 
     public var jobID: Int? {
         switch self {
-        case .notEnoughSpace: nil
+        case .notEnoughSpace, .destinationReadOnly: nil
         case .invalidName(let job, _), .fileTooLarge(let job, _): job
         }
     }
 }
 
 public enum TransferPreflight {
-    public static func check(jobs: [TransferJob], rules: DestinationRules, freeBytes: Int64) -> [TransferProblem] {
+    public static func check(
+        jobs: [TransferJob], rules: DestinationRules, freeBytes: Int64,
+        destinationReadOnly: Bool = false
+    ) -> [TransferProblem] {
         var problems: [TransferProblem] = []
+        if destinationReadOnly {
+            problems.append(.destinationReadOnly)
+            return problems  // No point listing other issues if writing is impossible.
+        }
         let needed = jobs.reduce(Int64(0)) { $0 + ($1.kind == .file ? $1.size : 0) }
         if needed > freeBytes {
             problems.append(.notEnoughSpace(needed: needed, available: freeBytes))

@@ -23,8 +23,13 @@ enum TransferText {
     static func problems(_ problems: [TransferProblem]) -> String {
         var lines: [String] = []
         for problem in problems {
-            if case .notEnoughSpace(let needed, let available) = problem {
+            switch problem {
+            case .notEnoughSpace(let needed, let available):
                 lines.append(String(localized: "Not enough space on the destination. Needed \(size(needed)), available \(size(available))."))
+            case .destinationReadOnly:
+                lines.append(String(localized: "This drive is read-only. Turn on writing for it in its drive page."))
+            default:
+                break
             }
         }
         let others = problems.filter { $0.jobID != nil }
@@ -34,7 +39,7 @@ enum TransferText {
                 lines.append(String(localized: "“\(name)” can't be stored on this drive: the name isn't allowed."))
             case .fileTooLarge(_, let name):
                 lines.append(String(localized: "“\(name)” is too large for this drive's file system."))
-            case .notEnoughSpace:
+            case .notEnoughSpace, .destinationReadOnly:
                 break
             }
         }

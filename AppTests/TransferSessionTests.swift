@@ -63,6 +63,22 @@ struct TransferSessionTests {
         #expect(TransferSession.review(jobs: [job(1, "a.bin")], rules: .unrestricted, freeBytes: 1_000_000) == nil)
     }
 
+    // MARK: I5 – read-only destination is a blocking preflight problem
+
+    @Test func readOnlyDestinationIsBlockingAndOffersNoChoice() {
+        let jobs = [job(1, "a.bin", size: 10)]
+        let pending = TransferSession.review(jobs: jobs, rules: .unrestricted, freeBytes: 1_000_000, destinationReadOnly: true)
+        #expect(pending != nil, "Read-only destination must trigger a preflight")
+        #expect(pending?.problems == [.destinationReadOnly])
+        #expect(pending?.restOfJobs.isEmpty == true, "Nothing can be copied to a read-only volume")
+        #expect(pending?.choice == nil, "No copy action must be offered")
+    }
+
+    @Test func writableDestinationDoesNotBlock() {
+        let jobs = [job(1, "a.bin", size: 10)]
+        #expect(TransferSession.review(jobs: jobs, rules: .unrestricted, freeBytes: 1_000_000, destinationReadOnly: false) == nil)
+    }
+
     @Test func badNamesAreLeftOutButSpaceNeverHidesTheRest() {
         let jobs = [job(1, "ok.txt", size: 10), job(2, "bad:name.txt", size: 10)]
         let pending = TransferSession.review(jobs: jobs, rules: .exFAT, freeBytes: 1_000_000)
@@ -949,6 +965,41 @@ struct TransferSessionTests {
         await rig.session.refresh(.right)
 
         #expect(rig.session.right.entries.map(\.name) == ["new.txt"])
+    }
+
+    // MARK: I3 – file operations run off the main actor and refresh the pane
+
+    @Test func newFolderRefreshesPaneAfterCompletion() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        rig.session.activeModel.open(rig.root)
+        await rig.session.activeModel.reload()
+        let countBefore = rig.session.activeModel.entries.count
+
+        rig.session.promptText = "async-folder"
+        rig.session.namePrompt = NamePrompt(kind: .newFolder)
+        rig.session.commitNamePrompt()
+
+        // The operation is async; wait for the pane to reflect the new folder
+        let appeared = await waitFor { rig.session.activeModel.entries.map(\.name).contains("async-folder") }
+        #expect(appeared, "Pane must refresh after async new-folder creation")
+        #expect(rig.session.activeModel.entries.count == countBefore + 1)
+    }
+
+    @Test func deleteRequestRunsOffMainActorAndRefreshes() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let file = rig.root.appending(component: "toDelete.txt")
+        try Data("bye".utf8).write(to: file)
+        rig.session.activeModel.open(rig.root)
+        await rig.session.activeModel.reload()
+        rig.session.activeModel.selection = [file]
+
+        rig.session.requestDelete()
+
+        // Wait for async trash + reload to complete (file moved to Trash successfully on APFS)
+        let gone = await waitFor { !rig.session.activeModel.entries.map(\.name).contains("toDelete.txt") }
+        #expect(gone, "File must be gone from pane after trash via async requestDelete")
     }
 }
 

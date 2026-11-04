@@ -30,11 +30,29 @@ import Testing
         #expect(DestinationRules.forFileSystem("apfs") == .unrestricted)
     }
 
-    @Test func notEnoughSpaceBlocks() {
+    @Test func notEnoughSpaceIsAWarningNotABlock() {
         let jobs = [file(0, "a", size: 600), file(1, "b", size: 600)]
         let problems = TransferPreflight.check(jobs: jobs, rules: .unrestricted, freeBytes: 1000)
         #expect(problems == [.notEnoughSpace(needed: 1200, available: 1000)])
+        // Space warning is NOT blocking – the user may choose to copy anyway
+        #expect(!problems[0].isBlocking)
+    }
+
+    // MARK: I5 – read-only destination is a blocking problem
+
+    @Test func readOnlyDestinationIsBlockingAndReturnsEarly() {
+        let jobs = [file(0, "a", size: 10), file(1, "bad:name.txt", size: 10)]
+        let problems = TransferPreflight.check(
+            jobs: jobs, rules: .exFAT, freeBytes: 100, destinationReadOnly: true)
+        #expect(problems == [.destinationReadOnly])
         #expect(problems[0].isBlocking)
+    }
+
+    @Test func writableDestinationDoesNotAddReadOnlyProblem() {
+        let jobs = [file(0, "a", size: 10)]
+        let problems = TransferPreflight.check(
+            jobs: jobs, rules: .unrestricted, freeBytes: 1_000_000, destinationReadOnly: false)
+        #expect(problems.isEmpty)
     }
 
     @Test func exactFitIsFine() {
