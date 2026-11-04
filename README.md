@@ -12,340 +12,205 @@
 [![License: GPL v2+](https://img.shields.io/badge/license-GPL--2.0--or--later-green)](LICENSE)
 
 [**⬇ Download NTFS-for-Mac.dmg**](https://github.com/dovancuongadhp/ntfs-for-mac/releases/latest/download/NTFS-for-Mac.dmg)
-· [Release notes](https://github.com/dovancuongadhp/ntfs-for-mac/releases)
-· [Changelog](CHANGELOG.md)
+· [What's new](https://github.com/dovancuongadhp/ntfs-for-mac/releases)
 · [**Tiếng Việt**](README.vi.md)
 
 </div>
 
 ---
 
-macOS can read NTFS drives out of the box, but it can't write to them. NTFS for Mac fixes that: plug in a
-USB stick, external disk or Boot Camp partition formatted by Windows, and you can copy, rename, delete and
-organize files in Finder just like on any other drive.
+Your Mac can read Windows (NTFS) drives, but it can't write to them. NTFS for Mac fixes that: plug in a USB
+stick, an external disk or a Boot Camp partition formatted by Windows, and copy, rename, delete and organize
+files in Finder like on any other drive.
 
-It runs as an Apple **FSKit** file system extension built into the app. There is no kernel extension, no
-macFUSE, no need to disable System Integrity Protection and no restart. To install, drag the app to
-Applications; to uninstall, drag it to the Trash.
+Nothing to configure, no restart, no extra software to install: drag the app to Applications, switch it on
+once, and you're done.
 
 ## Contents
 
-- [Features](#features)
+- [What it does](#what-it-does)
 - [Requirements](#requirements)
-- [Installation](#installation)
-- [Using NTFS for Mac](#using-ntfs-for-mac)
-- [Drive manager and formatting](#drive-manager-and-formatting)
+- [Install](#install)
+- [Everyday use](#everyday-use)
+- [Formatting a drive](#formatting-a-drive)
+- [File Transfer (beta)](#file-transfer-beta)
 - [When a drive opens read-only](#when-a-drive-opens-read-only)
-- [Limitations](#limitations)
-- [Uninstalling](#uninstalling)
-- [FAQ](#faq)
-- [Versions](#versions)
-- [Reporting a bug](#reporting-a-bug)
-- [How it works](#how-it-works)
-- [Building from source](#building-from-source)
-- [Contributing](#contributing)
-- [Acknowledgements](#acknowledgements)
-- [License](#license)
+- [What it can't do yet](#what-it-cant-do-yet)
+- [Updating and uninstalling](#updating-and-uninstalling)
+- [Questions](#questions)
+- [Reporting a problem](#reporting-a-problem)
 
-## Features
+## What it does
 
-- **Write support in Finder** — NTFS drives are mounted read-write automatically and behave like any other
-  drive: copy, move, rename, delete, create folders.
-- **Menu bar app** — see every connected NTFS drive with its status and used space, mount, eject or reveal
-  it in Finder, and turn writing off for any drive you want to keep read-only.
-- **Drive manager** — a window in the style of Disk Utility shows every connected drive with its partitions, and
-  formats a partition or a whole external drive as NTFS, exFAT, FAT32 or APFS. Internal and macOS drives are
-  protected.
-- **Protects your data** — if writing would be unsafe (Windows is hibernated, the drive wasn't ejected
-  cleanly, Windows asked for a disk check, or a write error occurred), the drive is opened read-only and
-  the app tells you why and how to fix it.
-- **No `._` clutter** — macOS extended attributes (Finder tags, download origin, Finder info…) are stored
-  natively as NTFS alternate data streams instead of littering the drive with `._` files.
-- **Native and lightweight** — an FSKit extension in user space, built on the proven
-  [ntfs-3g](https://github.com/tuxera/ntfs-3g) library.
-- **English and Vietnamese** — follows your system language, or pick one in Settings.
-- **Free and open source** — GPL-2.0-or-later, no trial, no subscription, no telemetry.
+- **Write to NTFS drives in Finder** — copy, move, rename, delete and create folders, just like on a Mac drive.
+- **Lives in the menu bar** — see your drives, how full they are and whether they can be written to; open,
+  mount or eject them in one click. Keep any drive read-only if you prefer.
+- **Manages and formats drives** — a window like Disk Utility shows every drive and its partitions, and formats
+  a partition or a whole external drive as NTFS, exFAT, FAT32 or APFS. Your Mac's own drives are protected.
+- **Protects your data** — when writing could damage the drive (for example Windows is hibernated, or the
+  drive was unplugged without ejecting), the drive opens read-only and the app tells you how to fix it.
+- **No `._` files** — Finder tags and other Mac information are kept inside the drive, so Windows doesn't see
+  stray `._` files.
+- **English and Vietnamese** — follows your Mac's language, or choose one in Settings.
+- **Free** — no trial, no subscription, no ads, no data collection.
 
 ## Requirements
 
-- **macOS 26 (Tahoe) or later.** Earlier versions of FSKit lack the APIs needed for fast, reliable writing.
-- A Mac with Apple silicon or an Intel processor.
+- **macOS 26 (Tahoe) or later.**
+- Any Mac, with Apple silicon or Intel.
 
-## Installation
+## Install
 
 1. **Download** [`NTFS-for-Mac.dmg`](https://github.com/dovancuongadhp/ntfs-for-mac/releases/latest/download/NTFS-for-Mac.dmg)
    and open it.
 2. **Drag NTFS for Mac into the Applications folder.**
-3. **Open the app.** The current build is **not notarized by Apple yet**, so macOS blocks the first launch:
-   1. Click **Done** in the warning dialog.
+3. **Open the app.** The app isn't notarized by Apple yet, so the first time macOS blocks it:
+   1. Click **Done** in the warning.
    2. Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.
 
-   Alternatively, run this once in Terminal:
+   Or, if you're comfortable with Terminal, run this once:
 
    ```sh
    xattr -dr com.apple.quarantine "/Applications/NTFS for Mac.app"
    ```
-4. **Turn on the file system extension.** On first launch the app opens on its **Settings** page, which has an
-   **Open System Settings** button that takes you to **General → Login Items & Extensions → File System Extensions**. Switch on **NTFS for Mac**.
-5. **Plug in your NTFS drive.** It appears in Finder, ready to write. If the drive was already connected,
-   click **Mount** next to it in the menu bar.
+4. **Switch it on.** The app shows whether NTFS for Mac is turned on, with a button that opens the right place in
+   System Settings: **General → Login Items & Extensions → File System Extensions**. Turn on **NTFS for Mac**.
+5. **Plug in your drive.** It appears in Finder, ready to write. If it was already plugged in, click **Mount**
+   next to it in the menu bar.
 
-> [!TIP]
-> To update, download the new DMG and drag the app into Applications again, replacing the old copy.
-> You won't need to turn the extension on again, as long as the new copy is signed the same way as the old one.
+## Everyday use
 
-## Using NTFS for Mac
+NTFS for Mac sits in the menu bar (it has no Dock icon). Click its icon to see your NTFS drives:
 
-NTFS for Mac lives in the menu bar (there is no Dock icon). Click the icon — left or right click — to see
-your NTFS drives. Each row shows:
-
-| Item | Description |
+| You see | What it's for |
 | --- | --- |
-| Status | **Read & write**, **Read-only — reason**, **Not mounted**, and so on |
-| Usage bar | Space used on the drive, updated live while the menu is open |
-| **Allow writing** | Turn off to keep this drive read-only. The choice is remembered per drive |
-| Folder button | Show the drive in Finder |
-| **Mount** | Mount a drive that is connected but not mounted |
-| Eject button | Safely eject the drive |
+| Status | **Read & write**, **Read-only — reason**, **Not mounted**… |
+| Bar | How full the drive is |
+| **Allow writing** | Turn off to keep this drive read-only. Remembered for each drive |
+| Folder button | Open the drive in Finder |
+| **Mount** | Use a drive that is plugged in but not mounted |
+| Eject button | Eject the drive safely |
 
-From the menu you can also open the [main window](#drive-manager-and-formatting) with **Open NTFS for Mac…**.
-**Settings…** opens the window on its **Settings** page (also at the bottom of the sidebar), where you can:
-
-- start NTFS for Mac automatically when you log in,
-- choose the language (Same as system, English, Tiếng Việt),
-- check whether the file system extension is turned on.
+**Open NTFS for Mac…** opens the main window, with every drive in the sidebar and a page for each.
+**Settings…** lets you start the app when you log in, choose the language, and check that NTFS for Mac is turned on.
 
 > [!IMPORTANT]
-> Always **eject** a drive (in Finder or from the menu bar) before unplugging it, so every change is written
-> to the disk.
+> Always **eject** a drive (in Finder or from the menu bar) before unplugging it, so all your changes are saved to it.
 
-## Drive manager and formatting
+## Formatting a drive
 
-Choose **Open NTFS for Mac…** in the menu bar to open the main window. The sidebar lists every connected drive,
-grouped into **External** and **Internal**, with its partitions underneath. Select a partition to see its format, used space and NTFS
-status; select a drive to see its model, connection, partition table and a partition map. The toolbar has
-**Mount**/**Unmount**, **Eject**, **Show in Finder** and **Format…**, and works for every drive, not only NTFS.
+In the main window, select a partition, or a whole drive, and click **Format…**. You can choose NTFS, exFAT,
+FAT32 or APFS; when erasing a whole drive, also GPT or MBR.
 
-**Format…** erases the selected partition, or the whole drive when the drive itself is selected:
+> [!WARNING]
+> Formatting erases everything on the partition or drive. Copy what you need first.
 
-| Option | Choices |
-| --- | --- |
-| Format | NTFS, exFAT, FAT32, APFS |
-| Scheme (whole drive only) | GUID Partition Map (GPT) or Master Boot Record (MBR) |
-| NTFS options | Cluster size (Automatic fits almost every drive; a larger size wastes space on small files); **Quick format** (turn off to write zeros over the whole partition, which takes much longer) |
+The app takes care not to erase the wrong thing:
 
-Formatting is built to never erase the wrong thing:
+- It lists exactly what will be erased, and you type the drive's name to confirm.
+- If the drive is unplugged or changed in the meantime, it stops and erases nothing.
+- Your Mac's internal drives and the drive macOS runs from can't be formatted.
+- Formatting as NTFS asks for your Mac password in the usual macOS dialog. The app never sees it.
 
-- The sheet lists exactly what will be erased and what won't, and you type the drive's name to confirm.
-- The drive is checked again right before every step. If it was unplugged, replaced or changed, formatting stops and
-  nothing is erased.
-- **Internal drives, the drive macOS runs from and the drive NTFS for Mac runs from are protected.** They are shown,
-  but can't be unmounted, ejected or formatted. Disk images can't be formatted either.
-- NTFS formatting runs a small helper with administrator rights, which you grant in the standard macOS password
-  dialog. NTFS for Mac never sees your password. The first time, macOS may also ask you to allow access to
-  removable volumes.
-- Erasing a **whole drive** as NTFS happens in two steps: macOS first erases the drive as exFAT, then asks for your
-  password to turn the partition into NTFS. If you cancel that dialog, the drive stays exFAT.
-- Formatting a Mac partition (APFS or Mac OS Extended) as NTFS also changes its partition type, so Windows recognizes it.
+## File Transfer (beta)
+
+NTFS for Mac **2.2.0**, available as a [beta](https://github.com/dovancuongadhp/ntfs-for-mac/releases), adds a
+**File Transfer** page: two file browsers side by side for copying between any drives and folders, with a
+progress list, pause and resume, retry of failed files, and a choice when a file or folder already exists.
+It's a beta: try it with files you have a backup of.
 
 ## When a drive opens read-only
 
-NTFS for Mac never forces a write onto a drive that may be in an inconsistent state. If a drive shows
-**Read-only**, the reason is displayed next to it:
+NTFS for Mac never writes to a drive that might not be in a safe state. When a drive shows **Read-only**, the
+reason is shown next to it:
 
-| Status | What it means | What to do |
+| Status | Why | What to do |
 | --- | --- | --- |
-| Windows is hibernated | Windows hibernated or uses Fast Startup, so the drive still holds Windows' open session | Start Windows, hold **Shift** while clicking **Shut Down** (or turn off Fast Startup), then reconnect the drive |
-| Not ejected safely | The drive was unplugged without ejecting, or Windows didn't shut down cleanly | Connect it to Windows and shut down normally, or click **Allow Writing Anyway…** (changes Windows hadn't finished saving may be lost) |
-| Disk needs checking | Windows flagged the volume for a disk check | Run `chkdsk /f` on the drive in Windows, then reconnect it |
+| Windows is hibernated | Windows is hibernated or uses Fast Startup and still holds the drive | Start Windows, hold **Shift** while clicking **Shut Down** (or turn off Fast Startup), then plug the drive in again |
+| Not ejected safely | The drive was unplugged without ejecting, or Windows didn't shut down properly | Plug it into Windows and shut down normally, or click **Allow Writing Anyway…** (changes Windows didn't finish saving may be lost) |
+| Disk needs checking | Windows asked for the drive to be checked | Run `chkdsk /f` on the drive in Windows, then plug it in again |
 | Disk is write-protected | The drive or card has its lock switch on | Slide the lock switch off |
-| Write error | Writing to the drive failed, so writing was stopped to protect your data | Eject the drive and check the cable or the drive itself |
+| Write error | Writing failed, so it was stopped to protect your files | Eject the drive and check the cable or the drive |
 | Writing turned off | You turned off **Allow writing** for this drive | Turn **Allow writing** back on |
-| Read-only (macOS driver) | macOS mounted the drive with its built-in read-only driver | Turn on the extension in System Settings (see [Installation](#installation)) |
+| Read-only (macOS driver) | NTFS for Mac isn't turned on | Turn it on (step 4 of [Install](#install)) |
 
-## Limitations
+## What it can't do yet
 
-NTFS for Mac does **not** support yet:
+- Resize, add or delete partitions (it can format a partition or erase a whole drive).
+- Repair a damaged drive (use `chkdsk` in Windows).
+- Change Windows file permissions.
+- Open BitLocker-encrypted drives or EFS-encrypted files.
 
-- resizing, adding or deleting partitions (only formatting an existing partition or erasing a whole drive),
-- repairing volumes (use `chkdsk` on Windows),
-- editing NTFS permissions (ACLs),
-- BitLocker-encrypted drives and EFS-encrypted files.
+## Updating and uninstalling
 
-## Uninstalling
+**Updating:** NTFS for Mac checks for new versions in **Settings**. You can also download the new DMG and drag
+the app into Applications, replacing the old one.
 
-Quit the app (menu → **Quit**) and drag **NTFS for Mac** from Applications to the Trash. That's it: the
-extension is removed together with the app. Only a small preferences file is left in `~/Library/Preferences`.
+**Uninstalling:** quit the app (menu → **Quit**) and drag **NTFS for Mac** from Applications to the Trash.
+Only a few small settings files are left behind.
 
-## FAQ
+## Questions
 
 <details>
 <summary><b>Is it safe to write to my drive?</b></summary>
 
-NTFS reading and writing is done by [ntfs-3g](https://github.com/tuxera/ntfs-3g), which has been used on
-Linux for well over a decade. On top of that, NTFS for Mac refuses to write whenever the volume isn't in a
-clean state (see [When a drive opens read-only](#when-a-drive-opens-read-only)). As with any disk tool,
-keep backups of important data and always eject before unplugging.
+Reading and writing NTFS is done by [ntfs-3g](https://github.com/tuxera/ntfs-3g), used on Linux for well over
+a decade, and NTFS for Mac refuses to write whenever the drive isn't in a clean state (see
+[When a drive opens read-only](#when-a-drive-opens-read-only)). As with any disk tool, keep a backup of
+important files and always eject before unplugging.
 </details>
 
 <details>
-<summary><b>Do I need macFUSE, a kernel extension or to disable SIP?</b></summary>
+<summary><b>Do I need macFUSE, a kernel extension, or to turn off System Integrity Protection?</b></summary>
 
-No. NTFS for Mac uses FSKit, Apple's user-space file system framework introduced for third-party file systems.
-Nothing is installed outside the app bundle.
+No. NTFS for Mac uses Apple's own system for adding file systems (FSKit). Everything stays inside the app.
 </details>
 
 <details>
 <summary><b>Why does macOS say the app can't be opened?</b></summary>
 
-The current build isn't notarized by Apple yet. Follow step 3 of [Installation](#installation) once; after that
-the app opens normally. You can also [build it from source](#building-from-source) yourself.
+The app isn't notarized by Apple yet. Follow step 3 of [Install](#install) once; after that it opens normally.
 </details>
 
 <details>
 <summary><b>Does it work on macOS 15 Sequoia or earlier?</b></summary>
 
-No. FSKit on earlier macOS versions lacks the APIs needed for fast, reliable read-write access, so macOS 26 is
-the minimum.
+No. It needs macOS 26 or later.
 </details>
 
 <details>
 <summary><b>My drive doesn't appear, or shows "Not supported".</b></summary>
 
-The menu bar only lists NTFS drives, so check the drive's format in the main window first. A drive shown as
-**Not supported — encrypted (BitLocker) or damaged** is either BitLocker-encrypted (turn BitLocker off in
-Windows) or damaged (run `chkdsk /f` on it in Windows).
+The menu bar lists NTFS drives only, so check the drive's format in the main window first. **Not supported —
+encrypted (BitLocker) or damaged** means the drive is BitLocker-encrypted (turn BitLocker off in Windows) or
+damaged (run `chkdsk /f` on it in Windows).
 </details>
 
 <details>
 <summary><b>Is it really free?</b></summary>
 
-Yes. NTFS for Mac is free software under the GNU GPL v2 or later: no trial period, no ads, no data collection.
+Yes. It's open-source software under the GNU GPL v2 or later: no trial, no ads, no data collection.
 </details>
 
-## Versions
+## Reporting a problem
 
-Versions are numbered `major.minor.patch`. Like macOS, every major version also has a name, here an English
-flower name that is never reused. Minor (new features) and patch (fixes) updates keep the name of their major version.
-Each release carries its full version and name, so 2.0.0 and 2.0.1 never look alike:
+Please [open an issue](https://github.com/dovancuongadhp/ntfs-for-mac/issues/new) and tell us:
 
-| | Pattern | Example |
-| --- | --- | --- |
-| Release title | NTFS for Mac *version* *Name* | NTFS for Mac 2.1.0 Lotus |
-| Git tag | v*version* | v2.1.0 |
-| Release branch | release-*version*-*name* | release-2.1.0-lotus |
+- your macOS version and Mac model,
+- the NTFS for Mac version (**Settings → About**),
+- what you did, what you expected and what happened instead.
 
-Unnamed versions just drop the name: NTFS for Mac 1.0.1, branch `release-1.0.1`.
-
-| Version | Name | Highlights |
-| --- | --- | --- |
-| 2.x | **Lotus** | Drive manager and formatting, including NTFS |
-| 1.0.x | — | First release: read and write NTFS drives in Finder |
-
-See the [changelog](CHANGELOG.md) for every change.
-
-## Reporting a bug
-
-Please [open an issue](https://github.com/dovancuongadhp/ntfs-for-mac/issues/new) and include:
-
-- your macOS version and Mac model (Apple silicon or Intel),
-- the NTFS for Mac version (**Settings… → About**),
-- what you did, what you expected and what happened instead,
-- logs from the last few minutes, collected right after the problem occurs:
+If you can, also paste what this Terminal command prints, run right after the problem happens:
 
 ```sh
 log show --last 10m --predicate 'subsystem BEGINSWITH "com.docuong.ntfsformac"'
 ```
 
-## How it works
+---
 
-```
-NTFS for Mac.app
-├── Contents/MacOS/NTFS for Mac                ← menu bar app and drive manager (SwiftUI)
-├── Contents/Helpers/ntfs-format, ntfs-mkfs, libNTFSDiskOpen.dylib    ← NTFS formatting helpers
-└── Contents/Extensions/NTFSExtension.appex    ← FSKit file system extension
-        └── NTFSCore → libntfs-3g              ← NTFS engine
-```
-
-- The **menu bar app** watches for disks with DiskArbitration, recognizes NTFS volumes from their boot
-  sector, decides whether a drive can be safely mounted read-write and asks FSKit to mount it with the extension.
-- The **FSKit extension** (`ntfsrw`) runs in user space and translates Finder's file operations into calls to
-  libntfs-3g, which reads and writes the NTFS structures directly on the block device.
-- **Formatting** uses `diskutil` for exFAT, FAT32, APFS and partition tables. For NTFS, the `ntfs-format` helper
-  re-checks the partition, blocks it from being mounted while it works, and opens the removable disk through
-  macOS before running ntfs-3g's `mkntfs`. macOS refuses a direct open of that disk, even for an administrator.
-
-## Building from source
-
-Requirements: **Xcode 26** or later. [XcodeGen](https://github.com/yonaskolb/XcodeGen) is only needed after
-editing `project.yml`.
-
-ntfs-3g is a git submodule, so clone with it:
-
-```sh
-git clone --recursive https://github.com/dovancuongadhp/ntfs-for-mac.git
-# or, in an existing clone: git submodule update --init
-```
-
-**Without an Apple Developer account**, run `scripts/build-local.sh`. It builds an ad hoc signed app and
-`build/NTFS-for-Mac.dmg` that work on your own Mac. Xcode itself refuses to sign the extension without a team,
-so use the script rather than building in Xcode.
-
-**With an account**, for debugging in Xcode and for public releases:
-
-```sh
-cp Config/Local.xcconfig.example Config/Local.xcconfig   # set DEVELOPMENT_TEAM to your Team ID
-xcodegen generate                                        # only needed after editing project.yml
-open NTFSForMac.xcodeproj                                # build and run the NTFSForMac scheme
-```
-
-Copy the built app to `/Applications` before enabling the extension, because macOS only offers extensions from
-installed apps. Replacing the app with a differently signed copy unregisters the extension until it is enabled again.
-
-| Command | What it does |
-| --- | --- |
-| `swift test --package-path Core` | Unit tests for the NTFS core (libntfs-3g bridge), using generated disk images |
-| `xcodebuild -scheme NTFSForMac CODE_SIGNING_ALLOWED=NO test` | App unit tests |
-| `scripts/build-local.sh` | Release build and DMG for your own Mac: signed with your free "Apple Development" certificate if present, else ad hoc |
-| `scripts/integration-test.sh` | Mounts a scratch NTFS image through the installed extension and checks data survives a remount |
-| `scripts/format-integration-test.sh` | Formats scratch disk images only (never a real drive) with the built helper and `diskutil`, and checks the results |
-| `scripts/make-dmg.sh [app] [dmg]` | Packages an app into a drag-to-install DMG (defaults to the unsigned Release build) |
-| `scripts/release.sh` | Archive, Developer ID signing, notarization, stapling and the final DMG |
-| `scripts/unregister-build-copies.sh` | Removes the copies under `build/` from System Settings' extension list (each build adds one). The two scripts above run it; run it yourself after Xcode builds or tests |
-| `swift scripts/make-icon.swift` | Regenerates the app icon |
-
-### Project layout
-
-| Path | Contents |
-| --- | --- |
-| `App/` | Menu bar app and drive manager: disk inventory (DiskArbitration), mounting, formatting, per-drive settings, the main window and its settings page |
-| `Extension/` | FSKit file system extension (`ntfsrw`) |
-| `Core/` | Swift package: vendored ntfs-3g (`CNTFS`), a typed Swift API over it (`NTFSCore`), boot-sector probing (`NTFSProbe`), the NTFS formatting helper (`NTFSFormat`, `ntfs-format`) and identifiers shared by the app and extension (`NTFSShared`) |
-| `AppTests/` | App unit tests |
-| `scripts/` | Build, packaging, release and integration-test scripts |
-| `docs/` | Design spec and implementation plan |
-
-## Contributing
-
-Contributions are welcome: bug reports, translations, documentation and code.
-
-1. For anything bigger than a small fix, please open an issue first so we can agree on the approach.
-2. Fork the repository and create a branch from `main`.
-3. Run the unit tests (`swift test --package-path Core` and the app tests above) and, if you changed the
-   extension, `scripts/integration-test.sh`.
-4. Open a pull request describing what changed and how you tested it.
-
-To add or improve a translation, edit `App/Localizable.xcstrings` in Xcode.
-
-## Acknowledgements
-
-- [ntfs-3g](https://github.com/tuxera/ntfs-3g) by Tuxera and its contributors, the NTFS engine behind this app.
-- Apple's [FSKit](https://developer.apple.com/documentation/fskit), which makes user-space file systems on macOS possible.
-
-## License
-
-NTFS for Mac is free software released under the **GNU General Public License v2.0 or later**, the same license
-as ntfs-3g. See [LICENSE](LICENSE).
+NTFS for Mac is free software under the [GNU General Public License v2.0 or later](LICENSE), built on
+[ntfs-3g](https://github.com/tuxera/ntfs-3g). Developers: see [CONTRIBUTING.md](CONTRIBUTING.md) to build it and
+take part.
 
 NTFS, Windows and BitLocker are trademarks of Microsoft Corporation. macOS and Finder are trademarks of Apple Inc.
 This project is not affiliated with or endorsed by Microsoft or Apple.
