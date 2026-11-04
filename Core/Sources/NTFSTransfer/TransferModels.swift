@@ -17,8 +17,8 @@ public struct FileAttributes: Sendable, Equatable {
 }
 
 /// One thing to create at the destination: a folder, a file or a symbolic link.
-public struct TransferJob: Sendable, Equatable, Identifiable {
-    public enum Kind: Sendable, Equatable {
+public struct TransferJob: Sendable, Equatable, Identifiable, Codable {
+    public enum Kind: Sendable, Equatable, Codable {
         case directory
         case file
         case symlink(target: String)
@@ -59,7 +59,7 @@ public struct TransferJob: Sendable, Equatable, Identifiable {
     }
 }
 
-public enum TransferFailureReason: Sendable, Equatable {
+public enum TransferFailureReason: Sendable, Equatable, Codable {
     case unreadable
     case writeFailed
     case noSpace
@@ -76,7 +76,7 @@ public enum TransferFailureReason: Sendable, Equatable {
     public var stopsTransfer: Bool { self == .noSpace || self == .driveRemoved }
 }
 
-public struct TransferFailure: Error, Sendable, Equatable {
+public struct TransferFailure: Error, Sendable, Equatable, Codable {
     public var reason: TransferFailureReason
     /// The system's own words, for the error list. Not meant for the main message.
     public var detail: String

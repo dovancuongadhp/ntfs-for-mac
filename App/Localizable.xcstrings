@@ -561,16 +561,6 @@
         }
       }
     },
-    "Format" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Định dạng"
-          }
-        }
-      }
-    },
     "Format…" : {
       "localizations" : {
         "vi" : {
@@ -2334,6 +2324,116 @@
         }
       }
     },
+    "A folder named “%@” already exists in “%@”" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thư mục “%1$@” đã có trong “%2$@”"
+          }
+        }
+      }
+    },
+    "Keep Both copies it under a new name with a number. Merge puts its contents into the folder that is there and asks about files with the same name." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giữ cả hai sẽ chép thư mục này thành tên mới có thêm số. Gộp sẽ chép nội dung vào thư mục đang có và hỏi khi gặp file trùng tên."
+          }
+        }
+      }
+    },
+    "Merge" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gộp"
+          }
+        }
+      }
+    },
+    "Go to folder" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đến thư mục"
+          }
+        }
+      }
+    },
+    "Copy at %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lần sao chép lúc %@"
+          }
+        }
+      }
+    },
+    "Files: %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tệp: %lld"
+          }
+        }
+      }
+    },
+    "Tab completes the highlighted folder, ↑ ↓ pick another, Return opens it" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tab điền thư mục đang chọn, ↑ ↓ để chọn thư mục khác, Return để mở"
+          }
+        }
+      }
+    },
+    "Click, or press ⌘L, to type a folder's path" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bấm, hoặc nhấn ⌘L, để gõ đường dẫn thư mục"
+          }
+        }
+      }
+    },
+    "No copies yet" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa có lần copy nào"
+          }
+        }
+      }
+    },
+    "Show progress" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiện tiến trình"
+          }
+        }
+      }
+    },
+    "Hide progress" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ẩn tiến trình"
+          }
+        }
+      }
+    },
     "From" : {
       "localizations" : {
         "vi" : {
@@ -3150,6 +3250,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đang chờ bạn"
+          }
+        }
+      }
+    },
+    "Nothing is being copied." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có gì đang sao chép."
+          }
+        }
+      }
+    },
+    "No errors." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không có lỗi."
+          }
+        }
+      }
+    },
+    "Earlier copies: %lld" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Các lần sao chép trước: %lld"
+          }
+        }
+      }
+    },
+    "Empty the copy log" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xoá nhật ký sao chép"
+          }
+        }
+      }
+    },
+    "Welcome" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chào mừng"
+          }
+        }
+      }
+    },
+    "Get started" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bắt đầu"
+          }
+        }
+      }
+    },
+    "Copy files between drives in a two-sided browser." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép tệp giữa các ổ bằng trình duyệt hai bên."
+          }
+        }
+      }
+    },
+    "The NTFS driver, language, updates and more." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trình điều khiển NTFS, ngôn ngữ, cập nhật và hơn thế nữa."
+          }
+        }
+      }
+    },
+    "The NTFS driver is on. Plug in a Windows drive and use it like any other." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trình điều khiển NTFS đang bật. Cắm ổ Windows vào và dùng như mọi ổ khác."
+          }
+        }
+      }
+    },
+    "The NTFS driver is off, so Windows drives are read-only." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trình điều khiển NTFS đang tắt nên ổ Windows chỉ đọc được."
+          }
+        }
+      }
+    },
+    "Turn It On" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bật lên"
+          }
+        }
+      }
+    },
+    "Version %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phiên bản %@"
           }
         }
       }

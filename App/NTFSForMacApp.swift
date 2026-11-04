@@ -34,16 +34,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.start()
         if !UserDefaults.standard.bool(forKey: WindowPresenter.welcomeSeenKey) {
             UserDefaults.standard.set(true, forKey: WindowPresenter.welcomeSeenKey)
-            windows.showSettings()
+            windows.showMain()
         } else if !launchedAsLoginItem {
             windows.showMain()
         }
-        // Remind the user if the extension is still switched off; an open
-        // window already shows the reminder.
+        // Remind the user if the extension is still switched off; the welcome page says so and how to fix it,
+        // and an open window already shows the reminder.
         Task {
             try? await Task.sleep(for: .seconds(2))
             if model.extensionStatus.isEnabled == false, !windows.isMainWindowVisible {
-                windows.showSettings()
+                windows.showMain()
             }
         }
     }

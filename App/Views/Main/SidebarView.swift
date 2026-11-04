@@ -5,6 +5,7 @@ enum SidebarSelection: Hashable {
     case partition(String)
     case settings
     case transfer
+    case welcome
 }
 
 struct SidebarView: View {
@@ -15,6 +16,8 @@ struct SidebarView: View {
         let disks = model.inventory.sidebarDisks
         List(selection: $selection) {
             Section {
+                Label("Welcome", systemImage: "house")
+                    .tag(SidebarSelection.welcome)
                 HStack {
                     Label("File Transfer", systemImage: "arrow.left.arrow.right")
                     Spacer()

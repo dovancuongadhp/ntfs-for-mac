@@ -1,7 +1,7 @@
 import Foundation
 
-public struct TransferItem: Identifiable, Sendable, Equatable {
-    public enum State: Sendable, Equatable {
+public struct TransferItem: Identifiable, Sendable, Equatable, Codable {
+    public enum State: Sendable, Equatable, Codable {
         case waiting
         case copying
         case done
@@ -92,6 +92,15 @@ public struct TransferProgress: Sendable, Equatable {
     }
 
     public init() {}
+
+    /// Totals for items already under way or over, such as one copy's share of the list.
+    init(items: [TransferItem]) {
+        self.items = items
+        for (index, item) in items.enumerated() {
+            indexByID[item.id] = index
+            totals.add(item, sign: 1)
+        }
+    }
 
     public mutating func append(_ jobs: [TransferJob]) {
         items.reserveCapacity(items.count + jobs.count)

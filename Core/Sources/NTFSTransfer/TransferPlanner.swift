@@ -5,14 +5,36 @@ public enum TransferPlanner {
         case destinationInsideSource(String)
     }
 
+    /// What to do with a copied folder whose name is already taken in the destination.
+    public enum FolderChoice: Sendable, Equatable {
+        /// Copy it under the next free name: "Photos 2".
+        case keepBoth
+        /// Copy its contents into the folder that is there; files with the same name are asked about one by one.
+        case merge
+        case skip
+    }
+
+    /// The copied folders, at the top level of `sources`, whose name is already taken in `folder`.
+    public static func clashingFolders(sources: [URL], into folder: URL, access: any FileAccess) throws -> [URL] {
+        try distinctTopLevel(sources).filter { source in
+            let destination = folder.appending(component: source.lastPathComponent)
+            guard destination.standardizedFileURL.path != source.standardizedFileURL.path else { return false }
+            return try access.attributes(of: source).kind == .directory && access.exists(destination)
+        }
+    }
+
     /// Lists, in copy order, everything needed to put `sources` inside `folder`.
     ///
     /// When `duplicate` is true (Copy button, Paste), a source whose planned destination
     /// is the same path as the source itself is renamed to a unique name beside it –
     /// "Photos" becomes "Photos 2", matching Finder behaviour. When false (Drop), sources
     /// that land in the same folder they already live in are left out by the caller.
+    ///
+    /// `folderChoices`, keyed by the standardized path of a source, says what to do with a folder from
+    /// `clashingFolders`; one without an answer is merged.
     public static func plan(
-        sources: [URL], into folder: URL, access: any FileAccess, duplicate: Bool = false
+        sources: [URL], into folder: URL, access: any FileAccess, duplicate: Bool = false,
+        folderChoices: [String: FolderChoice] = [:]
     ) throws -> [TransferJob] {
         var jobs: [TransferJob] = []
         let target = folder.standardizedFileURL.path
@@ -27,6 +49,12 @@ public enum TransferPlanner {
             // unique name next to it so the whole item is copied rather than merged.
             if duplicate, destination.standardizedFileURL.path == sourcePath {
                 destination = UniqueName.make(for: destination, exists: access.exists)
+            } else if attributes.kind == .directory, access.exists(destination) {
+                switch folderChoices[sourcePath] {
+                case .keepBoth: destination = UniqueName.make(for: destination, exists: access.exists)
+                case .skip: continue
+                case .merge, nil: break
+                }
             }
             try add(source, attributes: attributes, destination: destination, access: access, jobs: &jobs)
         }

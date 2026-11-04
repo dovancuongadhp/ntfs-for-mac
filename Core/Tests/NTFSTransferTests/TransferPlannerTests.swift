@@ -65,6 +65,49 @@ import Testing
         #expect(jobs.count == 1)
     }
 
+    @Test func onlyCopiedFoldersWhoseNameIsTakenClash() throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("Photos/a.jpg"); try source.file("Fresh/b.jpg"); try source.file("note.txt")
+        try destination.folder("Photos"); try destination.file("note.txt")
+        let access = PosixFileAccess()
+
+        let clashes = try TransferPlanner.clashingFolders(
+            sources: ["Photos", "Fresh", "note.txt"].map { source.path($0) }, into: destination.url, access: access)
+
+        #expect(clashes.map(\.lastPathComponent) == ["Photos"])
+        #expect(try TransferPlanner.clashingFolders(sources: [source.path("Photos")], into: source.url, access: access).isEmpty)
+    }
+
+    @Test func keepBothCopiesAClashingFolderUnderTheNextFreeName() throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        let photos = try source.folder("Photos")
+        try source.file("Photos/a.jpg")
+        try destination.folder("Photos"); try destination.folder("Photos 2")
+
+        let jobs = try TransferPlanner.plan(
+            sources: [photos], into: destination.url, access: PosixFileAccess(),
+            folderChoices: [photos.standardizedFileURL.path: .keepBoth])
+
+        #expect(jobs.map(\.destination) == [destination.path("Photos 3"), destination.path("Photos 3/a.jpg")])
+    }
+
+    @Test func skipLeavesAClashingFolderOutAndMergeCopiesIntoIt() throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        let photos = try source.folder("Photos")
+        let music = try source.folder("Music")
+        try source.file("Photos/a.jpg"); try source.file("Music/b.mp3")
+        try destination.folder("Photos"); try destination.folder("Music")
+
+        let jobs = try TransferPlanner.plan(
+            sources: [photos, music], into: destination.url, access: PosixFileAccess(),
+            folderChoices: [photos.standardizedFileURL.path: .skip, music.standardizedFileURL.path: .merge])
+
+        #expect(jobs.map(\.destination) == [destination.path("Music"), destination.path("Music/b.mp3")])
+    }
+
     @Test func uniqueNameAddsANumberBeforeTheExtension() {
         let taken: Set<String> = ["/x/a 2.txt", "/x/a 3.txt"]
         let url = UniqueName.make(for: URL(fileURLWithPath: "/x/a.txt")) { taken.contains($0.path) }

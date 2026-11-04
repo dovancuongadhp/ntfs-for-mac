@@ -171,6 +171,145 @@ private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool
         #expect(queue.progress.items.isEmpty)
     }
 
+    @Test func eachCopyIsAGroupNewestFirstWithWhereItCameFromAndWent() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.txt")
+        try source.folder("pics"); try source.file("pics/1.jpg"); try source.file("pics/2.jpg")
+        let queue = TransferQueue()
+        queue.enqueue(try plan([source.path("a.txt")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        queue.enqueue(try plan([source.path("pics")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+
+        let groups = queue.groups
+        #expect(groups.count == 2)
+        #expect(groups.map { $0.progress.fileCount } == [2, 1])
+        #expect(groups[0].progress.items.filter { !$0.job.isDirectory }.map(\.job.name).sorted() == ["1.jpg", "2.jpg"])
+        #expect(groups[0].from.standardizedFileURL == source.url.standardizedFileURL)
+        #expect(groups[0].to.standardizedFileURL == destination.url.standardizedFileURL)
+        #expect(groups.allSatisfy { $0.status == .over })
+        #expect(groups[0].started >= groups[1].started)
+        #expect(groups[0].id != groups[1].id)
+    }
+
+    @Test func aCopyAddedWhileAnotherRunsIsAGroupOfItsOwn() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.data("one.bin", count: 2_000_000)
+        try source.file("two.txt", "2")
+        let queue = TransferQueue()
+        queue.enqueue(try plan([source.path("one.bin")], into: destination.url))
+        queue.enqueue(try plan([source.path("two.txt")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+
+        #expect(queue.groups.map { $0.progress.items.map(\.job.name) } == [["two.txt"], ["one.bin"]])
+    }
+
+    @Test func aGroupThatHasNotStartedWaitsAndOneUnderWayIsCopying() {
+        let job = { (id: Int) in
+            TransferJob(id: id, kind: .file, source: URL(fileURLWithPath: "/s/\(id)"),
+                        destination: URL(fileURLWithPath: "/d/\(id)"), size: 10, modified: .distantPast)
+        }
+        var waiting = TransferItem(job: job(1))
+        #expect(TransferGroup.status(of: [waiting]) == .waiting)
+        var done = TransferItem(job: job(2))
+        done.state = .done
+        #expect(TransferGroup.status(of: [done, waiting]) == .copying)
+        waiting.state = .copying
+        #expect(TransferGroup.status(of: [waiting]) == .copying)
+        #expect(TransferGroup.status(of: [done]) == .over)
+    }
+
+    @Test func retriedFilesStayInTheirOwnCopyAndClearForgetsTheGroups() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("bad.bin", "xxxx"); try source.file("good.bin", "yyyy")
+        let flaky = Flaky()
+        flaky.update { $0.failReading = ["bad.bin"] }
+        let queue = TransferQueue(access: flaky)
+        queue.enqueue(try plan([source.path("bad.bin")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        queue.enqueue(try plan([source.path("good.bin")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(queue.groups.map { $0.progress.failedCount } == [0, 1])
+
+        flaky.update { $0.failReading = [] }
+        queue.retryFailed()
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(queue.groups.map { $0.progress.items.map(\.job.name) } == [["good.bin"], ["bad.bin"]])
+        #expect(queue.groups.map { $0.progress.failedCount } == [0, 0])
+
+        queue.clear()
+        #expect(queue.groups.isEmpty)
+    }
+
+    @Test func theLogSurvivesASaveAndARestartAndItsFailuresCanStillBeRetried() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        let store = try TempFolder()
+        try source.file("bad.bin", "xxxx"); try source.file("good.bin", "yyyy")
+        let flaky = Flaky()
+        flaky.update { $0.failReading = ["bad.bin"] }
+        let queue = TransferQueue(access: flaky)
+        queue.enqueue(try plan([source.path("good.bin")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        queue.enqueue(try plan([source.path("bad.bin")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+
+        let file = store.url.appending(path: "log.json")
+        try TransferLog.save(queue.log, to: file)
+        let restarted = TransferQueue(access: flaky)
+        restarted.restore(try #require(TransferLog.load(from: file)))
+
+        #expect(restarted.groups == queue.groups)
+        #expect(restarted.phase == .idle)
+        #expect(restarted.failedCount == 1)
+        flaky.update { $0.failReading = [] }
+        restarted.retryFailed()
+        #expect(await waitUntil { restarted.phase == .finished })
+        #expect(restarted.failedCount == 0)
+        #expect(try destination.text("bad.bin") == "xxxx")
+        #expect(restarted.groups.map { $0.progress.items.map(\.job.name) } == [["bad.bin"], ["good.bin"]])
+    }
+
+    @Test func filesStillUnderWayWhenTheAppQuitComeBackSkipped() {
+        let job = TransferJob(id: 0, kind: .file, source: URL(fileURLWithPath: "/s/a"), destination: URL(fileURLWithPath: "/d/a"))
+        var copying = TransferItem(job: job)
+        copying.state = .copying
+        let record = TransferQueue.CopyRecord(firstJobID: 0, started: .now, from: URL(fileURLWithPath: "/s"), to: URL(fileURLWithPath: "/d"))
+        let queue = TransferQueue()
+        queue.restore(TransferQueue.Log(copies: [record], items: [copying]))
+
+        #expect(queue.groups.first?.progress.items.map(\.state) == [.skipped])
+        #expect(queue.groups.first?.status == .over)
+    }
+
+    @Test func aCopyAfterARestoreIsANewGroupAndClearEmptiesTheLog() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.txt"); try source.file("b.txt")
+        let first = TransferQueue()
+        first.enqueue(try plan([source.path("a.txt")], into: destination.url))
+        #expect(await waitUntil { first.phase == .finished })
+
+        let queue = TransferQueue()
+        queue.restore(first.log)
+        queue.enqueue(try plan([source.path("b.txt")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(queue.groups.map { $0.progress.items.map(\.job.name) } == [["b.txt"], ["a.txt"]])
+
+        queue.clear()
+        #expect(queue.log == TransferQueue.Log(copies: [], items: []))
+    }
+
+    @Test func aMissingOrDamagedLogFileGivesNothing() throws {
+        let store = try TempFolder()
+        try store.file("bad.json", "not json")
+        #expect(TransferLog.load(from: store.url.appending(path: "missing.json")) == nil)
+        #expect(TransferLog.load(from: store.url.appending(path: "bad.json")) == nil)
+    }
+
     @Test func failuresFromEarlierCopiesAreCountedExportedAndRetried() async throws {
         let source = try TempFolder()
         let destination = try TempFolder()

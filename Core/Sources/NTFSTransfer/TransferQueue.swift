@@ -90,6 +90,82 @@ public final class TransferQueue {
 
     @ObservationIgnored private var historyFailures = 0
 
+    /// Where each copy starts among the job numbers, which only grow, so a job belongs to the last copy
+    /// that starts at or before it, retried or not.
+    public struct CopyRecord: Sendable, Equatable, Codable {
+        let firstJobID: Int
+        let started: Date
+        let from: URL
+        let to: URL
+    }
+
+    private var copies: [CopyRecord] = []
+
+    /// Every copy and file still kept, to be saved and given back to `restore(_:)` after the app restarts.
+    public struct Log: Sendable, Equatable, Codable {
+        var copies: [CopyRecord]
+        var items: [TransferItem]
+    }
+
+    public var log: Log {
+        Log(copies: copies, items: progress.items + history)
+    }
+
+    /// Takes back a saved log into a queue that has not copied anything yet. Files that were under way
+    /// when the app quit did not finish, so they come back skipped.
+    public func restore(_ log: Log) {
+        guard phase == .idle, copies.isEmpty, current.items.isEmpty else { return }
+        history = log.items.map { item in
+            guard item.state == .waiting || item.state == .copying else { return item }
+            var item = item
+            item.state = .skipped
+            item.bytesDone = 0
+            return item
+        }
+        historyFailures = history.count { $0.failure != nil }
+        copies = log.copies.sorted { $0.firstJobID < $1.firstJobID }
+        let lastID = max(log.items.map(\.id).max() ?? -1, copies.last?.firstJobID ?? -1)
+        nextID = max(nextID, lastID + 1)
+        reportProgress()
+    }
+
+    /// Every copy still kept, newest first, each with its own files and totals.
+    public var groups: [TransferGroup] {
+        guard !copies.isEmpty else { return [] }
+        var buckets = [[TransferItem]](repeating: [], count: copies.count)
+        for item in progress.items + history {
+            guard let index = copyIndex(of: item.id) else { continue }
+            buckets[index].append(item)
+        }
+        return zip(copies, buckets).reversed().compactMap { record, items in
+            items.isEmpty ? nil : TransferGroup(record: record, items: items.sorted { $0.id < $1.id })
+        }
+    }
+
+    private func copyIndex(of jobID: Int) -> Int? {
+        var low = 0
+        var high = copies.count - 1
+        var found: Int?
+        while low <= high {
+            let middle = (low + high) / 2
+            if copies[middle].firstJobID <= jobID {
+                found = middle
+                low = middle + 1
+            } else {
+                high = middle - 1
+            }
+        }
+        return found
+    }
+
+    /// The folders of the items picked, the top of what the copy creates, rather than of the files inside them.
+    private static func record(of jobs: [TransferJob], firstJobID: Int) -> CopyRecord {
+        let top = jobs.min { $0.source.pathComponents.count < $1.source.pathComponents.count } ?? jobs[0]
+        return CopyRecord(
+            firstJobID: firstJobID, started: Date(),
+            from: top.source.deletingLastPathComponent(), to: top.destination.deletingLastPathComponent())
+    }
+
     public var isBusy: Bool { phase == .running || phase == .paused }
 
     /// Failures in the latest copy and in the history.
@@ -114,6 +190,7 @@ public final class TransferQueue {
             summary = nil
             lastStop = nil
         }
+        copies.append(Self.record(of: jobs, firstJobID: nextID))
         let numbered = jobs.map { job -> TransferJob in
             var job = job
             job.id = nextID
@@ -200,6 +277,7 @@ public final class TransferQueue {
         guard !isBusy, !isHalted else { return }
         current = TransferProgress()
         history = []
+        copies = []
         historyFailures = 0
         summary = nil
         lastStop = nil

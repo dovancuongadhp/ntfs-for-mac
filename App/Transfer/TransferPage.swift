@@ -6,9 +6,13 @@ import SwiftUI
 struct TransferPage: View {
     @Bindable var session: TransferSession
     @AppStorage("TransferBetaNoticeDismissed") private var noticeDismissed = false
+    @AppStorage("TransferProgressCollapsed") private var progressCollapsed = false
     /// Below this width the two sides stack instead of sitting side by side.
     private nonisolated static let stackWidth: CGFloat = 900
+    /// The progress panel's bar alone.
+    private nonisolated static let collapsedBarHeight: CGFloat = 38
     @State private var stacked = false
+    @State private var deleteKeyMonitor: Any?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -17,16 +21,23 @@ struct TransferPage: View {
             Divider()
             VSplitView {
                 panes.frame(minHeight: 240)
-                // Collapsed until a copy starts; `phase` changes once per copy, unlike the progress inside it.
-                TransferProgressPanel(session: session)
+                TransferProgressPanel(session: session, collapsed: $progressCollapsed)
                     .frame(
-                        minHeight: session.queue.phase == .idle ? 44 : 120,
-                        idealHeight: session.queue.phase == .idle ? 44 : 240)
+                        minHeight: progressCollapsed ? Self.collapsedBarHeight : 120,
+                        idealHeight: progressCollapsed ? Self.collapsedBarHeight : 240,
+                        maxHeight: progressCollapsed ? Self.collapsedBarHeight : .infinity)
             }
         }
         .onGeometryChange(for: Bool.self, of: { $0.size.width < Self.stackWidth }) { stacked = $0 }
-        .onAppear { session.pageVisible = true }
-        .onDisappear { session.pageVisible = false }
+        .onAppear {
+            session.pageVisible = true
+            if deleteKeyMonitor == nil { deleteKeyMonitor = Self.watchDeleteKeys(session) }
+        }
+        .onDisappear {
+            session.pageVisible = false
+            if let deleteKeyMonitor { NSEvent.removeMonitor(deleteKeyMonitor) }
+            deleteKeyMonitor = nil
+        }
         .task {
             await session.left.reload()
             await session.right.reload()
@@ -42,6 +53,10 @@ struct TransferPage: View {
             // Answers this request only, and starts fresh (own "Apply to all") for the next one.
             ConflictSheet(request: request) { session.queue.answer($0, for: request) }
                 .id(request.id)
+        }
+        .sheet(item: Binding(get: { session.folderClash }, set: { _ in })) { clash in
+            FolderClashSheet(clash: clash) { session.answerFolderClash($0, applyToAll: $1) }
+                .id(clash.id)
         }
         .sheet(item: Binding(get: { session.queue.errorPrompt }, set: { _ in })) { request in
             ErrorSheet(request: request) { session.queue.answerError($0, for: request) }
@@ -87,6 +102,25 @@ struct TransferPage: View {
             Button("OK") {}
         } message: {
             Text(session.alertMessage ?? "")
+        }
+    }
+
+    /// AppKit hands ⌘⌫ to the table before SwiftUI's key handlers see it, so the keys are caught here first.
+    /// Only while a file list has focus: in a text field the same keys edit the text.
+    private static func watchDeleteKeys(_ session: TransferSession) -> Any? {
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard let key = TransferSession.deleteKey(keyCode: event.keyCode, flags: event.modifierFlags) else { return event }
+            let listHasFocus = MainActor.assumeIsolated { event.window?.firstResponder is NSTableView }
+            let handled = listHasFocus && MainActor.assumeIsolated {
+                guard let pane = session.focusedList else { return false }
+                session.activePane = pane
+                switch key {
+                case .trash: session.requestDelete()
+                case .immediately: session.requestPermanentDelete()
+                }
+                return true
+            }
+            return handled ? nil : event
         }
     }
 

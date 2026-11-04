@@ -175,7 +175,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
 }
 
-private extension Bundle {
+extension Bundle {
     var versionString: String {
         let version = infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
         guard let codename = infoDictionary?["NTFSCodename"] as? String, !codename.isEmpty else { return version }

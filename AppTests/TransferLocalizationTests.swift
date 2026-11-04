@@ -22,6 +22,7 @@ struct TransferLocalizationTests {
     /// Literals that are file names, settings keys, reasons for the system or other text nobody reads as a sentence.
     private static let notUserFacing: Set<String> = [
         "TransferVerify", "TransferAskOnError", "TransferPreventSleep", "TransferBetaNoticeDismissed",
+        "TransferProgressCollapsed", "TransferLog.json",
         "BETA", "XCTestConfigurationFilePath",
         // The app's name and a speed such as "12 MB/s" read the same in every language.
         "NTFS for Mac", "%@/s",

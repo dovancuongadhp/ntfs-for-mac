@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import NTFSTransfer
 import Testing
@@ -14,6 +15,30 @@ struct TransferSessionTests {
         TransferJob(
             id: id, kind: .file, source: URL(fileURLWithPath: "/src/\(name)"),
             destination: URL(fileURLWithPath: "/dst/\(name)"), size: size)
+    }
+
+    @Test func theCopyLogIsSavedReadBackOnTheNextLaunchAndOnlyClearEmptiesIt() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "log-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appending(path: "src"), destination = root.appending(path: "dst")
+        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        try Data("a".utf8).write(to: source.appending(path: "a.txt"))
+        let logURL = root.appending(path: "TransferLog.json")
+
+        let first = TransferSession(notify: { _, _ in }, logURL: logURL)
+        first.queue.enqueue(try TransferPlanner.plan(
+            sources: [source.appending(path: "a.txt")], into: destination, access: PosixFileAccess()))
+        #expect(await waitFor { first.queue.phase == .finished })
+        await first.logSaved()
+
+        let relaunched = TransferSession(notify: { _, _ in }, logURL: logURL)
+        #expect(relaunched.queue.groups.map { $0.progress.items.map(\.job.name) } == [["a.txt"]])
+
+        relaunched.clearLog()
+        await relaunched.logSaved()
+        #expect(relaunched.queue.groups.isEmpty)
+        #expect(TransferSession(notify: { _, _ in }, logURL: logURL).queue.groups.isEmpty)
     }
 
     @Test func nothingSelectedMeansNoDestructiveActions() {
@@ -372,6 +397,73 @@ struct TransferSessionTests {
 
         #expect(session.deleteRequest == nil)
         #expect(FileManager.default.fileExists(atPath: home.path))
+    }
+
+    @Test func commandDeleteTrashesAndShiftOrOptionCommandDeleteDeletesImmediately() {
+        let delete: UInt16 = 51, forwardDelete: UInt16 = 117
+        #expect(TransferSession.deleteKey(keyCode: delete, flags: .command) == .trash)
+        #expect(TransferSession.deleteKey(keyCode: delete, flags: .shift) == .immediately)
+        #expect(TransferSession.deleteKey(keyCode: forwardDelete, flags: [.shift, .function]) == .immediately)
+        #expect(TransferSession.deleteKey(keyCode: delete, flags: [.option, .command]) == .immediately)
+        #expect(TransferSession.deleteKey(keyCode: delete, flags: []) == nil)
+        #expect(TransferSession.deleteKey(keyCode: delete, flags: [.control, .command]) == nil)
+        #expect(TransferSession.deleteKey(keyCode: 0, flags: .command) == nil)
+    }
+
+    // MARK: A folder that is already there
+
+    private func clashRig(_ names: [String]) throws -> (DropRig, [URL]) {
+        let rig = try makeDropRig()
+        let folders = try names.map { name in
+            let folder = try rig.src.appending(component: name, directoryHint: .isDirectory).creatingFolder()
+            try Data("x".utf8).write(to: folder.appending(component: "a.jpg"))
+            _ = try rig.dst.appending(component: name, directoryHint: .isDirectory).creatingFolder()
+            return folder
+        }
+        return (rig, folders)
+    }
+
+    @Test func aFolderThatIsAlreadyThereIsAskedAboutAndCanBeKeptBoth() async throws {
+        let (rig, folders) = try clashRig(["Photos"])
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+
+        rig.session.copy(folders, into: rig.dst)
+        #expect(await waitFor { rig.session.folderClash != nil })
+        #expect(rig.session.folderClash?.name == "Photos")
+        #expect(rig.session.folderClash?.isLast == true)
+
+        rig.session.answerFolderClash(.keepBoth)
+        let copied = rig.dst.appending(path: "Photos 2/a.jpg").path
+        #expect(await waitFor { FileManager.default.fileExists(atPath: copied) })
+        #expect(rig.session.folderClash == nil)
+    }
+
+    @Test func cancellingTheFolderQuestionCopiesNothing() async throws {
+        let (rig, folders) = try clashRig(["Photos"])
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+
+        rig.session.copy(folders, into: rig.dst)
+        #expect(await waitFor { rig.session.folderClash != nil })
+        rig.session.answerFolderClash(nil)
+
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(rig.session.folderClash == nil)
+        #expect(rig.session.queue.phase == .idle)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: rig.dst.path).sorted() == ["Photos"])
+    }
+
+    @Test func applyToAllAnswersTheOtherFoldersToo() async throws {
+        let (rig, folders) = try clashRig(["Music", "Photos"])
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+
+        rig.session.copy(folders, into: rig.dst)
+        #expect(await waitFor { rig.session.folderClash != nil })
+        #expect(rig.session.folderClash?.isLast == false)
+        rig.session.answerFolderClash(.keepBoth, applyToAll: true)
+
+        let both = ["Music 2/a.jpg", "Photos 2/a.jpg"].map { rig.dst.appending(path: $0).path }
+        #expect(await waitFor { both.allSatisfy { FileManager.default.fileExists(atPath: $0) } })
+        #expect(rig.session.folderClash == nil)
     }
 
     @Test func deleteRefusesAProtectedItemAndLeavesItAlone() async throws {

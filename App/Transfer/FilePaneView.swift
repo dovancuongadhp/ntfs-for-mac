@@ -8,6 +8,7 @@ struct FilePaneView: View {
     let pane: TransferPane
     @State private var sortOrder = [KeyPathComparator(\FileEntry.name)]
     @State private var isTargeted = false
+    @FocusState private var listFocused: Bool
 
     var body: some View {
         @Bindable var model = session.model(for: pane)
@@ -61,11 +62,7 @@ struct FilePaneView: View {
                     .accessibilityLabel("Refresh")
             }
             .buttonStyle(.borderless)
-            Text(model.folder.path)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.head)
+            AddressField(model: model, isActive: isActive) { session.activePane = pane }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
@@ -149,19 +146,13 @@ struct FilePaneView: View {
             session.activePane = pane
             session.requestDelete()
         }
-        .onKeyPress(keys: [.delete, .deleteForward], phases: .down) { press in
-            let modifiers = press.modifiers.subtracting(.numericPad)
-            if modifiers == .shift || modifiers == [.option, .command] {
-                session.activePane = pane
-                session.requestPermanentDelete()
-                return .handled
+        .focused($listFocused)
+        .onChange(of: listFocused) { _, focused in
+            if focused {
+                session.focusedList = pane
+            } else if session.focusedList == pane {
+                session.focusedList = nil
             }
-            if modifiers == .command {
-                session.activePane = pane
-                session.requestDelete()
-                return .handled
-            }
-            return .ignored
         }
         .onKeyPress(.return) {
             guard model.selection.count == 1 else { return .ignored }
@@ -298,6 +289,163 @@ struct FilePaneView: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
+    }
+}
+
+/// The pane's path. Clicking it, or ⌘L on the active side, turns it into a field that lists the matching
+/// sub-folders as you type: Tab completes the highlighted one (the first until ↑ ↓ pick another) so typing
+/// can go on inside it, Return opens the picked one or the typed path, Esc puts the path back.
+private struct AddressField: View {
+    let model: FileBrowserModel
+    let isActive: Bool
+    let activate: () -> Void
+    @State private var editing = false
+    @State private var text = ""
+    @State private var invalid = false
+    @State private var suggestions = PathSuggestions()
+    @State private var keyMonitor: Any?
+    @FocusState private var focused: Bool
+
+    private var home: URL { FileManager.default.homeDirectoryForCurrentUser }
+    private static let rowHeight: CGFloat = 20
+
+    var body: some View {
+        if editing {
+            VStack(alignment: .leading, spacing: 2) {
+                TextField("Go to folder", text: $text)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.caption)
+                    .foregroundStyle(invalid ? Color.red : Color.primary)
+                    .focused($focused)
+                    .help("Tab completes the highlighted folder, ↑ ↓ pick another, Return opens it")
+                    .onSubmit(go)
+                    .onExitCommand { editing = false }
+                    .onChange(of: text) { invalid = false }
+                    .onChange(of: focused) { _, now in if !now { editing = false } }
+                    .task(id: text) {
+                        let (typed, home) = (text, home)
+                        let folders = await Task.detached(priority: .userInitiated) {
+                            PathCompletion.suggestions(for: typed, home: home)
+                        }.value
+                        if !Task.isCancelled { suggestions = PathSuggestions(folders) }
+                    }
+                if !suggestions.folders.isEmpty { suggestionList }
+            }
+            .onAppear {
+                focused = true
+                keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                    let (code, flags) = (event.keyCode, event.modifierFlags)
+                    let handled = MainActor.assumeIsolated { handleKey(code, flags) }
+                    return handled ? nil : event
+                }
+            }
+            .onDisappear {
+                if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+                keyMonitor = nil
+            }
+        } else {
+            Button(action: begin) {
+                Text(model.folder.path)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.head)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .keyboardShortcut(isActive ? KeyboardShortcut("l", modifiers: .command) : nil)
+            .help("Click, or press ⌘L, to type a folder's path")
+        }
+    }
+
+    private func begin() {
+        activate()
+        text = model.folder.path
+        invalid = false
+        editing = true
+    }
+
+    private var suggestionList: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(suggestions.folders.enumerated()), id: \.offset) { index, folder in
+                        suggestionRow(folder, highlighted: index == suggestions.highlighted)
+                            .id(index)
+                    }
+                }
+            }
+            .frame(height: min(CGFloat(suggestions.folders.count), 7) * Self.rowHeight)
+            .background(.background, in: RoundedRectangle(cornerRadius: 5))
+            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.separator))
+            .onChange(of: suggestions.highlighted) { _, index in
+                if let index { proxy.scrollTo(index) }
+            }
+        }
+    }
+
+    private func suggestionRow(_ folder: URL, highlighted: Bool) -> some View {
+        HStack(spacing: 6) {
+            Image(nsImage: FileIcons.icon(for: folder))
+            Text(folder.lastPathComponent)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer(minLength: 0)
+        }
+        .font(.caption)
+        .foregroundStyle(highlighted ? Color.white : Color.primary)
+        .padding(.horizontal, 6)
+        .frame(height: Self.rowHeight)
+        .background(highlighted ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 4))
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { open(folder) }
+        .onTapGesture { complete(with: folder.path + "/") }
+    }
+
+    /// Tab, ↑ ↓ and Return while this field is being typed in; anything else goes on to the field.
+    private func handleKey(_ code: UInt16, _ flags: NSEvent.ModifierFlags) -> Bool {
+        guard focused, flags.intersection([.command, .option, .control, .shift]).isEmpty else { return false }
+        switch code {
+        case 48:
+            if let completion = suggestions.completion {
+                complete(with: completion)
+            } else {
+                NSSound.beep()
+            }
+            return true
+        case 125:
+            suggestions.moveDown()
+            return true
+        case 126:
+            suggestions.moveUp()
+            return true
+        case 36, 76:
+            guard let picked = suggestions.picked else { return false }
+            open(picked)
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func complete(with path: String) {
+        text = path
+        focused = true
+    }
+
+    private func go() {
+        guard let folder = PathCompletion.folder(for: text, home: home) else {
+            invalid = true
+            NSSound.beep()
+            return
+        }
+        open(folder)
+    }
+
+    private func open(_ folder: URL) {
+        editing = false
+        model.open(folder)
     }
 }
 

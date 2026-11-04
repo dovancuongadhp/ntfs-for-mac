@@ -28,6 +28,16 @@ struct DeleteRequest: Equatable {
     let reason: Reason
 }
 
+/// A copied folder whose name is already taken in the destination, waiting for Keep Both, Merge or Skip.
+struct FolderClash: Identifiable, Equatable {
+    let id = UUID()
+    let name: String
+    /// The folder it would be copied into.
+    let destinationName: String
+    /// No other clash follows, so "Apply to all" has nothing to apply to.
+    let isLast: Bool
+}
+
 /// A plan that has problems the person must decide about before anything is copied.
 struct PendingTransfer: Identifiable {
     let id = UUID()
@@ -79,6 +89,7 @@ final class TransferSession {
     var promptText = ""
     var deleteRequest: DeleteRequest?
     var pendingTransfer: PendingTransfer?
+    private(set) var folderClash: FolderClash?
     var previewURL: URL?
     var alertMessage: String?
 
@@ -93,6 +104,10 @@ final class TransferSession {
     @ObservationIgnored private var lastBadgePercent = -1
     @ObservationIgnored private var lastPaneReload = Date.distantPast
     @ObservationIgnored private var lastCopyRequest: (paths: [String], at: Date) = ([], .distantPast)
+    @ObservationIgnored private var folderClashReply: CheckedContinuation<(TransferPlanner.FolderChoice, Bool)?, Never>?
+    @ObservationIgnored private let logURL: URL?
+    @ObservationIgnored private var terminationObserver: NSObjectProtocol?
+    @ObservationIgnored private var lastSave: Task<Void, Never>?
 
     /// Everything after `notify` exists so tests can stand in for the real queue, home folder, settings and
     /// the system's sleep assertion; the app uses the defaults.
@@ -107,9 +122,11 @@ final class TransferSession {
         },
         endActivity: @escaping @MainActor (NSObjectProtocol) -> Void = { ProcessInfo.processInfo.endActivity($0) },
         requestAttention: @escaping @MainActor () -> Void = { NSApp?.requestUserAttention(.criticalRequest) },
-        isForeground: @escaping @MainActor () -> Bool = { NSApp?.isActive ?? true }
+        isForeground: @escaping @MainActor () -> Bool = { NSApp?.isActive ?? true },
+        logURL: URL? = nil
     ) {
         self.queue = queue
+        self.logURL = logURL
         self.home = home
         self.defaults = defaults
         self.beginActivity = beginActivity
@@ -123,7 +140,46 @@ final class TransferSession {
         queue.onProgress = { [weak self] progress in self?.progressChanged(progress) }
         queue.onFinish = { [weak self] summary, stop in self?.finished(summary, stop) }
         queue.onPrompt = { [weak self] in self?.promptAppeared() }
+        if let logURL, let log = TransferLog.load(from: logURL) { queue.restore(log) }
+        if logURL != nil {
+            terminationObserver = NotificationCenter.default.addObserver(
+                forName: NSApplication.willTerminateNotification, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.saveLog(waiting: true) }
+            }
+        }
     }
+
+    /// Where the app keeps the copy log between launches.
+    static var defaultLogURL: URL {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        return support.appending(path: Bundle.main.bundleIdentifier ?? "NTFS for Mac").appending(path: "TransferLog.json")
+    }
+
+    /// Empties the progress list and the saved log; nothing else forgets it.
+    func clearLog() {
+        queue.clear()
+        saveLog()
+    }
+
+    /// Writes the log off the main actor, one write after another so an older log never lands last, or
+    /// right away when the app is quitting.
+    private func saveLog(waiting: Bool = false) {
+        guard let logURL else { return }
+        let log = queue.log
+        if waiting {
+            try? TransferLog.save(log, to: logURL)
+            return
+        }
+        let previous = lastSave
+        lastSave = Task.detached(priority: .utility) {
+            await previous?.value
+            try? TransferLog.save(log, to: logURL)
+        }
+    }
+
+    /// The latest write of the log; tests wait for it.
+    func logSaved() async { await lastSave?.value }
 
     func model(for pane: TransferPane) -> FileBrowserModel { pane == .left ? left : right }
     var activeModel: FileBrowserModel { model(for: activePane) }
@@ -191,6 +247,9 @@ final class TransferSession {
 
     /// Set by the page while it is on screen, so a question that comes up elsewhere can ask for attention.
     @ObservationIgnored var pageVisible = false
+
+    /// The side whose file list has keyboard focus; nil while typing in a field or anywhere else.
+    @ObservationIgnored var focusedList: TransferPane?
 
     /// A conflict or error question is waiting for an answer.
     var waitingForAnswer: Bool { queue.conflict != nil || queue.errorPrompt != nil }
@@ -298,8 +357,13 @@ final class TransferSession {
         Task {
             let access = PosixFileAccess()
             do {
+                let clashes = try await Task.detached(priority: .userInitiated) {
+                    try TransferPlanner.clashingFolders(sources: sources, into: destination, access: access)
+                }.value
+                guard let choices = await askAboutFolders(clashes, in: destination) else { return }
                 let planned = try await Task.detached(priority: .userInitiated) { () throws -> ([TransferJob], VolumeInfo) in
-                    let jobs = try TransferPlanner.plan(sources: sources, into: destination, access: access, duplicate: duplicate)
+                    let jobs = try TransferPlanner.plan(
+                        sources: sources, into: destination, access: access, duplicate: duplicate, folderChoices: choices)
                     return (jobs, try access.volumeInfo(at: destination))
                 }.value
                 let rules = DestinationRules.forFileSystem(planned.1.fileSystemType)
@@ -314,6 +378,41 @@ final class TransferSession {
                 alertMessage = Self.message(for: error)
             }
         }
+    }
+
+    /// Asks about each folder that is already there, one at a time, until "Apply to all". Nil when cancelled.
+    private func askAboutFolders(_ clashes: [URL], in destination: URL) async -> [String: TransferPlanner.FolderChoice]? {
+        var choices: [String: TransferPlanner.FolderChoice] = [:]
+        var forAll: TransferPlanner.FolderChoice?
+        for (index, folder) in clashes.enumerated() {
+            let choice: TransferPlanner.FolderChoice
+            if let forAll {
+                choice = forAll
+            } else {
+                let clash = FolderClash(
+                    name: folder.lastPathComponent, destinationName: destination.lastPathComponent,
+                    isLast: index == clashes.count - 1)
+                // A copy started while an earlier one is still asking replaces it: the earlier one is cancelled.
+                answerFolderClash(nil)
+                let reply = await withCheckedContinuation { continuation in
+                    folderClashReply = continuation
+                    folderClash = clash
+                }
+                guard let (answer, applyToAll) = reply else { return nil }
+                choice = answer
+                if applyToAll { forAll = answer }
+            }
+            choices[folder.standardizedFileURL.path] = choice
+        }
+        return choices
+    }
+
+    /// Nil cancels the whole copy.
+    func answerFolderClash(_ choice: TransferPlanner.FolderChoice?, applyToAll: Bool = false) {
+        guard let reply = folderClashReply else { return }
+        folderClashReply = nil
+        folderClash = nil
+        reply.resume(returning: choice.map { ($0, applyToAll) })
     }
 
     /// Nil when the copy can start straight away; otherwise the plan with what the person must decide.
@@ -385,6 +484,7 @@ final class TransferSession {
     }
 
     private func finished(_ summary: TransferSummary, _ stop: TransferStop) {
+        saveLog()
         endActivity()
         lastBadgePercent = -1
         NSApp?.dockTile.badgeLabel = nil
@@ -481,6 +581,22 @@ final class TransferSession {
             if let error = result.error { alertMessage = error.localizedDescription }
             if !result.stuck.isEmpty { deleteRequest = DeleteRequest(urls: result.stuck, reason: .noTrash) }
         }
+    }
+
+    enum DeleteKey: Equatable {
+        case trash, immediately
+    }
+
+    /// Finder's keys: ⌘⌫ moves to the Trash; ⌥⌘⌫, and Shift with ⌫ or ⌦, delete immediately.
+    nonisolated static func deleteKey(keyCode: UInt16, flags: NSEvent.ModifierFlags) -> DeleteKey? {
+        let backspace: UInt16 = 51, forwardDelete: UInt16 = 117
+        guard keyCode == backspace || keyCode == forwardDelete else { return nil }
+        let modifiers = flags.intersection([.command, .shift, .option, .control])
+        if modifiers == .shift { return .immediately }
+        guard keyCode == backspace else { return nil }
+        if modifiers == .command { return .trash }
+        if modifiers == [.option, .command] { return .immediately }
+        return nil
     }
 
     /// Asks before deleting the selection for good, skipping the Trash.

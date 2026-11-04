@@ -43,6 +43,40 @@ struct ConflictSheet: View {
     }
 }
 
+/// Asks what to do with a copied folder whose name is already taken in the destination.
+struct FolderClashSheet: View {
+    let clash: FolderClash
+    /// Nil cancels the whole copy.
+    let answer: (TransferPlanner.FolderChoice?, Bool) -> Void
+    @State private var applyToAll = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("A folder named “\(clash.name)” already exists in “\(clash.destinationName)”")
+                .font(.headline)
+            Text("Keep Both copies it under a new name with a number. Merge puts its contents into the folder that is there and asks about files with the same name.")
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if !clash.isLast {
+                Toggle("Apply to all", isOn: $applyToAll)
+            }
+            HStack {
+                Button("Cancel") { answer(nil, false) }
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Skip") { answer(.skip, applyToAll) }
+                Button("Merge") { answer(.merge, applyToAll) }
+                // Return keeps both: nothing that is there is changed.
+                Button("Keep Both") { answer(.keepBoth, applyToAll) }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 460)
+        .interactiveDismissDisabled()
+    }
+}
+
 /// Asks what to do after a file failed, when "Ask what to do on errors" is on.
 struct ErrorSheet: View {
     let request: ErrorRequest
