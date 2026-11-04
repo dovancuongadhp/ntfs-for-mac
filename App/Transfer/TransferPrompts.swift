@@ -17,12 +17,13 @@ struct ConflictSheet: View {
             }
             Toggle("Apply to all", isOn: $applyToAll)
             HStack {
+                // Return does the harmless thing: nothing is overwritten and nothing is lost.
                 Button("Skip") { choose(.skip) }
+                    .keyboardShortcut(.defaultAction)
                 Button("Replace If Newer") { choose(.replaceIfNewer) }
                 Spacer()
                 Button("Keep Both") { choose(.keepBoth) }
                 Button("Replace") { choose(.replace) }
-                    .keyboardShortcut(.defaultAction)
             }
         }
         .padding(20)
@@ -58,8 +59,9 @@ struct ErrorSheet: View {
             HStack {
                 Button("Stop") { choose(.stop) }
                 Spacer()
-                Button("Skip") { choose(.skip) }
                 Button("Retry") { choose(.retry) }
+                // Return skips: retrying could repeat the same failure, stopping ends the whole copy.
+                Button("Skip") { choose(.skip) }
                     .keyboardShortcut(.defaultAction)
             }
         }

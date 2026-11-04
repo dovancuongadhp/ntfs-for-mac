@@ -27,6 +27,16 @@ struct MenuContentView: View {
                 }
             }
 
+            if model.transfer.waitingForAnswer {
+                Button {
+                    windows.showMain()
+                } label: {
+                    Label("File copy is waiting for your answer", systemImage: "exclamationmark.bubble.fill")
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.orange)
+            }
+
             if let error = model.lastError {
                 HStack(alignment: .top) {
                     Image(systemName: "exclamationmark.triangle.fill")

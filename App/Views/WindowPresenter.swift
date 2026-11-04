@@ -81,6 +81,8 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         guard (notification.object as? NSWindow) === mainWindow else { return }
         mainWindow = nil
+        // Closing the window may not tell the page it left, and a copy question must then ask for attention.
+        model.transfer.pageVisible = false
         NSApp.setActivationPolicy(.accessory)
     }
 

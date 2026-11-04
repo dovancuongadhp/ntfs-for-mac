@@ -333,6 +333,249 @@ struct TransferSessionTests {
         #expect(session.deleteRequest == nil)
         #expect(session.alertMessage == nil)
     }
+
+    // MARK: Drops
+
+    /// Folders `src` and `dst` in a throwaway folder; the right pane shows `dst`, so nothing is ever copied
+    /// into a real folder.
+    private struct DropRig {
+        let session: TransferSession
+        let root: URL
+        let src: URL
+        let dst: URL
+        let notices: Notices
+        let attention: Counter
+    }
+
+    @MainActor
+    private final class Notices {
+        private(set) var titles: [String] = []
+        func add(_ title: String) { titles.append(title) }
+    }
+
+    @MainActor
+    private final class Counter {
+        private(set) var value = 0
+        func increment() { value += 1 }
+    }
+
+    private func makeDropRig(foreground: Bool = true) throws -> DropRig {
+        let root = FileManager.default.temporaryDirectory.appending(component: "drop-\(UUID().uuidString)", directoryHint: .isDirectory)
+        let src = try root.appending(component: "src", directoryHint: .isDirectory).creatingFolder()
+        let dst = try root.appending(component: "dst", directoryHint: .isDirectory).creatingFolder()
+        let suite = "TransferSessionTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+        let notices = Notices()
+        let attention = Counter()
+        let session = TransferSession(
+            notify: { title, _ in notices.add(title) }, home: root, defaults: defaults,
+            beginActivity: { NSObject() }, endActivity: { _ in },
+            requestAttention: { attention.increment() }, isForeground: { foreground })
+        session.right.open(dst)
+        return DropRig(session: session, root: root, src: src, dst: dst, notices: notices, attention: attention)
+    }
+
+    private func names(in folder: URL) -> [String] {
+        ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []).sorted()
+    }
+
+    @Test func aDroppedWebAddressOrAnEmptyDropIsRefused() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+
+        #expect(rig.session.drop([URL(string: "https://example.com/some/page")!], onto: .right) == false)
+        #expect(rig.session.drop([URL(string: "https://example.com")!], onto: .right) == false)
+        #expect(rig.session.drop([], onto: .right) == false)
+        try await Task.sleep(for: .milliseconds(300))
+
+        #expect(rig.session.queue.phase == .idle)
+        #expect(rig.session.pendingTransfer == nil)
+        #expect(rig.session.alertMessage == nil)
+        #expect(names(in: rig.dst).isEmpty)
+    }
+
+    @Test func webAddressesAreLeftOutOfADropThatAlsoHasFiles() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let file = try sourceFile("a.txt", in: rig.src)
+
+        #expect(rig.session.drop([URL(string: "https://example.com/x")!, file], onto: .right) == true)
+        #expect(await wait { rig.session.queue.phase == .finished })
+
+        #expect(names(in: rig.dst) == ["a.txt"])
+        #expect(rig.session.queue.progress.items.count == 1)
+    }
+
+    @Test func aFileDroppedFromAnotherFolderIsCopied() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let file = try sourceFile("a.txt", in: rig.src)
+
+        #expect(rig.session.drop([file], onto: .right) == true)
+        #expect(await wait { rig.session.queue.phase == .finished })
+        #expect(names(in: rig.dst) == ["a.txt"])
+    }
+
+    @Test func droppingItemsOntoTheFolderTheyAreAlreadyInDoesNothing() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let file = try sourceFile("a.txt", in: rig.dst)
+        let folder = try rig.dst.appending(component: "sub", directoryHint: .isDirectory).creatingFolder()
+        _ = try sourceFile("inner.txt", in: folder)
+
+        #expect(rig.session.drop([file], onto: .right) == false)
+        #expect(rig.session.drop([folder], onto: .right) == false)
+        #expect(rig.session.drop([file, folder], onto: .right) == false)
+        try await Task.sleep(for: .milliseconds(300))
+
+        #expect(rig.session.queue.phase == .idle)
+        #expect(names(in: rig.dst) == ["a.txt", "sub"])
+        #expect(names(in: folder) == ["inner.txt"])
+    }
+
+    @Test func aDropMixingItemsAlreadyThereAndNewOnesCopiesOnlyTheNewOnes() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let there = try sourceFile("a.txt", in: rig.dst)
+        let fresh = try sourceFile("b.txt", in: rig.src)
+
+        #expect(rig.session.drop([there, fresh], onto: .right) == true)
+        #expect(await wait { rig.session.queue.phase == .finished })
+
+        #expect(names(in: rig.dst) == ["a.txt", "b.txt"])
+        #expect(rig.session.queue.progress.items.count == 1)
+    }
+
+    // MARK: A question the person may not see
+
+    private func conflictingCopy(_ rig: DropRig) throws -> [TransferJob] {
+        _ = try sourceFile("a.txt", in: rig.src)
+        _ = try sourceFile("a.txt", in: rig.dst)
+        return try jobs(["a.txt"], from: rig.src, into: rig.dst)
+    }
+
+    @Test func aQuestionWhileThePageIsHiddenPostsANoticeAndAsksForAttention() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        rig.session.pageVisible = false
+
+        rig.session.start(try conflictingCopy(rig))
+        #expect(await wait { rig.session.queue.conflict != nil })
+
+        #expect(rig.notices.titles == [TransferText.promptNotice().title])
+        #expect(rig.attention.value == 1)
+        #expect(rig.session.waitingForAnswer)
+        rig.session.queue.answer(ConflictDecision(choice: .skip))
+        #expect(await wait { rig.session.queue.phase == .finished })
+        #expect(!rig.session.waitingForAnswer)
+    }
+
+    @Test func aQuestionWhileThePageIsOnScreenDoesNotInterrupt() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        rig.session.pageVisible = true
+
+        rig.session.start(try conflictingCopy(rig))
+        #expect(await wait { rig.session.queue.conflict != nil })
+        try await Task.sleep(for: .milliseconds(100))
+
+        #expect(rig.notices.titles.isEmpty)
+        #expect(rig.attention.value == 0)
+        rig.session.queue.answer(ConflictDecision(choice: .skip))
+        #expect(await wait { rig.session.queue.phase == .finished })
+    }
+
+    @Test func aQuestionWhileTheAppIsInTheBackgroundAsksEvenIfThePageIsShowing() async throws {
+        let rig = try makeDropRig(foreground: false)
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        rig.session.pageVisible = true
+
+        rig.session.start(try conflictingCopy(rig))
+        #expect(await wait { rig.session.queue.conflict != nil })
+
+        #expect(rig.notices.titles == [TransferText.promptNotice().title])
+        #expect(rig.attention.value == 1)
+        rig.session.queue.answer(ConflictDecision(choice: .skip))
+        #expect(await wait { rig.session.queue.phase == .finished })
+    }
+
+    @Test func anErrorQuestionWhileThePageIsHiddenAsksToo() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        rig.session.pageVisible = false
+        let disk = FullDisk()
+        disk.isFull = false
+        disk.cannotRead = true
+        let queue = TransferQueue(access: disk)
+        let notices = Notices()
+        let attention = Counter()
+        let session = TransferSession(
+            notify: { title, _ in notices.add(title) }, queue: queue, home: rig.root,
+            beginActivity: { NSObject() }, endActivity: { _ in },
+            requestAttention: { attention.increment() }, isForeground: { true })
+        _ = try sourceFile("a.txt", in: rig.src)
+        UserDefaults.standard.set(true, forKey: TransferSession.askOnErrorKey)
+        defer { UserDefaults.standard.removeObject(forKey: TransferSession.askOnErrorKey) }
+
+        session.start(try jobs(["a.txt"], from: rig.src, into: rig.dst))
+        #expect(await wait { queue.errorPrompt != nil })
+
+        #expect(notices.titles == [TransferText.promptNotice().title])
+        #expect(attention.value == 1)
+        queue.answerError(ErrorDecision(choice: .skip))
+        #expect(await wait { queue.phase == .finished })
+    }
+
+    // MARK: Panes after a drive goes away
+
+    @Test func aFolderThatStillExistsStaysWhereItIs() {
+        let home = URL(fileURLWithPath: "/Users/me")
+        let folder = URL(fileURLWithPath: "/Users/me/Documents")
+        #expect(TransferSession.recoveredFolder(for: folder, home: home, exists: { _ in true }) == nil)
+    }
+
+    @Test func aFolderOnAnUnmountedVolumeFallsBackToHome() {
+        let home = URL(fileURLWithPath: "/Users/me")
+        let folder = URL(fileURLWithPath: "/Volumes/Backup/Photos/2025")
+        let exists: (URL) -> Bool = { $0.path == "/" || $0.path == "/Volumes" }
+        #expect(TransferSession.recoveredFolder(for: folder, home: home, exists: exists) == home)
+    }
+
+    @Test func aDeletedFolderFallsBackToTheNearestOneThatExists() {
+        let home = URL(fileURLWithPath: "/Users/me")
+        let folder = URL(fileURLWithPath: "/Users/me/Documents/Old/Deep")
+        let exists: (URL) -> Bool = { ["/", "/Users", "/Users/me", "/Users/me/Documents"].contains($0.path) }
+        #expect(TransferSession.recoveredFolder(for: folder, home: home, exists: exists)?.path == "/Users/me/Documents")
+    }
+
+    @Test func aPaneWhoseFolderVanishedMovesToTheHomeFolder() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let gone = try rig.root.appending(component: "stick", directoryHint: .isDirectory).creatingFolder()
+        rig.session.right.open(gone)
+        _ = await wait { !rig.session.right.isLoading }
+        try FileManager.default.removeItem(at: gone)
+
+        rig.session.recoverPanes()
+
+        #expect(rig.session.right.folder.standardizedFileURL == rig.root.standardizedFileURL)
+        #expect(await wait { !rig.session.right.isLoading })
+        #expect(rig.session.right.errorMessage == nil)
+        #expect(rig.session.left.folder.standardizedFileURL == rig.root.standardizedFileURL)
+    }
+
+    @Test func refreshingAPaneShowsWhatChangedBehindItsBack() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        await rig.session.right.reload()
+        #expect(rig.session.right.entries.isEmpty)
+
+        _ = try sourceFile("new.txt", in: rig.dst)
+        await rig.session.refresh(.right)
+
+        #expect(rig.session.right.entries.map(\.name) == ["new.txt"])
+    }
 }
 
 private extension URL {

@@ -70,6 +70,8 @@ final class TransferSession {
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let beginActivity: @MainActor () -> NSObjectProtocol
     @ObservationIgnored private let endActivityHandler: @MainActor (NSObjectProtocol) -> Void
+    @ObservationIgnored private let requestAttention: @MainActor () -> Void
+    @ObservationIgnored private let isForeground: @MainActor () -> Bool
     @ObservationIgnored private var activity: NSObjectProtocol?
     @ObservationIgnored private var lastBadgePercent = -1
 
@@ -84,19 +86,24 @@ final class TransferSession {
             ProcessInfo.processInfo.beginActivity(
                 options: [.idleSystemSleepDisabled, .userInitiated], reason: "Copying files")
         },
-        endActivity: @escaping @MainActor (NSObjectProtocol) -> Void = { ProcessInfo.processInfo.endActivity($0) }
+        endActivity: @escaping @MainActor (NSObjectProtocol) -> Void = { ProcessInfo.processInfo.endActivity($0) },
+        requestAttention: @escaping @MainActor () -> Void = { NSApp?.requestUserAttention(.criticalRequest) },
+        isForeground: @escaping @MainActor () -> Bool = { NSApp?.isActive ?? true }
     ) {
         self.queue = queue
         self.home = home
         self.defaults = defaults
         self.beginActivity = beginActivity
         endActivityHandler = endActivity
+        self.requestAttention = requestAttention
+        self.isForeground = isForeground
         left = FileBrowserModel(folder: home)
         right = FileBrowserModel(folder: FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? home)
         self.notify = notify
         defaults.register(defaults: [Self.preventSleepKey: true])
         queue.onProgress = { [weak self] progress in self?.progressChanged(progress) }
         queue.onFinish = { [weak self] summary, stop in self?.finished(summary, stop) }
+        queue.onPrompt = { [weak self] in self?.promptAppeared() }
     }
 
     func model(for pane: TransferPane) -> FileBrowserModel { pane == .left ? left : right }
@@ -104,6 +111,50 @@ final class TransferSession {
     var otherModel: FileBrowserModel { model(for: activePane.other) }
 
     func refreshLocations() { locations = Locations.available() }
+
+    /// A drive was mounted or unmounted: the places menu, the panes and their free space follow.
+    func volumesChanged() {
+        refreshLocations()
+        recoverPanes()
+        Task {
+            await left.reload()
+            await right.reload()
+        }
+    }
+
+    /// Lists a pane again, and the places in its menu.
+    func refresh(_ pane: TransferPane) async {
+        refreshLocations()
+        recoverPanes()
+        await model(for: pane).reload()
+    }
+
+    /// Moves a pane whose folder is gone (a drive was unmounted, a folder deleted) somewhere that exists.
+    func recoverPanes() {
+        for model in [left, right] {
+            if let target = Self.recoveredFolder(for: model.folder, home: home) { model.open(target) }
+        }
+    }
+
+    /// Nil while the folder exists. Otherwise the closest enclosing folder that does, or the home folder
+    /// when that is as far as a missing volume leaves us (`/Volumes` itself or the root).
+    static func recoveredFolder(
+        for folder: URL, home: URL,
+        exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }
+    ) -> URL? {
+        guard !exists(folder) else { return nil }
+        var candidate = folder.standardizedFileURL.deletingLastPathComponent()
+        while candidate.path != "/", !exists(candidate) {
+            candidate = candidate.deletingLastPathComponent()
+        }
+        return candidate.path == "/" || candidate.path == "/Volumes" ? home : candidate
+    }
+
+    /// Set by the page while it is on screen, so a question that comes up elsewhere can ask for attention.
+    @ObservationIgnored var pageVisible = false
+
+    /// A conflict or error question is waiting for an answer.
+    var waitingForAnswer: Bool { queue.conflict != nil || queue.errorPrompt != nil }
 
     // MARK: Toolbar state
 
@@ -126,13 +177,39 @@ final class TransferSession {
     }
 
     /// Dropping one row of a multi-selection brings the whole selection along.
-    func drop(_ urls: [URL], onto pane: TransferPane) {
-        var sources = urls
+    @discardableResult
+    func drop(_ urls: [URL], onto pane: TransferPane) -> Bool {
+        // A web address or text dragged in has no file to copy.
+        let files = urls.filter(\.isFileURL)
+        guard !files.isEmpty else { return false }
+        var sources = files
         let origin = model(for: pane.other)
-        if urls.count == 1, origin.selection.contains(urls[0]) {
+        if files.count == 1, origin.selection.contains(files[0]) {
             sources = origin.selectedEntries.map(\.url)
         }
-        copy(sources, into: model(for: pane).folder)
+        let destination = model(for: pane).folder
+        // Items dropped on the folder they already sit in would only be copied next to themselves.
+        let moving = Self.leavingOut(itemsIn: destination, from: sources)
+        guard !moving.isEmpty else { return false }
+        copy(moving, into: destination)
+        return true
+    }
+
+    /// `sources` without the ones whose enclosing folder is `folder`.
+    static func leavingOut(itemsIn folder: URL, from sources: [URL]) -> [URL] {
+        let target = folder.resolvingSymlinksInPath().standardizedFileURL.path
+        var memo: [String: Bool] = [:]
+        return sources.filter { source in
+            let parent = source.deletingLastPathComponent()
+            let inside: Bool
+            if let known = memo[parent.path] {
+                inside = known
+            } else {
+                inside = parent.resolvingSymlinksInPath().standardizedFileURL.path == target
+                memo[parent.path] = inside
+            }
+            return !inside
+        }
     }
 
     func copy(_ sources: [URL], into destination: URL) {
@@ -182,6 +259,15 @@ final class TransferSession {
     }
 
     // MARK: Progress and finish
+
+    /// A copy stops at a question until it is answered. If nobody is looking at the page, say so: a
+    /// notification, and the Dock icon bounces.
+    private func promptAppeared() {
+        guard !pageVisible || !isForeground() else { return }
+        let notice = TransferText.promptNotice()
+        notify(notice.title, notice.body)
+        requestAttention()
+    }
 
     private func progressChanged(_ progress: TransferProgress) {
         syncActivity()

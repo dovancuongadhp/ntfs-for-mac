@@ -63,4 +63,63 @@ struct TransferTextTests {
         #expect(TransferText.rate(100_000_000).hasSuffix("/s"))
         #expect(!TransferText.duration(252).isEmpty)
     }
+
+    // MARK: The panel's headline
+
+    private let someSummary = TransferSummary(copied: 3, failed: 0, skipped: 2, bytes: 4_000, duration: 9)
+
+    @Test func aCancelledCopyDoesNotSayItWasComplete() {
+        let title = TransferText.headline(phase: .finished, lastStop: .cancelled, summary: someSummary, done: 3, total: 5)
+        #expect(title == "Copy cancelled")
+        let detail = TransferText.detail(phase: .finished, lastStop: .cancelled, summary: someSummary)
+        #expect(detail == "Files copied: 3 · Skipped: 2")
+    }
+
+    @Test func aCopyTheUserStoppedSaysSo() {
+        let title = TransferText.headline(phase: .finished, lastStop: .userStopped, summary: someSummary, done: 3, total: 5)
+        #expect(title == "Copy stopped")
+    }
+
+    @Test func aCleanFinishStillSaysCompleteWithTheCountSizeAndTime() {
+        let clean = TransferSummary(copied: 5, failed: 0, skipped: 0, bytes: 4_000, duration: 9)
+        #expect(TransferText.headline(phase: .finished, lastStop: .finished, summary: clean, done: 5, total: 5) == "Copy complete")
+        #expect(TransferText.headline(phase: .finished, lastStop: nil, summary: clean, done: 5, total: 5) == "Copy complete")
+        let detail = TransferText.detail(phase: .finished, lastStop: .finished, summary: clean)
+        #expect(detail == "Files copied: 5 · \(TransferText.size(4_000)) · \(TransferText.duration(9))")
+    }
+
+    @Test func aFinishWithFailuresSaysSoEvenWhenTheReasonIsMissing() {
+        let failed = TransferSummary(copied: 4, failed: 1, skipped: 0, bytes: 4_000, duration: 9)
+        #expect(TransferText.headline(phase: .finished, lastStop: .finished, summary: failed, done: 4, total: 5) == "Copy finished with errors")
+    }
+
+    @Test func aHaltedCopyShowsWhatToDoNext() {
+        let full = TransferText.headline(phase: .stopped(.noSpace), lastStop: .noSpace, summary: someSummary, done: 3, total: 5)
+        #expect(full == "The destination is full")
+        #expect(TransferText.detail(phase: .stopped(.noSpace), lastStop: .noSpace, summary: someSummary) == "Free some space, then resume the copy.")
+        let gone = TransferText.detail(phase: .stopped(.driveRemoved), lastStop: .driveRemoved, summary: someSummary)
+        #expect(gone == "Reconnect it, then resume the copy.")
+    }
+
+    @Test func whileCopyingTheHeadlineCountsFilesAndThereIsNoDetail() {
+        #expect(TransferText.headline(phase: .running, lastStop: nil, summary: nil, done: 2, total: 9) == "Copying files: 2 of 9")
+        #expect(TransferText.headline(phase: .paused, lastStop: nil, summary: nil, done: 2, total: 9) == "Paused")
+        #expect(TransferText.detail(phase: .running, lastStop: nil, summary: nil) == nil)
+        #expect(TransferText.detail(phase: .paused, lastStop: nil, summary: nil) == nil)
+    }
+
+    @Test func theQuestionNoticeSaysSomethingIsWaiting() {
+        let notice = TransferText.promptNotice()
+        #expect(!notice.title.isEmpty)
+        #expect(!notice.body.isEmpty)
+    }
+
+    @Test func theDeleteWarningNamesOneItemAndCountsSeveral() {
+        let one = TransferText.deleteMessage(for: [URL(fileURLWithPath: "/Volumes/Stick/Report.docx")])
+        #expect(one.contains("Report.docx"))
+        let many = TransferText.deleteMessage(for: (0..<7).map { URL(fileURLWithPath: "/Volumes/Stick/file\($0).txt") })
+        #expect(many.contains("7"))
+        #expect(many.contains("file0.txt"))
+        #expect(many.contains("Trash"))
+    }
 }

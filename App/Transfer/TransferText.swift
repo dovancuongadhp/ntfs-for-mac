@@ -1,5 +1,6 @@
 import Foundation
 import NTFSTransfer
+import os
 
 /// The words the transfer screens use. The package reports reasons; this turns them into text.
 enum TransferText {
@@ -66,8 +67,65 @@ enum TransferText {
         }
     }
 
+    /// The panel's headline: how far along, or why the copy ended.
+    static func headline(
+        phase: TransferQueue.Phase, lastStop: TransferStop?, summary: TransferSummary?, done: Int, total: Int
+    ) -> String {
+        switch phase {
+        case .idle, .running: String(localized: "Copying files: \(done) of \(total)")
+        case .paused: String(localized: "Paused")
+        case .stopped(let stop): notice(for: summary ?? empty, stop: stop).title
+        case .finished: notice(for: summary ?? empty, stop: endedBy(lastStop)).title
+        }
+    }
+
+    /// The line under the headline once the copy has ended, with what to do next if it halted; nil while
+    /// it is under way.
+    static func detail(phase: TransferQueue.Phase, lastStop: TransferStop?, summary: TransferSummary?) -> String? {
+        switch phase {
+        case .idle, .running, .paused: nil
+        case .stopped(let stop): notice(for: summary ?? empty, stop: stop).body
+        case .finished: notice(for: summary ?? empty, stop: endedBy(lastStop)).body
+        }
+    }
+
+    private static let empty = TransferSummary(copied: 0, failed: 0, skipped: 0, bytes: 0, duration: 0)
+
+    /// A finished queue ended by finishing, or because the person cancelled or stopped it.
+    private static func endedBy(_ stop: TransferStop?) -> TransferStop {
+        switch stop {
+        case .cancelled?: .cancelled
+        case .userStopped?: .userStopped
+        default: .finished
+        }
+    }
+
+    /// What to tell the person when a question is waiting and they may not be looking.
+    static func promptNotice() -> (title: String, body: String) {
+        (String(localized: "Copying is waiting for you"),
+         String(localized: "A file needs your decision. Open NTFS for Mac to continue."))
+    }
+
+    /// The warning before items that can't go to the Trash are deleted for good.
+    static func deleteMessage(for urls: [URL]) -> String {
+        guard let first = urls.first else { return "" }
+        if urls.count == 1 {
+            return String(localized: "“\(first.lastPathComponent)” can't be moved to the Trash. It will be deleted permanently.")
+        }
+        var names = urls.prefix(3).map { "“\($0.lastPathComponent)”" }.joined(separator: ", ")
+        if urls.count > 3 { names += " " + String(localized: "…and \(urls.count - 3) more") }
+        return String(localized: "\(urls.count) items can't be moved to the Trash. They will be deleted permanently.") + "\n" + names
+    }
+
+    /// One formatter for every size on screen: making one per call was the cost of every list row.
+    private static let sizeFormatter = OSAllocatedUnfairLock(uncheckedState: {
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter
+    }())
+
     static func size(_ bytes: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+        sizeFormatter.withLock { $0.string(fromByteCount: bytes) }
     }
 
     static func rate(_ bytesPerSecond: Double) -> String {

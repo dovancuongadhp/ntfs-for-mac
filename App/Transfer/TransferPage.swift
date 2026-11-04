@@ -17,26 +17,35 @@ struct TransferPage: View {
             Divider()
             VSplitView {
                 panes.frame(minHeight: 240)
-                TransferProgressPanel(session: session).frame(minHeight: 120, idealHeight: 240)
+                // Collapsed until a copy starts; `phase` changes once per copy, unlike the progress inside it.
+                TransferProgressPanel(session: session)
+                    .frame(
+                        minHeight: session.queue.phase == .idle ? 44 : 120,
+                        idealHeight: session.queue.phase == .idle ? 44 : 240)
             }
         }
         .onGeometryChange(for: Bool.self, of: { $0.size.width < Self.stackWidth }) { stacked = $0 }
+        .onAppear { session.pageVisible = true }
+        .onDisappear { session.pageVisible = false }
         .task {
             await session.left.reload()
             await session.right.reload()
         }
         .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didMountNotification)) { _ in
-            session.refreshLocations()
+            session.volumesChanged()
         }
         .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didUnmountNotification)) { _ in
-            session.refreshLocations()
+            session.volumesChanged()
         }
         .quickLookPreview($session.previewURL)
         .sheet(item: Binding(get: { session.queue.conflict }, set: { _ in })) { request in
-            ConflictSheet(request: request) { session.queue.answer($0) }
+            // Answers this request only, and starts fresh (own "Apply to all") for the next one.
+            ConflictSheet(request: request) { session.queue.answer($0, for: request) }
+                .id(request.id)
         }
         .sheet(item: Binding(get: { session.queue.errorPrompt }, set: { _ in })) { request in
-            ErrorSheet(request: request) { session.queue.answerError($0) }
+            ErrorSheet(request: request) { session.queue.answerError($0, for: request) }
+                .id(request.id)
         }
         .alert(
             namePromptTitle,
@@ -62,12 +71,13 @@ struct TransferPage: View {
         }
         .alert(
             "Delete permanently?",
-            isPresented: Binding(get: { session.deleteRequest != nil }, set: { if !$0 { session.deleteRequest = nil } })
-        ) {
+            isPresented: Binding(get: { session.deleteRequest != nil }, set: { if !$0 { session.deleteRequest = nil } }),
+            presenting: session.deleteRequest
+        ) { _ in
             Button("Delete", role: .destructive) { session.confirmDelete() }
             Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("These items can't be moved to the Trash. They will be deleted permanently.")
+        } message: { urls in
+            Text(TransferText.deleteMessage(for: urls))
         }
         .alert(
             "File Transfer",
