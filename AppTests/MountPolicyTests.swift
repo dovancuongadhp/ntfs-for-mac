@@ -69,6 +69,8 @@ struct MountPolicyTests {
         #expect(FileSystemKind(volumeKind: "msdos", content: nil, mountedAs: "ntfs") == .ntfs)
         #expect(FileSystemKind(volumeKind: "exfat", content: "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7") == .exfat)
         #expect(!NTFSDisk.isCandidate(content: "Apple_APFS", volumeKind: nil))
+        #expect(!NTFSDisk.isCandidate(
+            content: "EBD0A0A2-B9E5-4433-87C0-68B6B72699C7", volumeKind: nil, mountedAs: "exfat"))
     }
 }
 
@@ -101,5 +103,31 @@ struct MountPointTests {
         #expect(MountController.freeMountPoint(for: "a/b:c") == "/Volumes/a-b-c")
         #expect(MountController.freeMountPoint(for: "  ") == "/Volumes/NTFS")
         #expect(MountController.freeMountPoint(for: "..") == "/Volumes/NTFS")
+    }
+
+    /// `mount -F` has to run as the logged-in user. FSKit will not start the
+    /// extension for root, and the only message mount prints then is
+    /// "Unable to invoke task".
+    @Test func explicitMountDoesNotRunTheFileSystemAsRoot() {
+        let command = MountController.extensionMountCommand(
+            bsdName: "disk4s3", mountPoint: "/Volumes/NTFS_CUONG_2", readOnly: false, uid: 501, gid: 20)
+        #expect(command.prepareScript == "/bin/mkdir -p '/Volumes/NTFS_CUONG_2' && /usr/sbin/chown 501:20 '/Volumes/NTFS_CUONG_2'")
+        #expect(!command.prepareScript.contains("/sbin/mount"))
+        #expect(command.arguments == ["-F", "-t", "ntfsrw", "/dev/disk4s3", "/Volumes/NTFS_CUONG_2"])
+    }
+
+    @Test func readOnlyMountStaysInTheUserCommand() {
+        let command = MountController.extensionMountCommand(
+            bsdName: "disk4s3", mountPoint: "/Volumes/NTFS", readOnly: true, uid: 501, gid: 20)
+        #expect(command.arguments == ["-F", "-t", "ntfsrw", "-o", "rdonly", "/dev/disk4s3", "/Volumes/NTFS"])
+    }
+}
+
+struct DiskOperationErrorTests {
+    @Test func busyMeansDiskArbitrationIsAlreadyMounting() {
+        let busy = DiskOperationError(message: "busy", status: Int32(bitPattern: 0xF8DA0002))
+        #expect(busy.isBusy)
+        #expect(!DiskOperationError(message: "other", status: 1).isBusy)
+        #expect(!DiskOperationError(message: "unknown").isBusy)
     }
 }

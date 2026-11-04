@@ -35,7 +35,8 @@ for tool in "$APP/Contents/Helpers/"*; do
     if [[ "$SIGN_IDENTITY" == "-" && "$(basename "$tool")" == "ntfs-mkfs" ]]; then
         extra=(--entitlements scripts/ntfs-mkfs-adhoc.entitlements)
     fi
-    codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp=none "${extra[@]}" "$tool"
+    # Bash 3.2 with `set -u` rejects "${extra[@]}" when the array is empty.
+    codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp=none ${extra+"${extra[@]}"} "$tool"
 done
 codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp=none \
     --entitlements "$ENTITLEMENTS" "$APP/Contents/Extensions/NTFSExtension.appex"

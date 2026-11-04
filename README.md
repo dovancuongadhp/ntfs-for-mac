@@ -231,9 +231,9 @@ Each release carries its full version and name, so 2.0.0 and 2.0.1 never look al
 
 | | Pattern | Example |
 | --- | --- | --- |
-| Release title | NTFS for Mac *version* *Name* | NTFS for Mac 2.0.2 Lotus |
-| Git tag | v*version* | v2.0.2 |
-| Release branch | release-*version*-*name* | release-2.0.2-lotus |
+| Release title | NTFS for Mac *version* *Name* | NTFS for Mac 2.0.3 Lotus |
+| Git tag | v*version* | v2.0.3 |
+| Release branch | release-*version*-*name* | release-2.0.3-lotus |
 
 Unnamed versions just drop the name: NTFS for Mac 1.0.1, branch `release-1.0.1`.
 

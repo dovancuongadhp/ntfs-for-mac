@@ -28,9 +28,13 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     }
 
     func showMain() {
+        // This is a menu-bar app until a window opens. The SwiftUI content has to
+        // be created after the app becomes a normal app; otherwise Light Mode
+        // draws the drive list in white on white.
+        NSApp.setActivationPolicy(.regular)
         let window = mainWindow ?? makeMainWindow()
         mainWindow = window
-        NSApp.setActivationPolicy(.regular)
+        window.appearance = NSApp.effectiveAppearance
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
         window.toolbar?.displayMode = .iconAndLabel
@@ -45,6 +49,7 @@ final class WindowPresenter: NSObject, NSWindowDelegate {
     private func makeMainWindow() -> NSWindow {
         let controller = NSHostingController(rootView: MainWindowView(model: model, navigation: navigation))
         controller.sceneBridgingOptions = [.toolbars, .title]
+        controller.view.appearance = NSApp.effectiveAppearance
         let window = NSWindow(contentViewController: controller)
         window.title = "NTFS for Mac"
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
