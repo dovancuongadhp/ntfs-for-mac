@@ -3033,6 +3033,36 @@
           }
         }
       }
+    },
+    "Needs your answer" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cần bạn trả lời"
+          }
+        }
+      }
+    },
+    "Transfer errors" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lỗi sao chép tệp"
+          }
+        }
+      }
+    },
+    "Copying files" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang sao chép tệp"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

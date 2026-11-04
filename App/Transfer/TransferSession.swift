@@ -84,7 +84,7 @@ final class TransferSession {
         defaults: UserDefaults = .standard,
         beginActivity: @escaping @MainActor () -> NSObjectProtocol = {
             ProcessInfo.processInfo.beginActivity(
-                options: [.idleSystemSleepDisabled, .userInitiated], reason: "Copying files")
+                options: [.idleSystemSleepDisabled, .userInitiated], reason: String(localized: "Copying files"))
         },
         endActivity: @escaping @MainActor (NSObjectProtocol) -> Void = { ProcessInfo.processInfo.endActivity($0) },
         requestAttention: @escaping @MainActor () -> Void = { NSApp?.requestUserAttention(.criticalRequest) },
@@ -115,8 +115,8 @@ final class TransferSession {
     /// A drive was mounted or unmounted: the places menu, the panes and their free space follow.
     func volumesChanged() {
         refreshLocations()
-        recoverPanes()
         Task {
+            await recoverPanes()
             await left.reload()
             await right.reload()
         }
@@ -125,29 +125,49 @@ final class TransferSession {
     /// Lists a pane again, and the places in its menu.
     func refresh(_ pane: TransferPane) async {
         refreshLocations()
-        recoverPanes()
+        await recoverPanes()
         await model(for: pane).reload()
     }
 
     /// Moves a pane whose folder is gone (a drive was unmounted, a folder deleted) somewhere that exists.
-    func recoverPanes() {
-        for model in [left, right] {
-            if let target = Self.recoveredFolder(for: model.folder, home: home) { model.open(target) }
+    /// The file system is asked off the main actor, so a slow or half-gone volume can't freeze the window.
+    func recoverPanes() async {
+        let panes = [left, right]
+        let asked = panes.map(\.folder)
+        let home = home
+        let targets = await Task.detached(priority: .userInitiated) {
+            asked.map { Self.recoveredFolder(for: $0, home: home) }
+        }.value
+        for (pane, (folder, target)) in zip(panes, zip(asked, targets)) {
+            // The person may have opened another folder while we were asking.
+            if let target, pane.folder == folder { pane.open(target) }
         }
     }
 
     /// Nil while the folder exists. Otherwise the closest enclosing folder that does, or the home folder
-    /// when that is as far as a missing volume leaves us (`/Volumes` itself or the root).
-    static func recoveredFolder(
+    /// when that is as far as a missing volume leaves us (`/Volumes` itself, the root, or the empty folder
+    /// the system leaves behind where a volume was mounted).
+    nonisolated static func recoveredFolder(
         for folder: URL, home: URL,
-        exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }
+        exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
+        isVolumeStub: (URL) -> Bool = TransferSession.isUnmountedVolumeFolder
     ) -> URL? {
         guard !exists(folder) else { return nil }
         var candidate = folder.standardizedFileURL.deletingLastPathComponent()
         while candidate.path != "/", !exists(candidate) {
             candidate = candidate.deletingLastPathComponent()
         }
-        return candidate.path == "/" || candidate.path == "/Volumes" ? home : candidate
+        if candidate.path == "/" || candidate.path == "/Volumes" || isVolumeStub(candidate) { return home }
+        return candidate
+    }
+
+    /// A folder directly inside /Volumes that nothing is mounted on: it belongs to the volume the pane was
+    /// showing, not to anything the person can use.
+    nonisolated static func isUnmountedVolumeFolder(_ url: URL) -> Bool {
+        let resolved = url.resolvingSymlinksInPath()
+        guard resolved.deletingLastPathComponent().path == "/Volumes" else { return false }
+        guard let mountPoint = try? resolved.resourceValues(forKeys: [.volumeURLKey]).volume else { return false }
+        return mountPoint.resolvingSymlinksInPath().path != resolved.path
     }
 
     /// Set by the page while it is on screen, so a question that comes up elsewhere can ask for attention.
@@ -155,6 +175,24 @@ final class TransferSession {
 
     /// A conflict or error question is waiting for an answer.
     var waitingForAnswer: Bool { queue.conflict != nil || queue.errorPrompt != nil }
+
+    /// What the File Transfer row in the sidebar shows.
+    enum SidebarStatus: Equatable {
+        case none
+        /// Copying, or paused by the user.
+        case working
+        /// The copy can't go on until the person acts: a question is open, or it halted (drive full or removed).
+        case needsAnswer
+    }
+
+    var sidebarStatus: SidebarStatus {
+        if waitingForAnswer { return .needsAnswer }
+        switch queue.phase {
+        case .stopped: return .needsAnswer
+        case .running, .paused: return .working
+        case .idle, .finished: return .none
+        }
+    }
 
     // MARK: Toolbar state
 
@@ -305,9 +343,12 @@ final class TransferSession {
         activity = nil
     }
 
+    /// The name the save panel starts with; the extension is not part of the translated text.
+    static var exportFileName: String { String(localized: "Transfer errors") + ".txt" }
+
     func exportFailures() {
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "Transfer errors.txt"
+        panel.nameFieldStringValue = Self.exportFileName
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let lines = queue.progress.failedItems.map { item in
             let reason = item.failure.map { TransferText.failure($0.reason) } ?? ""

@@ -18,8 +18,18 @@ struct SidebarView: View {
                 HStack {
                     Label("File Transfer", systemImage: "arrow.left.arrow.right")
                     Spacer()
-                    if model.transfer.queue.isBusy {
+                    switch model.transfer.sidebarStatus {
+                    case .needsAnswer:
+                        // Visible whichever page is shown, even when the app is the active one.
+                        Image(systemName: "circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .help("Needs your answer")
+                            .accessibilityLabel("Needs your answer")
+                    case .working:
                         ProgressView().controlSize(.small)
+                    case .none:
+                        EmptyView()
                     }
                     BetaBadge()
                 }

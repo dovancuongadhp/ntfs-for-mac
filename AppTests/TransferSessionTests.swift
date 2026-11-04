@@ -510,13 +510,16 @@ struct TransferSessionTests {
         let queue = TransferQueue(access: disk)
         let notices = Notices()
         let attention = Counter()
+        let suite = "TransferSessionTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+        defaults.set(true, forKey: TransferSession.askOnErrorKey)
+        defer { defaults.removePersistentDomain(forName: suite) }
         let session = TransferSession(
-            notify: { title, _ in notices.add(title) }, queue: queue, home: rig.root,
+            notify: { title, _ in notices.add(title) }, queue: queue, home: rig.root, defaults: defaults,
             beginActivity: { NSObject() }, endActivity: { _ in },
             requestAttention: { attention.increment() }, isForeground: { true })
         _ = try sourceFile("a.txt", in: rig.src)
-        UserDefaults.standard.set(true, forKey: TransferSession.askOnErrorKey)
-        defer { UserDefaults.standard.removeObject(forKey: TransferSession.askOnErrorKey) }
 
         session.start(try jobs(["a.txt"], from: rig.src, into: rig.dst))
         #expect(await wait { queue.errorPrompt != nil })
@@ -525,6 +528,157 @@ struct TransferSessionTests {
         #expect(attention.value == 1)
         queue.answerError(ErrorDecision(choice: .skip))
         #expect(await wait { queue.phase == .finished })
+    }
+
+
+    // MARK: The sidebar row while a copy needs the person
+
+    @Test func theSidebarRowIsQuietWhenNothingIsCopying() throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        #expect(rig.session.sidebarStatus == .none)
+    }
+
+    @Test func aCopyThatIsRunningOrPausedShowsAsWorkingNotAsNeedingAnAnswer() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        _ = try sourceFile("a.txt", in: rig.src)
+
+        rig.session.start(try jobs(["a.txt"], from: rig.src, into: rig.dst))
+        #expect(rig.session.sidebarStatus == .working)
+        rig.session.queue.pause()
+        #expect(rig.session.sidebarStatus == .working)
+        rig.session.queue.resume()
+        #expect(await wait { rig.session.queue.phase == .finished })
+        #expect(rig.session.sidebarStatus == .none)
+    }
+
+    @Test func anOpenQuestionMarksTheSidebarRowEvenWhileThePageIsHiddenOrTheAppIsActive() async throws {
+        for foreground in [true, false] {
+            let rig = try makeDropRig(foreground: foreground)
+            defer { try? FileManager.default.removeItem(at: rig.root) }
+            rig.session.pageVisible = false
+
+            rig.session.start(try conflictingCopy(rig))
+            #expect(await wait { rig.session.queue.conflict != nil })
+            #expect(rig.session.sidebarStatus == .needsAnswer, "foreground: \(foreground)")
+
+            rig.session.queue.answer(ConflictDecision(choice: .skip))
+            #expect(await wait { rig.session.queue.phase == .finished })
+            #expect(rig.session.sidebarStatus == .none)
+        }
+    }
+
+    @Test func theMarkGoesAwayAsSoonAsTheQuestionIsAnswered() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        rig.session.start(try conflictingCopy(rig))
+        #expect(await wait { rig.session.queue.conflict != nil })
+        #expect(rig.session.sidebarStatus == .needsAnswer)
+
+        rig.session.queue.answer(ConflictDecision(choice: .skip))
+
+        #expect(rig.session.queue.conflict == nil)
+        #expect(rig.session.sidebarStatus != .needsAnswer)
+        #expect(await wait { rig.session.queue.phase == .finished })
+    }
+
+    @Test func aHaltedCopyMarksTheSidebarRowUntilItIsResumed() async throws {
+        let rig = try makeRig()
+        defer { try? FileManager.default.removeItem(at: rig.folder) }
+        let source = try rig.folder.appending(component: "src", directoryHint: .isDirectory).creatingFolder()
+        let destination = try rig.folder.appending(component: "dst", directoryHint: .isDirectory).creatingFolder()
+        _ = try sourceFile("a.txt", in: source)
+
+        rig.session.start(try jobs(["a.txt"], from: source, into: destination))
+        #expect(await wait { rig.queue.phase == .stopped(.noSpace) })
+        #expect(rig.session.sidebarStatus == .needsAnswer)
+
+        rig.disk.isFull = false
+        rig.queue.resume()
+        #expect(rig.session.sidebarStatus == .working)
+        #expect(await wait { rig.queue.phase == .finished })
+        #expect(rig.session.sidebarStatus == .none)
+    }
+
+    @Test func aCancelledHaltedCopyClearsTheMark() async throws {
+        let rig = try makeRig()
+        defer { try? FileManager.default.removeItem(at: rig.folder) }
+        let source = try rig.folder.appending(component: "src", directoryHint: .isDirectory).creatingFolder()
+        let destination = try rig.folder.appending(component: "dst", directoryHint: .isDirectory).creatingFolder()
+        _ = try sourceFile("a.txt", in: source)
+        rig.session.start(try jobs(["a.txt"], from: source, into: destination))
+        #expect(await wait { rig.queue.phase == .stopped(.noSpace) })
+
+        rig.queue.cancel()
+
+        #expect(rig.session.sidebarStatus == .none)
+    }
+
+    // MARK: Notifications while the app is active
+
+    @Test func aNotificationIsShownEvenWhenTheAppIsTheActiveOne() {
+        #expect(NotificationPresenter.foregroundOptions == [.banner, .sound])
+    }
+
+    // MARK: The default name of the exported error list
+
+    @Test func theExportedListKeepsATxtExtensionWhateverTheLanguage() {
+        let name = TransferSession.exportFileName
+        #expect(name.hasSuffix(".txt"))
+        #expect(name == String(localized: "Transfer errors") + ".txt")
+    }
+
+    // MARK: Items already in the destination folder
+
+    @Test func aFolderNameInTheOtherCaseIsStillTheSameFolderOnACaseInsensitiveVolume() throws {
+        let root = FileManager.default.temporaryDirectory.appending(component: "case-\(UUID().uuidString)", directoryHint: .isDirectory)
+        let folder = try root.appending(component: "Photos", directoryHint: .isDirectory).creatingFolder()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = try sourceFile("a.txt", in: folder)
+        let shouty = root.appending(component: "PHOTOS", directoryHint: .isDirectory)
+        // On a case-sensitive volume the two names are different folders and there is nothing to check.
+        guard FileManager.default.fileExists(atPath: shouty.path) else { return }
+
+        #expect(TransferSession.leavingOut(itemsIn: shouty, from: [file]).isEmpty)
+        #expect(TransferSession.leavingOut(itemsIn: folder, from: [shouty.appending(component: "a.txt")]).isEmpty)
+        let other = try root.appending(component: "Other", directoryHint: .isDirectory).creatingFolder()
+        #expect(TransferSession.leavingOut(itemsIn: other, from: [file]) == [file])
+    }
+
+    // MARK: Panes after a drive goes away (stubs left behind by the system)
+
+    @Test func anEmptyStubLeftByAnUnmountedVolumeIsNotAPlaceToRecoverTo() {
+        let home = URL(fileURLWithPath: "/Users/me")
+        let folder = URL(fileURLWithPath: "/Volumes/Backup/Photos/2025")
+        // The mount point folder is still there, but nothing is mounted on it any more.
+        let exists: (URL) -> Bool = { ["/", "/Volumes", "/Volumes/Backup"].contains($0.path) }
+        let stub: (URL) -> Bool = { $0.path == "/Volumes/Backup" }
+        #expect(TransferSession.recoveredFolder(for: folder, home: home, exists: exists, isVolumeStub: stub) == home)
+    }
+
+    @Test func aMountedVolumeIsStillARecoveryPlace() {
+        let home = URL(fileURLWithPath: "/Users/me")
+        let folder = URL(fileURLWithPath: "/Volumes/Backup/Photos/2025")
+        let exists: (URL) -> Bool = { ["/", "/Volumes", "/Volumes/Backup"].contains($0.path) }
+        let result = TransferSession.recoveredFolder(for: folder, home: home, exists: exists, isVolumeStub: { _ in false })
+        #expect(result?.path == "/Volumes/Backup")
+    }
+
+    @Test func onlyAFolderDirectlyInVolumesCanBeAnUnmountedVolumeStub() {
+        #expect(!TransferSession.isUnmountedVolumeFolder(URL(fileURLWithPath: "/")))
+        #expect(!TransferSession.isUnmountedVolumeFolder(URL(fileURLWithPath: "/Volumes")))
+        #expect(!TransferSession.isUnmountedVolumeFolder(FileManager.default.temporaryDirectory))
+        #expect(!TransferSession.isUnmountedVolumeFolder(URL(fileURLWithPath: "/Volumes/does-not-exist-\(UUID().uuidString)")))
+    }
+
+    @Test func recoveringPanesDoesNotTouchAFolderThePersonOpenedMeanwhile() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let there = try rig.root.appending(component: "there", directoryHint: .isDirectory).creatingFolder()
+        rig.session.right.open(there)
+        await rig.session.recoverPanes()
+        #expect(rig.session.right.folder.standardizedFileURL == there.standardizedFileURL)
     }
 
     // MARK: Panes after a drive goes away
@@ -554,13 +708,14 @@ struct TransferSessionTests {
         defer { try? FileManager.default.removeItem(at: rig.root) }
         let gone = try rig.root.appending(component: "stick", directoryHint: .isDirectory).creatingFolder()
         rig.session.right.open(gone)
-        _ = await wait { !rig.session.right.isLoading }
+        await rig.session.right.reload()
         try FileManager.default.removeItem(at: gone)
 
-        rig.session.recoverPanes()
+        await rig.session.recoverPanes()
+        // Listing the new folder is a task of its own; reloading here waits for it and the one before it.
+        await rig.session.right.reload()
 
         #expect(rig.session.right.folder.standardizedFileURL == rig.root.standardizedFileURL)
-        #expect(await wait { !rig.session.right.isLoading })
         #expect(rig.session.right.errorMessage == nil)
         #expect(rig.session.left.folder.standardizedFileURL == rig.root.standardizedFileURL)
     }

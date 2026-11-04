@@ -85,6 +85,14 @@ struct ProtectedFoldersTests {
         #expect(other.paths.contains("/users/someone-else"))
     }
 
+    /// Other tests (and the app) ask for other homes in between; that must not make this home rebuild.
+    @Test func askingForAnotherHomeInBetweenDoesNotMakeTheFirstOneRebuild() {
+        let probe = URL(fileURLWithPath: "/Users/cache-probe-interleaved")
+        let first = ProtectedFolders.rules(for: probe)
+        for index in 0..<5 { _ = ProtectedFolders.rules(for: URL(fileURLWithPath: "/Users/interloper-\(index)")) }
+        #expect(ProtectedFolders.rules(for: probe) === first)
+    }
+
     @Test func aBigSelectionInOneFolderResolvesTheFolderOnce() {
         var checker = ProtectedFolders.Checker(home: home)
         for index in 0..<5_000 {

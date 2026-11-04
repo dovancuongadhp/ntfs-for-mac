@@ -25,15 +25,19 @@ enum ProtectedFolders {
         }
     }
 
-    private static let cachedRules = OSAllocatedUnfairLock<(home: String, rules: Rules)?>(initialState: nil)
+    private static let cachedRules = OSAllocatedUnfairLock<[String: Rules]>(initialState: [:])
 
-    /// The rules for `home`. The last one built is kept: the home folder does not change while the app runs.
+    /// The rules for `home`, kept per home folder: the app asks for one home only, and a second one
+    /// (a test, a sandbox) must not make the first be rebuilt.
     static func rules(for home: URL) -> Rules {
         let key = home.standardizedFileURL.path
-        if let cached = cachedRules.withLock({ $0 }), cached.home == key { return cached.rules }
+        if let cached = cachedRules.withLock({ $0[key] }) { return cached }
         let built = Rules(home: home)
-        cachedRules.withLock { $0 = (key, built) }
-        return built
+        return cachedRules.withLock { cache in
+            if let existing = cache[key] { return existing }
+            cache[key] = built
+            return built
+        }
     }
 
     /// Answers for many items at once. The folders above an item are resolved once per folder rather
