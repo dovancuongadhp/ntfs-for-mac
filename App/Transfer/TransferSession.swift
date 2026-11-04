@@ -79,6 +79,7 @@ final class TransferSession {
     @ObservationIgnored private var activity: NSObjectProtocol?
     @ObservationIgnored private var lastBadgePercent = -1
     @ObservationIgnored private var lastPaneReload = Date.distantPast
+    @ObservationIgnored private var lastCopyRequest: (paths: [String], at: Date) = ([], .distantPast)
 
     /// Everything after `notify` exists so tests can stand in for the real queue, home folder, settings and
     /// the system's sleep assertion; the app uses the defaults.
@@ -277,6 +278,10 @@ final class TransferSession {
 
     func copy(_ sources: [URL], into destination: URL, duplicate: Bool = false) {
         guard !sources.isEmpty else { return }
+        // SwiftUI can deliver one drop or paste twice; the second would copy everything again.
+        let request = ([destination] + sources).map(\.standardizedFileURL.path)
+        if request == lastCopyRequest.paths, Date.now.timeIntervalSince(lastCopyRequest.at) < 1 { return }
+        lastCopyRequest = (request, .now)
         Task {
             let access = PosixFileAccess()
             do {

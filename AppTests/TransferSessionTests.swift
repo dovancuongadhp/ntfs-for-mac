@@ -433,6 +433,20 @@ struct TransferSessionTests {
         #expect(names(in: rig.dst) == ["a.txt"])
     }
 
+    @Test func theSameDropDeliveredTwiceCopiesOnce() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let file = try sourceFile("a.txt", in: rig.src)
+
+        #expect(rig.session.drop([file], onto: .right) == true)
+        rig.session.drop([file], onto: .right)
+        #expect(await wait { rig.session.queue.phase == .finished })
+        try await Task.sleep(for: .milliseconds(300))
+
+        #expect(rig.session.queue.progress.items.count == 1)
+        #expect(names(in: rig.dst) == ["a.txt"])
+    }
+
     @Test func droppingItemsOntoTheFolderTheyAreAlreadyInDoesNothing() async throws {
         let rig = try makeDropRig()
         defer { try? FileManager.default.removeItem(at: rig.root) }
