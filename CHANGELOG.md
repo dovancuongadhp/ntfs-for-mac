@@ -11,6 +11,20 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 
 ## [Unreleased]
 
+## [2.2.0] Lotus - 2026-11-04
+
+### Added
+
+- **File Transfer (Beta).** A new page in the main window with two file browsers side by side, each showing any drive or folder of the Mac. Drag files from one side to the other, press **Copy**, or use ⌘C and ⌘V. A panel underneath shows the progress, the read and write speed, the time left, every file and its state, and the files that failed with the reason. This is a Beta, and it only copies: there is no Move yet, so the originals always stay where they are.
+- Copying can be paused, resumed, skipped file by file, cancelled, and retried for the files that failed. Errors can be exported as a list. A notification says when the copy is done or needs you.
+- Name conflicts offer Replace, Keep Both, Skip or Replace If Newer, with an option to apply the choice to every file.
+- **Verify after copy** compares a checksum of each file with its original. **Ask what to do on errors** turns a failed file into a Skip, Retry or Stop prompt.
+- Files are written under a temporary name and renamed when complete, so an unplugged drive never keeps a half-written file. A drive that runs out of space or is removed pauses the copy until you resume it.
+- Before copying, names that the destination cannot hold (such as `a:b.txt` on exFAT) and files too large for FAT32 are listed, and you can copy the rest.
+- New Folder, Rename, Delete (to the Trash) and Quick Look in either pane. Drives, system folders and your home folder are protected from Rename and Delete. The copy keeps the Mac awake, shows its progress on the Dock icon and in the menu bar menu, and asks before quitting while it runs.
+- The File Transfer row in the sidebar shows an orange dot when the copy needs an answer, even from another page.
+- The page, panel and prompts are available in Vietnamese.
+
 ## [2.1.0] Lotus - 2026-11-04
 
 ### Added
@@ -120,7 +134,8 @@ First public release.
 - English and Vietnamese user interface.
 - Drag-to-install DMG, and `scripts/build-local.sh` to build an ad hoc signed copy without an Apple Developer account.
 
-[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.3...v2.1.0
 [2.0.3]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.2...v2.0.3
 [2.0.2]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.1...v2.0.2
