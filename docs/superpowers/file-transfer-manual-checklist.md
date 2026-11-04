@@ -125,6 +125,18 @@ Notation: **Result** is what you should see. Tick the box when it did.
 - [ ] **F2. Vietnamese.** Set the language to Vietnamese (Settings, or the system language). Look through the page,
   the sidebar and menu, the panel in every state (running, paused, cancelled, stopped, finished with errors), the
   toolbar tooltips, the alerts and sheets. *Result:* no untranslated English except "BETA".
+- [ ] **F3. Quit alert comes to the front.** With another app in front (a browser, say) and a copy running, choose
+  **Quit** from the menu bar panel. *Result:* the "Files are still being copied" alert opens in front of every
+  window and the app is active. Press ⌘Q twice quickly while it is cancelling: no second alert, the app quits once.
+- [ ] **F4. Quit with a halted copy.** Let a copy halt (drive full or pulled out), then quit. *Result:* the same
+  alert; **Quit** cancels, removes any `.…ntfs-part` leftovers and exits. With a stalled drive the app still quits
+  within about 10 seconds.
+- [ ] **F5. Menu bar line.** *Result:* "Copying files… NN%" while copying, "Paused NN%" when paused, and an orange
+  "Waiting for you" button (opens the window) while a question is open or the copy halted. VoiceOver reads each as
+  one phrase without naming the symbol.
+- [ ] **F6. No beep on finish in front.** With the File Transfer page open and NTFS for Mac in front, a copy that
+  finishes shows no banner and makes no sound; with the window hidden or another app in front it still banners.
+  Questions still banner with sound in every case.
 
 ## Known limits (recorded for the final review)
 

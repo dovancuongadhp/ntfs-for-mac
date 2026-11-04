@@ -629,6 +629,225 @@ struct TransferSessionTests {
         #expect(name == String(localized: "Transfer errors") + ".txt")
     }
 
+    // MARK: Quitting
+
+    /// Lets a test hold a task until it decides to let it go.
+    @MainActor
+    private final class Gate {
+        private var waiting: [CheckedContinuation<Void, Never>] = []
+        private(set) var isOpen = false
+
+        func wait() async {
+            if isOpen { return }
+            await withCheckedContinuation { waiting.append($0) }
+        }
+
+        func open() {
+            isOpen = true
+            waiting.forEach { $0.resume() }
+            waiting = []
+        }
+    }
+
+    /// Stands in for the alert, the queue and AppKit's reply, and writes down what happened in which order.
+    @MainActor
+    private final class QuitProbe {
+        var phase: TransferQueue.Phase = .running
+        var answer = true
+        private(set) var events: [String] = []
+        let cancelGate = Gate()
+        let timeoutGate = Gate()
+        var cancelStalls = false
+
+        func coordinator(timeout: Duration = .seconds(10)) -> QuitCoordinator {
+            let timeoutGate = timeoutGate
+            return QuitCoordinator(
+                phase: { self.phase },
+                activate: { self.events.append("activate") },
+                confirmQuit: { self.events.append("confirm"); return self.answer },
+                cancelAndWait: {
+                    self.events.append("cancel")
+                    if self.cancelStalls { await self.cancelGate.wait() }
+                    self.events.append("cancelled")
+                },
+                reply: { self.events.append("reply:\($0)") },
+                timeout: timeout,
+                sleep: { _ in await timeoutGate.wait() })
+        }
+
+        func count(_ event: String) -> Int { events.filter { $0 == event }.count }
+    }
+
+    @Test func onlyACopyThatIsRunningPausedOrHaltedAsksBeforeQuitting() {
+        let decisions = [
+            (TransferQueue.Phase.idle, QuitCoordinator.Decision.quitNow),
+            (.finished, .quitNow),
+            (.running, .askFirst),
+            (.paused, .askFirst),
+            (.stopped(.noSpace), .askFirst),
+            (.stopped(.driveRemoved), .askFirst),
+        ]
+        for (phase, expected) in decisions {
+            #expect(QuitCoordinator.decision(for: phase) == expected, "\(phase)")
+        }
+    }
+
+    @Test func quittingWithNothingCopyingJustQuitsWithoutAnAlert() {
+        let probe = QuitProbe()
+        probe.phase = .finished
+        #expect(probe.coordinator().shouldTerminate() == .terminateNow)
+        #expect(probe.events.isEmpty)
+    }
+
+    @Test func theAppComesToTheFrontBeforeTheQuitAlertSoItCannotOpenBehindOtherWindows() {
+        let probe = QuitProbe()
+        probe.answer = false
+        _ = probe.coordinator().shouldTerminate()
+        #expect(probe.events == ["activate", "confirm"])
+    }
+
+    @Test func keepCopyingCancelsTheQuitAndLeavesTheCopyAlone() async {
+        let probe = QuitProbe()
+        probe.answer = false
+        let coordinator = probe.coordinator()
+        #expect(coordinator.shouldTerminate() == .terminateCancel)
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(!probe.events.contains("cancel"))
+        #expect(probe.count("reply:true") == 0)
+        // Asking again later asks again.
+        #expect(coordinator.shouldTerminate() == .terminateCancel)
+        #expect(probe.count("confirm") == 2)
+    }
+
+    @Test func quitCancelsTheCopyAndRepliesOnlyWhenThatIsDone() async {
+        let probe = QuitProbe()
+        probe.cancelStalls = true
+        #expect(probe.coordinator().shouldTerminate() == .terminateLater)
+        #expect(await waitFor { probe.events.contains("cancel") })
+        #expect(probe.count("reply:true") == 0)
+
+        probe.cancelGate.open()
+
+        #expect(await waitFor { probe.count("reply:true") == 1 })
+        #expect(probe.events.firstIndex(of: "cancelled")! < probe.events.firstIndex(of: "reply:true")!)
+    }
+
+    @Test func aHaltedCopyAsksAndQuitCancelsItToo() async {
+        let probe = QuitProbe()
+        probe.phase = .stopped(.noSpace)
+        #expect(probe.coordinator().shouldTerminate() == .terminateLater)
+        #expect(await waitFor { probe.count("reply:true") == 1 })
+        #expect(probe.events.contains("confirm"))
+        #expect(probe.events.contains("cancel"))
+    }
+
+    @Test func aSecondQuitWhileTheFirstIsFinishingShowsNoAlertAndRepliesOnce() async {
+        let probe = QuitProbe()
+        probe.cancelStalls = true
+        let coordinator = probe.coordinator()
+        #expect(coordinator.shouldTerminate() == .terminateLater)
+        #expect(await waitFor { probe.events.contains("cancel") })
+
+        #expect(coordinator.shouldTerminate() == .terminateLater)
+        #expect(coordinator.shouldTerminate() == .terminateLater)
+        #expect(probe.count("confirm") == 1)
+        #expect(probe.count("cancel") == 1)
+
+        probe.cancelGate.open()
+        #expect(await waitFor { probe.count("reply:true") >= 1 })
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(probe.count("reply:true") == 1)
+    }
+
+    @Test func aStalledDriveCannotHoldTheQuitForever() async {
+        let probe = QuitProbe()
+        probe.cancelStalls = true
+        #expect(probe.coordinator().shouldTerminate() == .terminateLater)
+        #expect(await waitFor { probe.events.contains("cancel") })
+        #expect(probe.count("reply:true") == 0)
+
+        probe.timeoutGate.open()
+
+        #expect(await waitFor { probe.count("reply:true") == 1 })
+        #expect(!probe.events.contains("cancelled"))
+        // The cancel finishing later must not reply a second time.
+        probe.cancelGate.open()
+        #expect(await waitFor { probe.events.contains("cancelled") })
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(probe.count("reply:true") == 1)
+    }
+
+    @Test func quitOnAHaltedRealQueueCancelsItAndClearsWhatItLeftBehind() async throws {
+        let rig = try makeRig()
+        defer { try? FileManager.default.removeItem(at: rig.folder) }
+        let source = try rig.folder.appending(component: "src", directoryHint: .isDirectory).creatingFolder()
+        let destination = try rig.folder.appending(component: "dst", directoryHint: .isDirectory).creatingFolder()
+        _ = try sourceFile("a.txt", in: source)
+        let leftover = destination.appending(component: ".a.txt.ntfs-part")
+        rig.session.start(try jobs(["a.txt"], from: source, into: destination))
+        #expect(await wait { rig.queue.phase == .stopped(.noSpace) })
+        try Data("half".utf8).write(to: leftover)
+        let replies = Counter()
+        let queue = rig.queue
+        let coordinator = QuitCoordinator(
+            phase: { queue.phase }, activate: {}, confirmQuit: { true },
+            cancelAndWait: { await queue.cancelAndWait() }, reply: { _ in replies.increment() })
+
+        #expect(coordinator.shouldTerminate() == .terminateLater)
+
+        #expect(await wait { replies.value == 1 })
+        #expect(rig.queue.phase == .finished)
+        #expect(!FileManager.default.fileExists(atPath: leftover.path))
+    }
+
+    // MARK: The menu bar line
+
+    @Test func theMenuBarLineSaysWhatTheCopyIsDoing() {
+        let cases: [(TransferQueue.Phase, Bool, TransferSession.MenuStatus)] = [
+            (.idle, false, .none),
+            (.finished, false, .none),
+            (.running, false, .copying),
+            (.paused, false, .paused),
+            (.running, true, .waiting),
+            (.paused, true, .waiting),
+            (.stopped(.noSpace), false, .waiting),
+            (.stopped(.driveRemoved), false, .waiting),
+        ]
+        for (phase, waiting, expected) in cases {
+            #expect(
+                TransferSession.menuStatus(phase: phase, waitingForAnswer: waiting) == expected,
+                "\(phase), waiting: \(waiting)")
+        }
+    }
+
+    // MARK: The finish notice while the page is in front
+
+    @Test func aFinishedCopyDoesNotBannerWhileThePageIsShownAndTheAppIsInFront() async throws {
+        let rig = try makeDropRig(foreground: true)
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        rig.session.pageVisible = true
+        _ = try sourceFile("a.txt", in: rig.src)
+
+        rig.session.start(try jobs(["a.txt"], from: rig.src, into: rig.dst))
+        #expect(await wait { rig.session.queue.phase == .finished })
+
+        #expect(rig.notices.titles.isEmpty)
+    }
+
+    @Test func aFinishedCopyStillBannersWhenNobodyIsLooking() async throws {
+        for (visible, foreground) in [(false, true), (true, false), (false, false)] {
+            let rig = try makeDropRig(foreground: foreground)
+            defer { try? FileManager.default.removeItem(at: rig.root) }
+            rig.session.pageVisible = visible
+            _ = try sourceFile("a.txt", in: rig.src)
+
+            rig.session.start(try jobs(["a.txt"], from: rig.src, into: rig.dst))
+            #expect(await wait { rig.session.queue.phase == .finished })
+
+            #expect(rig.notices.titles.count == 1, "visible: \(visible), foreground: \(foreground)")
+        }
+    }
+
     // MARK: Items already in the destination folder
 
     @Test func aFolderNameInTheOtherCaseIsStillTheSameFolderOnACaseInsensitiveVolume() throws {

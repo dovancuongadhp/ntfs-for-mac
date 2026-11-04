@@ -59,24 +59,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             WindowPresenter.showFormattingInProgress()
             return .terminateCancel
         }
-        guard model.transfer.queue.isBusy else { return .terminateNow }
-        let alert = NSAlert()
-        alert.messageText = String(localized: "Files are still being copied")
-        alert.informativeText = String(localized: "Quitting now cancels the copy and removes the unfinished files.")
-        alert.addButton(withTitle: String(localized: "Keep Copying"))
-        alert.addButton(withTitle: String(localized: "Quit"))
-        if alert.runModal() == .alertFirstButtonReturn { return .terminateCancel }
-        Task {
-            await model.transfer.queue.cancelAndWait()
-            NSApp.reply(toApplicationShouldTerminate: true)
-        }
-        return .terminateLater
+        return quit.shouldTerminate().appKitReply
     }
+
+    /// Asks before quitting in the middle of a copy; see `QuitCoordinator`.
+    private lazy var quit = QuitCoordinator(
+        phase: { [model] in model.transfer.queue.phase },
+        // The app has no Dock icon and the menu panel does not activate it, so without this the alert can
+        // open behind other windows and Quit looks like a hang.
+        activate: { NSApp.activate() },
+        confirmQuit: {
+            let alert = NSAlert()
+            alert.messageText = String(localized: "Files are still being copied")
+            alert.informativeText = String(localized: "Quitting now cancels the copy and removes the unfinished files.")
+            alert.addButton(withTitle: String(localized: "Keep Copying"))
+            alert.addButton(withTitle: String(localized: "Quit"))
+            return alert.runModal() != .alertFirstButtonReturn
+        },
+        cancelAndWait: { [model] in await model.transfer.queue.cancelAndWait() },
+        reply: { NSApp.reply(toApplicationShouldTerminate: $0) })
 
     /// Started by "Open at login" rather than by the user.
     private var launchedAsLoginItem: Bool {
         guard let event = NSAppleEventManager.shared().currentAppleEvent else { return false }
         return event.eventID == kAEOpenApplication
             && event.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
+    }
+}
+
+private extension QuitCoordinator.Reply {
+    var appKitReply: NSApplication.TerminateReply {
+        switch self {
+        case .terminateNow: .terminateNow
+        case .terminateCancel: .terminateCancel
+        case .terminateLater: .terminateLater
+        }
     }
 }

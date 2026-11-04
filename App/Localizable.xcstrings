@@ -2029,7 +2029,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Không ghi được vào nơi đến."
+            "value" : "Không ghi được vào thư mục đích."
           }
         }
       }
@@ -2039,7 +2039,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nơi đến đã đầy."
+            "value" : "Thư mục đích đã đầy."
           }
         }
       }
@@ -2069,7 +2069,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tên này không được phép trên nơi đến."
+            "value" : "Tên này không được phép trên thư mục đích."
           }
         }
       }
@@ -2119,7 +2119,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tệp quá lớn đối với hệ tệp của nơi đến."
+            "value" : "Tệp quá lớn đối với hệ tệp của thư mục đích."
           }
         }
       }
@@ -2189,7 +2189,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nơi đến đã đầy"
+            "value" : "Thư mục đích đã đầy"
           }
         }
       }
@@ -2259,7 +2259,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nơi đến không đủ dung lượng. Cần %1$@, còn %2$@."
+            "value" : "Thư mục đích không đủ dung lượng. Cần %1$@, còn %2$@."
           }
         }
       }
@@ -2369,7 +2369,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ trên %2$@"
+            "value" : "%1$@ / %2$@"
           }
         }
       }
@@ -2479,7 +2479,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ngày sửa"
+            "value" : "Ngày sửa đổi"
           }
         }
       }
@@ -2749,7 +2749,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Đang chép"
+            "value" : "Đang sao chép"
           }
         }
       }
@@ -2889,7 +2889,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Đang có sẵn"
+            "value" : "Đã có ở đây"
           }
         }
       }
@@ -3060,6 +3060,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đang sao chép tệp"
+          }
+        }
+      }
+    },
+    "Waiting for you" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chờ bạn"
           }
         }
       }

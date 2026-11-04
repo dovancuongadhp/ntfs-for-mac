@@ -15,6 +15,7 @@ struct TransferLocalizationTests {
             + [
                 "App/NTFSForMacApp.swift", "App/Views/MenuContentView.swift",
                 "App/Views/Main/SidebarView.swift", "App/Views/Main/MainWindowView.swift",
+                "App/Views/Main/Components.swift",
             ]
     }()
 
@@ -49,8 +50,30 @@ struct TransferLocalizationTests {
         text.replacing(/%(\d+\$)?(@|lld|ld|d|f)/, with: "%@")
     }
 
-    private static func placeholders(_ text: String) -> [String] {
-        text.matches(of: /%(\d+\$)?(@|lld|ld|d|f)/).map { String($0.output.2) }.sorted()
+    /// One placeholder: where its argument sits (1-based) and what kind of value it takes.
+    struct Placeholder: Equatable, Comparable {
+        let position: Int
+        /// `@` for text, `d` for whole numbers (`%d`, `%ld`, `%lld`), `f` for fractions.
+        let kind: Character
+
+        static func < (a: Placeholder, b: Placeholder) -> Bool { a.position < b.position }
+    }
+
+    /// The placeholders of `text` by argument position: `%1$@` is the first argument whatever its place in
+    /// the sentence, and a plain `%@` is the next argument in order.
+    static func placeholders(_ text: String) -> [Placeholder] {
+        var next = 1
+        return text.matches(of: /%(?:(\d+)\$)?(@|lld|ld|d|f)/).map { match in
+            let position: Int
+            if let explicit = match.output.1, let number = Int(explicit) {
+                position = number
+            } else {
+                position = next
+                next += 1
+            }
+            let kind: Character = match.output.2 == "@" ? "@" : match.output.2 == "f" ? "f" : "d"
+            return Placeholder(position: position, kind: kind)
+        }.sorted()
     }
 
     @Test func theCatalogIsValidAndEveryVietnameseEntryIsTranslated() throws {
@@ -60,6 +83,18 @@ struct TransferLocalizationTests {
             #expect(entry.state == "translated", "“\(key)” is not marked translated")
             #expect(entry.value?.isEmpty == false, "“\(key)” has an empty translation")
         }
+    }
+
+    @Test func placeholdersAreComparedByArgumentPositionAndKind() {
+        // A translation may move an argument, but it must still be the same argument of the same kind.
+        #expect(Self.placeholders("%@ of %@") == Self.placeholders("%1$@ / %2$@"))
+        #expect(Self.placeholders("%1$@ and %2$@") == Self.placeholders("%2$@ và %1$@"))
+        #expect(Self.placeholders("%lld of %lld") == Self.placeholders("%1$lld / %2$lld"))
+        #expect(Self.placeholders("%lld files") == Self.placeholders("%ld tệp"))
+        #expect(Self.placeholders("%lld files") != Self.placeholders("%@ tệp"))
+        #expect(Self.placeholders("%@ then %lld") != Self.placeholders("%1$lld rồi %2$@"))
+        #expect(Self.placeholders("%@ then %@") != Self.placeholders("%1$@ rồi %1$@"))
+        #expect(Self.placeholders("%@") != Self.placeholders("không có"))
     }
 
     @Test func translationsKeepTheirPlaceholders() throws {

@@ -194,6 +194,26 @@ final class TransferSession {
         }
     }
 
+    /// What the menu bar panel shows about the copy.
+    enum MenuStatus: Equatable {
+        case none
+        case copying
+        case paused
+        /// A question is open, or the copy halted: the person has to act.
+        case waiting
+    }
+
+    static func menuStatus(phase: TransferQueue.Phase, waitingForAnswer: Bool) -> MenuStatus {
+        switch phase {
+        case .stopped: .waiting
+        case .running, .paused:
+            if waitingForAnswer { .waiting } else { phase == .paused ? .paused : .copying }
+        case .idle, .finished: .none
+        }
+    }
+
+    var menuStatus: MenuStatus { Self.menuStatus(phase: queue.phase, waitingForAnswer: waitingForAnswer) }
+
     // MARK: Toolbar state
 
     var canCopy: Bool { !activeModel.selection.isEmpty }
@@ -307,6 +327,11 @@ final class TransferSession {
         requestAttention()
     }
 
+    /// True when the person is looking at the page, in the app that is in front.
+    static func finishNoticeIsRedundant(pageVisible: Bool, isForeground: Bool) -> Bool {
+        pageVisible && isForeground
+    }
+
     private func progressChanged(_ progress: TransferProgress) {
         syncActivity()
         let percent = Int(progress.fraction * 100)
@@ -319,8 +344,11 @@ final class TransferSession {
         endActivity()
         lastBadgePercent = -1
         NSApp?.dockTile.badgeLabel = nil
-        let notice = TransferText.notice(for: summary, stop: stop)
-        notify(notice.title, notice.body)
+        // The page shows the result itself: a banner and a beep on top of that only startle.
+        if !Self.finishNoticeIsRedundant(pageVisible: pageVisible, isForeground: isForeground()) {
+            let notice = TransferText.notice(for: summary, stop: stop)
+            notify(notice.title, notice.body)
+        }
         Task {
             await left.reload()
             await right.reload()
@@ -439,5 +467,89 @@ final class TransferSession {
         default:
             error.localizedDescription
         }
+    }
+}
+
+/// What happens when the person quits the app while File Transfer may be copying.
+///
+/// AppKit may ask more than once while an answer is pending (a second ⌘Q), so the flow is guarded: it asks at
+/// most once, and tells AppKit it may go on exactly once, even if the cancel never finishes.
+@MainActor
+final class QuitCoordinator {
+    enum Decision: Equatable {
+        /// Nothing is copying: quit at once.
+        case quitNow
+        /// A copy is running, paused or halted (drive full or removed): ask first.
+        case askFirst
+    }
+
+    enum Reply: Equatable { case terminateNow, terminateCancel, terminateLater }
+
+    static func decision(for phase: TransferQueue.Phase) -> Decision {
+        switch phase {
+        case .running, .paused, .stopped: .askFirst
+        case .idle, .finished: .quitNow
+        }
+    }
+
+    private let phase: @MainActor () -> TransferQueue.Phase
+    private let activate: @MainActor () -> Void
+    private let confirmQuit: @MainActor () -> Bool
+    private let cancelAndWait: @MainActor () async -> Void
+    private let reply: @MainActor (Bool) -> Void
+    private let timeout: Duration
+    private let sleep: @Sendable (Duration) async -> Void
+    private var isTerminating = false
+    private var hasReplied = false
+
+    /// - Parameters:
+    ///   - activate: brings the app to the front, so the alert cannot open behind other windows.
+    ///   - confirmQuit: shows the alert; true when the person chose Quit.
+    ///   - cancelAndWait: cancels the copy and returns once its leftovers are gone.
+    ///   - reply: tells AppKit it may quit. Called once.
+    ///   - timeout: the longest the quit waits for `cancelAndWait` (a stalled drive can hold it up).
+    init(
+        phase: @escaping @MainActor () -> TransferQueue.Phase,
+        activate: @escaping @MainActor () -> Void,
+        confirmQuit: @escaping @MainActor () -> Bool,
+        cancelAndWait: @escaping @MainActor () async -> Void,
+        reply: @escaping @MainActor (Bool) -> Void,
+        timeout: Duration = .seconds(10),
+        sleep: @escaping @Sendable (Duration) async -> Void = { try? await Task.sleep(for: $0) }
+    ) {
+        self.phase = phase
+        self.activate = activate
+        self.confirmQuit = confirmQuit
+        self.cancelAndWait = cancelAndWait
+        self.reply = reply
+        self.timeout = timeout
+        self.sleep = sleep
+    }
+
+    func shouldTerminate() -> Reply {
+        // The first request is already being carried out; this one only has to wait with it.
+        if isTerminating { return .terminateLater }
+        guard Self.decision(for: phase()) == .askFirst else { return .terminateNow }
+        activate()
+        if !confirmQuit() { return .terminateCancel }
+        isTerminating = true
+        let timeout = timeout
+        let sleep = sleep
+        // Held strongly on purpose: the reply must come even if nothing else keeps the coordinator alive.
+        Task {
+            await cancelAndWait()
+            replyOnce()
+        }
+        Task {
+            await sleep(timeout)
+            replyOnce()
+        }
+        return .terminateLater
+    }
+
+    private func replyOnce() {
+        guard !hasReplied else { return }
+        hasReplied = true
+        reply(true)
     }
 }
