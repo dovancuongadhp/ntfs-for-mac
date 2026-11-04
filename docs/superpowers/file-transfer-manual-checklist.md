@@ -26,7 +26,7 @@ Notation: **Result** is what you should see. Tick the box when it did.
 - [ ] **B1. One file by drag.** Left pane on Home, right pane on `NTFS_CUONG_2`. Drag one file from left to right.
   *Result:* the progress panel opens, shows the percentage, the read and write speeds and the time left. At the end a
   notification says "Copy complete" and the panel shows files copied, size and time.
-- [ ] **B2. Several files and a folder.** Select three files and one folder with files inside, press **Copy**.
+- [ ] **B2. Several files and a folder.** Select three files and one folder with files inside, choose **Copy to the Other Side** from the right-click menu.
   *Result:* all arrive on the right with the same modification dates; the folder keeps its structure.
 - [ ] **B3. Multi-row drag.** Select three rows in one pane and drag them (grab one of the selected rows).
   *Result:* all three are copied, not only the row under the pointer. Dragging an unselected row copies only that
@@ -144,11 +144,11 @@ Notation: **Result** is what you should see. Tick the box when it did.
   `NTFS_CUONG_2`). Press Delete. When the "Delete permanently?" alert appears, press **Return**. *Result:* the
   alert is dismissed and nothing is deleted (Return activates **Cancel**, not **Delete**).
 - [ ] **G2. Read-only refusal message (I5).** With a drive that is mounted read-only (e.g. an NTFS volume whose
-  writing is not enabled), try to copy files into it via the Copy button or drag. *Result:* the preflight alert
+  writing is not enabled), try to copy files into it via the right-click menu or drag. *Result:* the preflight alert
   appears with the message "This drive is read-only. Turn on writing for it in its drive page." and no copy action
   is offered – only Cancel.
 - [ ] **G3. Finder-style duplicate on copy/paste in the same folder (I2).** Set both panes to the same folder.
-  Select a folder (e.g. "Photos") and press **Copy**. *Result:* a "Photos 2" folder appears beside it, containing
+  Select a folder (e.g. "Photos") and choose **Copy to the Other Side** from the right-click menu. *Result:* a "Photos 2" folder appears beside it, containing
   all the same contents. The original "Photos" is untouched. Same result when you ⌘C and ⌘V in the same folder.
   *Note:* dragging "Photos" onto the same pane still does nothing (Drop intentionally ignores same-folder items).
 - [ ] **G4. Trash vs permanent delete on the NTFS volume (C1 regression check).** On the NTFS volume select a

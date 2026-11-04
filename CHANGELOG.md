@@ -15,7 +15,7 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 
 ### Added
 
-- **File Transfer (Beta).** A new page in the main window with two file browsers side by side, each showing any drive or folder of the Mac. Drag files from one side to the other, press **Copy**, or use ⌘C and ⌘V. A panel underneath shows the progress, the read and write speed, the time left, every file and its state, and the files that failed with the reason. This is a Beta, and it only copies: there is no Move yet, so the originals always stay where they are.
+- **File Transfer (Beta).** A new page in the main window with two file browsers side by side, each showing any drive or folder of the Mac. Drag files from one side to the other, right-click and choose **Copy to the Other Side**, or copy and paste with ⌘C and ⌘V (also within one side, and with Finder). A panel underneath shows the progress, the read and write speed, the time left, every file and its state, and the files that failed with the reason. This is a Beta, and it only copies: there is no Move yet, so the originals always stay where they are.
 - Copying can be paused, resumed, skipped file by file, cancelled, and retried for the files that failed. Errors can be exported as a list. A notification says when the copy is done or needs you.
 - Name conflicts offer Replace, Keep Both, Skip or Replace If Newer, with an option to apply the choice to every file.
 - **Verify after copy** compares a checksum of each file with its original. **Ask what to do on errors** turns a failed file into a Skip, Retry or Stop prompt.
