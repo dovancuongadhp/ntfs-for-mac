@@ -136,6 +136,63 @@ private func waitUntil(timeout: Duration = .seconds(10), _ condition: () -> Bool
         #expect(queue.summary == nil)
     }
 
+    @Test func aNewCopyKeepsTheFinishedOnesAsHistoryNewestFirst() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.txt"); try source.file("b.txt"); try source.file("c.txt")
+        let queue = TransferQueue()
+        queue.enqueue(try plan([source.path("a.txt")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        queue.enqueue(try plan([source.path("b.txt")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+
+        queue.enqueue(try plan([source.path("c.txt")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+
+        #expect(queue.progress.items.map(\.job.name) == ["c.txt"])
+        #expect(queue.progress.fileCount == 1)
+        #expect(queue.summary?.copied == 1)
+        #expect(queue.history.map(\.job.name) == ["b.txt", "a.txt"])
+        #expect(queue.history.allSatisfy { $0.state == .done })
+    }
+
+    @Test func clearingAlsoForgetsTheHistory() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("a.txt"); try source.file("b.txt")
+        let queue = TransferQueue()
+        queue.enqueue(try plan([source.path("a.txt")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        queue.enqueue(try plan([source.path("b.txt")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+
+        queue.clear()
+        #expect(queue.history.isEmpty)
+        #expect(queue.progress.items.isEmpty)
+    }
+
+    @Test func failuresFromEarlierCopiesAreCountedExportedAndRetried() async throws {
+        let source = try TempFolder()
+        let destination = try TempFolder()
+        try source.file("bad.bin", "xxxx"); try source.file("good.bin", "yyyy")
+        let flaky = Flaky()
+        flaky.update { $0.failReading = ["bad.bin"] }
+        let queue = TransferQueue(access: flaky)
+        queue.enqueue(try plan([source.path("bad.bin")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        queue.enqueue(try plan([source.path("good.bin")], into: destination.url))
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(queue.failedCount == 1)
+        #expect(queue.failedItems.map(\.job.name) == ["bad.bin"])
+
+        flaky.update { $0.failReading = [] }
+        queue.retryFailed()
+        #expect(await waitUntil { queue.phase == .finished })
+        #expect(queue.failedCount == 0)
+        #expect(queue.history.isEmpty)
+        #expect(try destination.text("bad.bin") == "xxxx")
+    }
+
     @Test func cancellingWhileTheEngineIsAboutToAskDoesNotHang() async throws {
         let source = try TempFolder()
         let destination = try TempFolder()

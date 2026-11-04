@@ -2334,6 +2334,26 @@
         }
       }
     },
+    "From" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Từ"
+          }
+        }
+      }
+    },
+    "To" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đến"
+          }
+        }
+      }
+    },
     "Delete Immediately…" : {
       "localizations" : {
         "vi" : {

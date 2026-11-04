@@ -18,7 +18,7 @@ struct TransferProgressPanel: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if progress.items.isEmpty {
+            if progress.items.isEmpty && queue.history.isEmpty {
                 empty
             } else {
                 summaryBlock
@@ -114,8 +114,9 @@ struct TransferProgressPanel: View {
 
     // MARK: List
 
+    /// The latest copy, then the earlier ones still kept.
     private var visibleItems: [TransferItem] {
-        progress.items.filter { item in
+        (progress.items + queue.history).filter { item in
             guard !item.job.isDirectory else { return false }
             switch filter {
             case .all: return true
@@ -136,10 +137,22 @@ struct TransferProgressPanel: View {
             .labelsHidden()
             .frame(maxWidth: 280)
             .padding(.vertical, 6)
-            List(visibleItems) { item in
-                TransferRow(item: item).equatable()
+            Table(visibleItems) {
+                TableColumn("Name") { item in NameCell(item: item).equatable() }
+                    .width(min: 140, ideal: 220)
+                TableColumn("From") { item in FolderCell(url: item.job.source.deletingLastPathComponent()).equatable() }
+                    .width(min: 100, ideal: 220)
+                TableColumn("To") { item in FolderCell(url: item.job.destination.deletingLastPathComponent()).equatable() }
+                    .width(min: 100, ideal: 220)
+                TableColumn("Size") { item in
+                    Text(TransferText.size(item.job.size))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+                .width(min: 60, ideal: 80, max: 110)
+                TableColumn("Status") { item in StatusCell(item: item).equatable() }
+                    .width(min: 70, ideal: 90, max: 120)
             }
-            .listStyle(.plain)
         }
     }
 
@@ -147,7 +160,7 @@ struct TransferProgressPanel: View {
 
     private var footer: some View {
         HStack {
-            let failed = progress.failedCount
+            let failed = queue.failedCount
             if failed > 0 {
                 Label("Errors: \(failed)", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.red)
@@ -168,8 +181,8 @@ struct TransferProgressPanel: View {
     }
 }
 
-/// Equatable, so a progress tick redraws only the rows whose item changed.
-private struct TransferRow: View, Equatable {
+/// The cells are Equatable, so a progress tick redraws only the rows whose item changed.
+private struct NameCell: View, Equatable {
     let item: TransferItem
 
     var body: some View {
@@ -183,13 +196,8 @@ private struct TransferRow: View, Equatable {
                         .foregroundStyle(.red)
                 }
             }
-            Spacer()
-            Text(TransferText.size(item.job.size))
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-            statusView.frame(width: 90, alignment: .trailing)
         }
-        .font(.callout)
+        .help(item.job.name)
     }
 
     @ViewBuilder
@@ -202,9 +210,25 @@ private struct TransferRow: View, Equatable {
         case .skipped: Image(systemName: "arrow.uturn.forward.circle").foregroundStyle(.secondary)
         }
     }
+}
 
-    @ViewBuilder
-    private var statusView: some View {
+/// A folder path cut at the front, so the folder names nearest the file stay visible; the whole path on hover.
+private struct FolderCell: View, Equatable {
+    let url: URL
+
+    var body: some View {
+        Text(url.path)
+            .lineLimit(1)
+            .truncationMode(.head)
+            .foregroundStyle(.secondary)
+            .help(url.path)
+    }
+}
+
+private struct StatusCell: View, Equatable {
+    let item: TransferItem
+
+    var body: some View {
         switch item.state {
         case .waiting: Text("Waiting").foregroundStyle(.secondary)
         case .copying:

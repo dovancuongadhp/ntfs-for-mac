@@ -422,7 +422,7 @@ final class TransferSession {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = Self.exportFileName
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        let lines = queue.progress.failedItems.map { item in
+        let lines = queue.failedItems.map { item in
             let reason = item.failure.map { TransferText.failure($0.reason) } ?? ""
             let detail = item.failure?.detail ?? ""
             return "\(item.job.source.path)\t\(reason)\t\(detail)"

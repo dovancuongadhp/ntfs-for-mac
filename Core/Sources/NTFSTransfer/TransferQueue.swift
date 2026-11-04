@@ -56,6 +56,8 @@ public final class TransferQueue {
         return current
     }
     public private(set) var phase: Phase = .idle
+    /// The items of earlier copies, newest copy first, kept until `clear()`. `progress` covers the latest copy only.
+    public private(set) var history: [TransferItem] = []
     public private(set) var summary: TransferSummary?
     /// Why the queue last ended or halted; nil while a copy is under way or after `clear()`.
     public private(set) var lastStop: TransferStop?
@@ -86,7 +88,16 @@ public final class TransferQueue {
         self.access = access
     }
 
+    @ObservationIgnored private var historyFailures = 0
+
     public var isBusy: Bool { phase == .running || phase == .paused }
+
+    /// Failures in the latest copy and in the history.
+    public var failedCount: Int { progress.failedCount + historyFailures }
+
+    public var failedItems: [TransferItem] {
+        progress.failedItems + (historyFailures > 0 ? history.filter { $0.failure != nil } : [])
+    }
 
     private var isHalted: Bool {
         if case .stopped = phase { true } else { false }
@@ -97,6 +108,8 @@ public final class TransferQueue {
     public func enqueue(_ jobs: [TransferJob]) {
         guard !jobs.isEmpty else { return }
         if phase == .finished || phase == .idle {
+            history = current.items + history
+            historyFailures += current.failedCount
             current = TransferProgress()
             summary = nil
             lastStop = nil
@@ -164,9 +177,16 @@ public final class TransferQueue {
         await task?.value
     }
 
-    /// Runs the failed files again.
+    /// Runs the failed files again, those of earlier copies too: they move from the history into the latest copy.
     public func retryFailed() {
-        let jobs = current.resetFailed()
+        var jobs = current.resetFailed()
+        if historyFailures > 0 {
+            let earlier = history.filter { $0.failure != nil }.map(\.job)
+            history.removeAll { $0.failure != nil }
+            historyFailures = 0
+            current.append(earlier)
+            jobs += earlier
+        }
         guard !jobs.isEmpty else { return }
         summary = nil
         lastStop = nil
@@ -179,6 +199,8 @@ public final class TransferQueue {
     public func clear() {
         guard !isBusy, !isHalted else { return }
         current = TransferProgress()
+        history = []
+        historyFailures = 0
         summary = nil
         lastStop = nil
         phase = .idle
