@@ -1099,6 +1099,23 @@ struct TransferSessionTests {
         #expect(rig.session.left.folder.standardizedFileURL == rig.root.standardizedFileURL)
     }
 
+    @Test func aFavoriteFolderIsStillPinnedAfterRelaunch() throws {
+        let rig = try makeRig()
+        defer { try? FileManager.default.removeItem(at: rig.folder) }
+        let folder = rig.folder.appending(component: "Keep", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+
+        rig.session.toggleFavorite(folder)
+        #expect(rig.session.favorites.contains(folder))
+
+        let relaunched = TransferSession(notify: { _, _ in }, home: rig.folder, defaults: rig.defaults)
+        #expect(relaunched.favorites.contains(folder))
+        relaunched.toggleFavorite(folder)
+
+        let cleared = TransferSession(notify: { _, _ in }, home: rig.folder, defaults: rig.defaults)
+        #expect(!cleared.favorites.contains(folder))
+    }
+
     @Test func refreshingAPaneShowsWhatChangedBehindItsBack() async throws {
         let rig = try makeDropRig()
         defer { try? FileManager.default.removeItem(at: rig.root) }

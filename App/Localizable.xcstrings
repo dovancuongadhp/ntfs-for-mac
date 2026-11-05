@@ -51,6 +51,16 @@
         }
       }
     },
+    "Add to Favorites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm vào Yêu thích"
+          }
+        }
+      }
+    },
     "Advanced" : {
       "localizations" : {
         "vi" : {
@@ -2524,6 +2534,16 @@
         }
       }
     },
+    "Favorites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yêu thích"
+          }
+        }
+      }
+    },
     "File Transfer" : {
       "localizations" : {
         "vi" : {
@@ -2570,6 +2590,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thư mục mới"
+          }
+        }
+      }
+    },
+    "Remove from Favorites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa khỏi Yêu thích"
           }
         }
       }

@@ -31,7 +31,6 @@ struct FilePaneView: View {
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
             receiveDrop(providers)
         }
-        .simultaneousGesture(TapGesture().onEnded { session.activePane = pane })
     }
 
     // MARK: Header
@@ -39,19 +38,29 @@ struct FilePaneView: View {
     private func header(_ model: FileBrowserModel, isActive: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
-                Button { model.goBack() } label: { Image(systemName: "chevron.left") }
+                Button {
+                    session.activePane = pane
+                    model.goBack()
+                } label: { Image(systemName: "chevron.left") }
                     .disabled(!model.canGoBack)
                     .help("Back")
                     .accessibilityLabel("Back")
-                Button { model.goForward() } label: { Image(systemName: "chevron.right") }
+                Button {
+                    session.activePane = pane
+                    model.goForward()
+                } label: { Image(systemName: "chevron.right") }
                     .disabled(!model.canGoForward)
                     .help("Forward")
                     .accessibilityLabel("Forward")
-                Button { model.goUp() } label: { Image(systemName: "arrow.up") }
+                Button {
+                    session.activePane = pane
+                    model.goUp()
+                } label: { Image(systemName: "arrow.up") }
                     .disabled(!model.canGoUp)
                     .help("Enclosing Folder")
                     .accessibilityLabel("Enclosing Folder")
                 locationMenu(model)
+                favoriteButton(model)
                 Spacer(minLength: 0)
                 Button {
                     session.activePane = pane
@@ -70,12 +79,17 @@ struct FilePaneView: View {
 
     private func locationMenu(_ model: FileBrowserModel) -> some View {
         let current = Locations.containing(model.folder, in: session.locations)
+        let favorites = session.favorites.urls
         return Menu {
-            ForEach(session.locations) { location in
-                Button { model.open(location.url) } label: {
-                    Label { Text(location.name) } icon: { Image(nsImage: FileIcons.icon(for: location.url)) }
-                        .labelStyle(.titleAndIcon)
+            if !favorites.isEmpty {
+                Section("Favorites") {
+                    ForEach(favorites, id: \.path) { url in
+                        placeButton(url, title: Self.favoriteTitle(url)) { model.open(url) }
+                    }
                 }
+            }
+            ForEach(session.locations) { location in
+                placeButton(location.url, title: location.name) { model.open(location.url) }
             }
         } label: {
             Label {
@@ -86,6 +100,35 @@ struct FilePaneView: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
+    }
+
+    /// The star next to the place menu. Filled means this folder is pinned.
+    private func favoriteButton(_ model: FileBrowserModel) -> some View {
+        let pinned = session.favorites.contains(model.folder)
+        return Button {
+            session.activePane = pane
+            session.toggleFavorite(model.folder)
+        } label: {
+            Image(systemName: pinned ? "star.fill" : "star")
+                .foregroundStyle(pinned ? Color.yellow : Color.secondary)
+        }
+        .help(pinned ? Text("Remove from Favorites") : Text("Add to Favorites"))
+        .accessibilityLabel(pinned ? Text("Remove from Favorites") : Text("Add to Favorites"))
+    }
+
+    private func placeButton(_ url: URL, title: String, open: @escaping () -> Void) -> some View {
+        Button {
+            session.activePane = pane
+            open()
+        } label: {
+            Label { Text(title) } icon: { Image(nsImage: FileIcons.icon(for: url)) }
+                .labelStyle(.titleAndIcon)
+        }
+    }
+
+    private static func favoriteTitle(_ url: URL) -> String {
+        let name = url.lastPathComponent
+        return name.isEmpty ? url.path : name
     }
 
     // MARK: Table
@@ -133,7 +176,8 @@ struct FilePaneView: View {
             model.sort = FileSort(comparators: comparators)
         }
         .onChange(of: model.selection) { _, selection in
-            if !selection.isEmpty { session.activePane = pane }
+            // Same value again still refreshes both panes, so only switch sides when the click landed elsewhere.
+            if !selection.isEmpty, session.activePane != pane { session.activePane = pane }
         }
         .onCopyCommand {
             // Providers handed back here are added to the clipboard as copies in SwiftUI's cache folder,
@@ -150,6 +194,7 @@ struct FilePaneView: View {
         .onChange(of: listFocused) { _, focused in
             if focused {
                 session.focusedList = pane
+                if session.activePane != pane { session.activePane = pane }
             } else if session.focusedList == pane {
                 session.focusedList = nil
             }
@@ -182,6 +227,14 @@ struct FilePaneView: View {
         let protected = urls.contains { ProtectedFolders.isProtected($0) }
         if !urls.isEmpty {
             Button("Open") { open(Array(urls), in: session.model(for: pane)) }
+            if urls.count == 1, let url = urls.first,
+               session.model(for: pane).entries.contains(where: { $0.url == url && $0.isFolder }) {
+                if session.favorites.contains(url) {
+                    Button("Remove from Favorites") { session.toggleFavorite(url) }
+                } else {
+                    Button("Add to Favorites") { session.toggleFavorite(url) }
+                }
+            }
             Button("Copy") {
                 focus(urls)
                 session.copyToPasteboard(from: pane)
@@ -289,6 +342,8 @@ struct FilePaneView: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onTapGesture { session.activePane = pane }
     }
 }
 
@@ -304,6 +359,7 @@ private struct AddressField: View {
     @State private var invalid = false
     @State private var suggestions = PathSuggestions()
     @State private var keyMonitor: Any?
+    @State private var lastSuggestionClick: (path: String, time: Date)?
     @FocusState private var focused: Bool
 
     private var home: URL { FileManager.default.homeDirectoryForCurrentUser }
@@ -399,8 +455,21 @@ private struct AddressField: View {
         .frame(height: Self.rowHeight)
         .background(highlighted ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 4))
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) { open(folder) }
-        .onTapGesture { complete(with: folder.path + "/") }
+        .onTapGesture { clickSuggestion(folder) }
+    }
+
+    /// The first click completes at once. Waiting to see whether a second click is coming is what made a
+    /// single click feel late, so a second click within the system double-click gap opens the folder instead.
+    private func clickSuggestion(_ folder: URL) {
+        let now = Date()
+        if let last = lastSuggestionClick, last.path == folder.path,
+           now.timeIntervalSince(last.time) < NSEvent.doubleClickInterval {
+            lastSuggestionClick = nil
+            open(folder)
+        } else {
+            lastSuggestionClick = (folder.path, now)
+            complete(with: folder.path + "/")
+        }
     }
 
     /// Tab, ↑ ↓ and Return while this field is being typed in; anything else goes on to the field.

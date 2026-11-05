@@ -84,6 +84,7 @@ final class TransferSession {
     let right: FileBrowserModel
     var activePane: TransferPane = .left
     private(set) var locations = Locations.available()
+    private(set) var favorites = FavoriteFolders()
 
     var namePrompt: NamePrompt?
     var promptText = ""
@@ -136,6 +137,7 @@ final class TransferSession {
         left = FileBrowserModel(folder: home)
         right = FileBrowserModel(folder: FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? home)
         self.notify = notify
+        favorites = FavoriteFolders(paths: defaults.stringArray(forKey: FavoriteFolders.storageKey) ?? [])
         defaults.register(defaults: [Self.preventSleepKey: true])
         queue.onProgress = { [weak self] progress in self?.progressChanged(progress) }
         queue.onFinish = { [weak self] summary, stop in self?.finished(summary, stop) }
@@ -186,6 +188,14 @@ final class TransferSession {
     var otherModel: FileBrowserModel { model(for: activePane.other) }
 
     func refreshLocations() { locations = Locations.available() }
+
+    /// Pins or unpins a folder for both panes. The list is still there the next time the app opens.
+    func toggleFavorite(_ url: URL) {
+        var updated = favorites
+        updated.toggle(url)
+        favorites = updated
+        defaults.set(updated.paths, forKey: FavoriteFolders.storageKey)
+    }
 
     /// A drive was mounted or unmounted: the places menu, the panes and their free space follow.
     func volumesChanged() {
