@@ -23,7 +23,7 @@ struct TransferLocalizationTests {
     private static let notUserFacing: Set<String> = [
         "TransferVerify", "TransferAskOnError", "TransferPreventSleep",
         "TransferProgressCollapsed", "TransferLog.json",
-        "XCTestConfigurationFilePath",
+        "XCTestConfigurationFilePath", "zZ",
         // The app's name and a speed such as "12 MB/s" read the same in every language.
         "NTFS for Mac", "%@/s",
     ]
