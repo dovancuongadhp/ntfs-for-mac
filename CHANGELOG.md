@@ -22,7 +22,6 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 
 ### Changed
 
-- File Transfer is no longer marked Beta. The badge and the first-run notice are gone.
 - A click selects the row immediately. A second click opens the folder or file.
 - The context menu is grouped with separators, as in Finder.
 
