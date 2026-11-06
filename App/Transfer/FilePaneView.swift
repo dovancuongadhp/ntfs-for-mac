@@ -8,6 +8,10 @@ struct FilePaneView: View {
     let pane: TransferPane
     @State private var sortOrder = [KeyPathComparator(\FileEntry.name)]
     @State private var isTargeted = false
+    /// The folder row a drag is hovering, so the drop lands inside it rather than in the pane.
+    @State private var dropFolder: URL?
+    /// Flips while a folder is a drop target, so the row blinks instead of sitting still.
+    @State private var dropPulse = false
     @FocusState private var listFocused: Bool
 
     var body: some View {
@@ -141,15 +145,7 @@ struct FilePaneView: View {
         let rows = (up.map { [$0] } ?? []) + model.entries
         return Table(of: FileEntry.self, selection: $model.selection, sortOrder: $sortOrder) {
             TableColumn("Name", value: \.name) { entry in
-                Label {
-                    Text(entry.name).lineLimit(1)
-                } icon: {
-                    if entry == up {
-                        Image(systemName: "arrow.turn.left.up").foregroundStyle(.secondary)
-                    } else {
-                        Image(nsImage: FileIcons.icon(for: entry.url))
-                    }
-                }
+                fileName(entry, up: up)
             }
             TableColumn("Size", value: \.size) { entry in
                 Text(entry == up ? "" : entry.isFolder ? "—" : TransferText.size(entry.size))
@@ -209,6 +205,21 @@ struct FilePaneView: View {
             session.preview()
             return .handled
         }
+        .onKeyPress(characters: .init(charactersIn: "zZ")) { press in
+            guard press.modifiers.contains(.command) else { return .ignored }
+            let done = press.modifiers.contains(.shift) ? session.redo() : session.undo()
+            return done ? .handled : .ignored
+        }
+        .task(id: dropFolder) {
+            guard dropFolder != nil else {
+                dropPulse = false
+                return
+            }
+            while !Task.isCancelled {
+                withAnimation(.easeInOut(duration: 0.22)) { dropPulse.toggle() }
+                try? await Task.sleep(for: .milliseconds(220))
+            }
+        }
         .overlay {
             if let message = model.errorMessage {
                 ContentUnavailableView(
@@ -220,21 +231,81 @@ struct FilePaneView: View {
         }
     }
 
+    /// The name, a star when the folder is pinned, and a drop onto a folder row that copies into it.
+    @ViewBuilder
+    private func fileName(_ entry: FileEntry, up: FileEntry?) -> some View {
+        if entry.isFolder {
+            nameLabel(entry, up: up)
+                .onDrop(of: [.fileURL], isTargeted: folderDrop(entry)) { providers in
+                    receiveDrop(providers, into: entry.url)
+                }
+        } else {
+            nameLabel(entry, up: up)
+        }
+    }
+
+    private func nameLabel(_ entry: FileEntry, up: FileEntry?) -> some View {
+        let pinned = entry != up && entry.isFolder && session.favorites.contains(entry.url)
+        return HStack(spacing: 6) {
+            if entry == up {
+                Image(systemName: "arrow.turn.left.up").foregroundStyle(.secondary)
+            } else {
+                Image(nsImage: FileIcons.icon(for: entry.url))
+            }
+            Text(entry.name).lineLimit(1)
+            if pinned {
+                Image(systemName: "star.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.yellow)
+                    .accessibilityLabel("Favorite")
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 1)
+        .padding(.horizontal, 2)
+        .background(
+            dropFolder == entry.url ? Color.accentColor.opacity(dropPulse ? 0.55 : 0.08) : Color.clear,
+            in: RoundedRectangle(cornerRadius: 4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .strokeBorder(Color.accentColor, lineWidth: dropFolder == entry.url ? (dropPulse ? 2.5 : 0.5) : 0))
+    }
+
+    /// True only while a drag is over this folder row.
+    private func folderDrop(_ entry: FileEntry) -> Binding<Bool> {
+        Binding(
+            get: { dropFolder == entry.url },
+            set: { targeted in
+                if targeted { dropFolder = entry.url }
+                else if dropFolder == entry.url { dropFolder = nil }
+            })
+    }
+
     @ViewBuilder
     private func menu(for clicked: Set<URL>) -> some View {
-        let parent = session.model(for: pane).parentURL
+        let model = session.model(for: pane)
+        let parent = model.parentURL
         let urls = clicked.filter { $0 != parent }
         let protected = urls.contains { ProtectedFolders.isProtected($0) }
+        let folder = urls.count == 1
+            ? urls.first.flatMap { url in model.entries.first { $0.url == url && $0.isFolder }?.url }
+            : nil
+        let destination = folder ?? model.folder
         if !urls.isEmpty {
-            Button("Open") { open(Array(urls), in: session.model(for: pane)) }
-            if urls.count == 1, let url = urls.first,
-               session.model(for: pane).entries.contains(where: { $0.url == url && $0.isFolder }) {
-                if session.favorites.contains(url) {
-                    Button("Remove from Favorites") { session.toggleFavorite(url) }
+            Button("Open") { open(Array(urls), in: model) }
+            Button("Quick Look") {
+                focus(urls)
+                session.preview()
+            }
+            if let folder {
+                Divider()
+                if session.favorites.contains(folder) {
+                    Button("Remove from Favorites") { session.toggleFavorite(folder) }
                 } else {
-                    Button("Add to Favorites") { session.toggleFavorite(url) }
+                    Button("Add to Favorites") { session.toggleFavorite(folder) }
                 }
             }
+            Divider()
             Button("Copy") {
                 focus(urls)
                 session.copyToPasteboard(from: pane)
@@ -243,10 +314,7 @@ struct FilePaneView: View {
                 focus(urls)
                 session.copyActiveToOther()
             }
-            Button("Quick Look") {
-                focus(urls)
-                session.preview()
-            }
+            Divider()
             if urls.count == 1 {
                 Button("Rename") {
                     focus(urls)
@@ -266,16 +334,24 @@ struct FilePaneView: View {
             }
             .keyboardShortcut(.delete, modifiers: [.option, .command])
             .disabled(protected)
+            Divider()
             Button("Show in Finder") {
                 focus(urls)
                 session.revealInFinder()
             }
+            Divider()
         }
         Button("Paste Here") {
             session.activePane = pane
-            session.pasteFromPasteboard(into: pane)
+            session.pasteFromPasteboard(into: destination)
         }
         .disabled(!session.pasteboardHasFiles)
+        Button("Move Item Here") {
+            session.activePane = pane
+            session.moveFromPasteboard(into: destination)
+        }
+        .disabled(!session.pasteboardHasFiles)
+        Divider()
         Button("New Folder") {
             session.activePane = pane
             session.beginNewFolder()
@@ -291,7 +367,7 @@ struct FilePaneView: View {
 
     /// Reads the file addresses themselves: decoding `URL` as a transferable copies every dropped item into
     /// SwiftUI's cache folder first, and the copy would be what gets copied.
-    private func receiveDrop(_ providers: [NSItemProvider]) -> Bool {
+    private func receiveDrop(_ providers: [NSItemProvider], into folder: URL? = nil) -> Bool {
         let files = providers.filter { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }
         guard !files.isEmpty else { return false }
         Task {
@@ -299,7 +375,7 @@ struct FilePaneView: View {
             for provider in files {
                 if let url = await Self.fileURL(from: provider) { urls.append(url) }
             }
-            session.drop(urls, onto: pane)
+            session.drop(urls, onto: pane, into: folder)
         }
         return true
     }

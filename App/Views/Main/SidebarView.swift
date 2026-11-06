@@ -34,7 +34,6 @@ struct SidebarView: View {
                     case .none:
                         EmptyView()
                     }
-                    BetaBadge()
                 }
                 .tag(SidebarSelection.transfer)
             }

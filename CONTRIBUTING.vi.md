@@ -22,7 +22,7 @@ NTFS for Mac.app
   lại phân vùng, chặn không cho phân vùng bị gắn trong lúc làm việc, rồi mở ổ rời thông qua macOS trước khi chạy
   `mkntfs` của ntfs-3g. macOS từ chối mở trực tiếp ổ đó, kể cả với quản trị viên. Xoá cả ổ thành NTFS sẽ xoá
   thành exFAT bằng `diskutil` trước, rồi chuyển phân vùng sang NTFS.
-- **File Transfer** (2.2.0, beta) là bộ chép tệp nằm trong app (`Core/Sources/NTFSTransfer`): tệp được ghi dưới
+- **File Transfer** (2.2.1) là bộ chép tệp nằm trong app (`Core/Sources/NTFSTransfer`): tệp được ghi dưới
   tên tạm, có thể kiểm tra lại bằng SHA-256, rồi mới đổi tên khi xong.
 
 ## Tự build từ mã nguồn

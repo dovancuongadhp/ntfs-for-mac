@@ -11,6 +11,21 @@ name of their major version, and a name is never reused. Versions 1.0.x have no 
 
 ## [Unreleased]
 
+## [2.2.1] Lotus - 2026-11-06
+
+### Added
+
+- **Favorite folders.** A star beside the place name pins the folder you are in. Pinned folders are listed under Favorites in that menu, and a pinned folder shows a star next to its name.
+- **Drop into a folder.** Dragging onto a folder in the same pane moves the items into it. Dragging onto a folder in the other pane copies them. The folder blinks while the drag is over it.
+- **Move Item Here.** After copying, the context menu can move those items into the folder you clicked. The originals stay until every one of them has arrived.
+- **Undo.** ⌘Z takes back the last move or copy while a file list is focused. ⌘⇧Z redoes a move.
+
+### Changed
+
+- File Transfer is no longer marked Beta. The badge and the first-run notice are gone.
+- A click selects the row immediately. A second click opens the folder or file.
+- The context menu is grouped with separators, as in Finder.
+
 ## [2.2.0] Lotus - 2026-11-04
 
 ### Added
@@ -147,7 +162,8 @@ First public release.
 - English and Vietnamese user interface.
 - Drag-to-install DMG, and `scripts/build-local.sh` to build an ad hoc signed copy without an Apple Developer account.
 
-[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.2.1...HEAD
+[2.2.1]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.3...v2.1.0
 [2.0.3]: https://github.com/dovancuongadhp/ntfs-for-mac/compare/v2.0.2...v2.0.3

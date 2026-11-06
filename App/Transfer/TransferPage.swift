@@ -5,19 +5,18 @@ import SwiftUI
 
 struct TransferPage: View {
     @Bindable var session: TransferSession
-    @AppStorage("TransferBetaNoticeDismissed") private var noticeDismissed = false
     @AppStorage("TransferProgressCollapsed") private var progressCollapsed = false
     /// Below this width the two sides stack instead of sitting side by side.
     private nonisolated static let stackWidth: CGFloat = 900
     /// The progress panel's bar alone.
     private nonisolated static let collapsedBarHeight: CGFloat = 38
+    @Environment(\.undoManager) private var undoManager
     @State private var stacked = false
     @State private var deleteKeyMonitor: Any?
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            if !noticeDismissed { betaNotice }
             Divider()
             VSplitView {
                 panes.frame(minHeight: 240)
@@ -31,6 +30,7 @@ struct TransferPage: View {
         .onGeometryChange(for: Bool.self, of: { $0.size.width < Self.stackWidth }) { stacked = $0 }
         .onAppear {
             session.pageVisible = true
+            session.undoManager = undoManager
             if deleteKeyMonitor == nil { deleteKeyMonitor = Self.watchDeleteKeys(session) }
         }
         .onDisappear {
@@ -76,8 +76,8 @@ struct TransferPage: View {
             presenting: session.pendingTransfer
         ) { pending in
             switch pending.choice {
-            case .copyAnyway: Button("Copy Anyway") { session.start(pending.restOfJobs) }
-            case .copyTheRest: Button("Copy the Rest") { session.start(pending.restOfJobs) }
+            case .copyAnyway: Button("Copy Anyway") { session.start(pending.restOfJobs, removeAfter: pending.removeAfter) }
+            case .copyTheRest: Button("Copy the Rest") { session.start(pending.restOfJobs, removeAfter: pending.removeAfter) }
             case nil: EmptyView()
             }
             Button("Cancel", role: .cancel) {}
@@ -135,30 +135,10 @@ struct TransferPage: View {
     private var header: some View {
         HStack(spacing: 8) {
             Text("File Transfer").font(.title3.weight(.semibold))
-            BetaBadge()
             Spacer()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-    }
-
-    private var betaNotice: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "info.circle.fill").foregroundStyle(.orange)
-            Text("File Transfer is in beta. Keep a second copy of anything important.")
-                .font(.callout)
-            Spacer()
-            Button {
-                noticeDismissed = true
-            } label: {
-                Image(systemName: "xmark")
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel("Dismiss")
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 6)
-        .background(.orange.opacity(0.12))
     }
 
     @ViewBuilder

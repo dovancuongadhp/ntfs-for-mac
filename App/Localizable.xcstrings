@@ -2534,6 +2534,16 @@
         }
       }
     },
+    "Favorite" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yêu thích"
+          }
+        }
+      }
+    },
     "Favorites" : {
       "localizations" : {
         "vi" : {
@@ -2684,12 +2694,42 @@
         }
       }
     },
+    "Move" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Di chuyển"
+          }
+        }
+      }
+    },
+    "Move Item Here" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển mục vào đây"
+          }
+        }
+      }
+    },
     "Move to Trash" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chuyển vào Thùng rác"
+          }
+        }
+      }
+    },
+    "These items can't be moved." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không chuyển được các mục này."
           }
         }
       }
