@@ -232,6 +232,40 @@ public enum Locations {
     }
 }
 
+/// Folders the person pinned, in the order they were pinned. Paths are standardized so a trailing slash
+/// does not count as a second folder.
+public struct FavoriteFolders: Equatable, Sendable {
+    public static let storageKey = "FavoriteFolders"
+
+    public private(set) var paths: [String]
+
+    public init(paths: [String] = []) {
+        self.paths = paths
+    }
+
+    public func contains(_ url: URL) -> Bool {
+        paths.contains(Self.key(for: url))
+    }
+
+    /// Pins `url`, or unpins it when it is already there. The other folders stay in order.
+    public mutating func toggle(_ url: URL) {
+        let key = Self.key(for: url)
+        if let index = paths.firstIndex(of: key) {
+            paths.remove(at: index)
+        } else {
+            paths.append(key)
+        }
+    }
+
+    public var urls: [URL] {
+        paths.map { URL(fileURLWithPath: $0, isDirectory: true) }
+    }
+
+    public static func key(for url: URL) -> String {
+        url.standardizedFileURL.path
+    }
+}
+
 public enum FileOperationError: Error, Equatable {
     case invalidName
     case alreadyExists(String)

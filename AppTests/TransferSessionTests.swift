@@ -1025,6 +1025,64 @@ struct TransferSessionTests {
         #expect(TransferSession.leavingOut(itemsIn: other, from: [file]) == [file])
     }
 
+    @Test func droppingAFolderOntoItselfOrIntoItsOwnChildCopiesNothing() {
+        let photos = URL(fileURLWithPath: "/Volumes/USB/Photos")
+        let child = photos.appending(component: "2024")
+        let file = photos.appending(component: "a.txt")
+        #expect(TransferSession.leavingOut(itemsIn: photos, from: [photos, file]).isEmpty)
+        #expect(TransferSession.leavingOut(itemsIn: child, from: [photos]).isEmpty)
+        #expect(TransferSession.leavingOut(itemsIn: child, from: [file]) == [file])
+    }
+
+    @Test func aDragInsideTheOpenFolderIsAMoveAndOneFromOutsideIsACopy() {
+        let pane = URL(fileURLWithPath: "/Volumes/USB/Photos")
+        let file = pane.appending(component: "a.txt")
+        let elsewhere = URL(fileURLWithPath: "/Users/me/Desktop/a.txt")
+        #expect(TransferSession.draggedWithinPane([file], paneFolder: pane))
+        #expect(!TransferSession.draggedWithinPane([elsewhere], paneFolder: pane))
+        #expect(!TransferSession.draggedWithinPane([], paneFolder: pane))
+    }
+
+    @Test func draggingInsideOnePaneMovesTheFileAndCommandZPutsItBack() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let manager = UndoManager()
+        rig.session.undoManager = manager
+        let file = try sourceFile("a.txt", in: rig.src)
+        let inside = try rig.src.appending(component: "Inside", directoryHint: .isDirectory).creatingFolder()
+        rig.session.left.open(rig.src)
+        await rig.session.left.reload()
+
+        #expect(rig.session.drop([file], onto: .left, into: inside))
+        #expect(await wait { names(in: inside) == ["a.txt"] && !FileManager.default.fileExists(atPath: file.path) })
+
+        #expect(rig.session.undo())
+        #expect(FileManager.default.fileExists(atPath: file.path))
+        #expect(!FileManager.default.fileExists(atPath: inside.appending(component: "a.txt").path))
+
+        #expect(rig.session.redo())
+        #expect(names(in: inside) == ["a.txt"])
+        #expect(!FileManager.default.fileExists(atPath: file.path))
+    }
+
+    @Test func movingAFileRemovesItAfterTheCopyArrives() async throws {
+        let rig = try makeDropRig()
+        defer { try? FileManager.default.removeItem(at: rig.root) }
+        let file = try sourceFile("a.txt", in: rig.src)
+        let inside = try rig.dst.appending(component: "Inside", directoryHint: .isDirectory).creatingFolder()
+
+        #expect(rig.session.drop([file], onto: .right, into: inside))
+        #expect(await wait { names(in: inside) == ["a.txt"] })
+        #expect(FileManager.default.fileExists(atPath: file.path))
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.writeObjects([file as NSURL])
+        rig.session.moveFromPasteboard(into: rig.dst)
+        #expect(await wait {
+            names(in: rig.dst).contains("a.txt") && !FileManager.default.fileExists(atPath: file.path)
+        })
+    }
+
     // MARK: Panes after a drive goes away (stubs left behind by the system)
 
     @Test func anEmptyStubLeftByAnUnmountedVolumeIsNotAPlaceToRecoverTo() {
@@ -1097,6 +1155,23 @@ struct TransferSessionTests {
         #expect(rig.session.right.folder.standardizedFileURL == rig.root.standardizedFileURL)
         #expect(rig.session.right.errorMessage == nil)
         #expect(rig.session.left.folder.standardizedFileURL == rig.root.standardizedFileURL)
+    }
+
+    @Test func aFavoriteFolderIsStillPinnedAfterRelaunch() throws {
+        let rig = try makeRig()
+        defer { try? FileManager.default.removeItem(at: rig.folder) }
+        let folder = rig.folder.appending(component: "Keep", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+
+        rig.session.toggleFavorite(folder)
+        #expect(rig.session.favorites.contains(folder))
+
+        let relaunched = TransferSession(notify: { _, _ in }, home: rig.folder, defaults: rig.defaults)
+        #expect(relaunched.favorites.contains(folder))
+        relaunched.toggleFavorite(folder)
+
+        let cleared = TransferSession(notify: { _, _ in }, home: rig.folder, defaults: rig.defaults)
+        #expect(!cleared.favorites.contains(folder))
     }
 
     @Test func refreshingAPaneShowsWhatChangedBehindItsBack() async throws {

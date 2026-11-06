@@ -22,7 +22,7 @@ NTFS for Mac.app
   re-checks the partition, blocks it from being mounted while it works, and opens the removable disk through
   macOS before running ntfs-3g's `mkntfs`. macOS refuses a direct open of that disk, even for an administrator.
   Erasing a whole drive as NTFS first erases it as exFAT with `diskutil`, then converts the partition.
-- **File Transfer** (2.2.0, beta) is an in-app copy engine (`Core/Sources/NTFSTransfer`): files are written
+- **File Transfer** (2.2.1) is an in-app copy engine (`Core/Sources/NTFSTransfer`): files are written
   under a temporary name, optionally verified with SHA-256, and renamed when complete.
 
 ## Building from source

@@ -33,7 +33,7 @@ once, and you're done.
 - [Install](#install)
 - [Everyday use](#everyday-use)
 - [Formatting a drive](#formatting-a-drive)
-- [File Transfer (beta)](#file-transfer-beta)
+- [File Transfer](#file-transfer)
 - [When a drive opens read-only](#when-a-drive-opens-read-only)
 - [What it can't do yet](#what-it-cant-do-yet)
 - [Updating and uninstalling](#updating-and-uninstalling)
@@ -112,12 +112,12 @@ The app takes care not to erase the wrong thing:
 - Your Mac's internal drives and the drive macOS runs from can't be formatted.
 - Formatting as NTFS asks for your Mac password in the usual macOS dialog. The app never sees it.
 
-## File Transfer (beta)
+## File Transfer
 
-New in 2.2.0, the **File Transfer** page in the main window has two file browsers side by side for copying
-between any drives and folders: drag from one side to the other, or copy and paste. A progress list shows
-every copy and file, with pause and resume, retry of failed files, and a choice when a file or folder already
-exists. The list is kept until you press **Clear**. The feature is a beta: try it with files you have a backup of.
+The **File Transfer** page in the main window has two file browsers side by side. Drag from one side to the
+other to copy, or onto a folder in the same side to move. You can also copy and paste, pin favorite folders,
+and press ⌘Z to undo the last move or copy. A progress list shows every copy and file, with pause and resume,
+retry of failed files, and a choice when a file or folder already exists. The list is kept until you press **Clear**.
 
 ## When a drive opens read-only
 

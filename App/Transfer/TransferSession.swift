@@ -44,6 +44,8 @@ struct PendingTransfer: Identifiable {
     let jobs: [TransferJob]
     let problems: [TransferProblem]
 
+    /// Originals to put in the Trash after this copy, and only if every one of them finishes.
+    var removeAfter: [URL] = []
     /// Not enough room is a warning, not a stop: the copy can still be started and may run until the drive fills.
     var hasSpaceWarning: Bool {
         problems.contains { if case .notEnoughSpace = $0 { true } else { false } }
@@ -84,6 +86,7 @@ final class TransferSession {
     let right: FileBrowserModel
     var activePane: TransferPane = .left
     private(set) var locations = Locations.available()
+    private(set) var favorites = FavoriteFolders()
 
     var namePrompt: NamePrompt?
     var promptText = ""
@@ -104,6 +107,20 @@ final class TransferSession {
     @ObservationIgnored private var lastBadgePercent = -1
     @ObservationIgnored private var lastPaneReload = Date.distantPast
     @ObservationIgnored private var lastCopyRequest: (paths: [String], at: Date) = ([], .distantPast)
+    /// Originals of moves, removed only after the copy that owns them finishes with nothing skipped or failed.
+    @ObservationIgnored private var removals: [[URL]] = []
+    /// One copy or move that ⌘Z can take back once it has finished.
+    private struct RememberedOperation {
+        var sources: [URL]
+        var isMove: Bool
+        /// Destination paths that already existed, so undoing a copy must not delete them.
+        var occupied: Set<String>
+    }
+
+    /// Copies and moves still in flight, so a finished run can be undone with ⌘Z.
+    @ObservationIgnored private var remembered: [RememberedOperation] = []
+    /// The window's undo stack. Tests pass their own; the open window's is used when this is empty.
+    @ObservationIgnored weak var undoManager: UndoManager?
     @ObservationIgnored private var folderClashReply: CheckedContinuation<(TransferPlanner.FolderChoice, Bool)?, Never>?
     @ObservationIgnored private let logURL: URL?
     @ObservationIgnored private var terminationObserver: NSObjectProtocol?
@@ -136,6 +153,7 @@ final class TransferSession {
         left = FileBrowserModel(folder: home)
         right = FileBrowserModel(folder: FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? home)
         self.notify = notify
+        favorites = FavoriteFolders(paths: defaults.stringArray(forKey: FavoriteFolders.storageKey) ?? [])
         defaults.register(defaults: [Self.preventSleepKey: true])
         queue.onProgress = { [weak self] progress in self?.progressChanged(progress) }
         queue.onFinish = { [weak self] summary, stop in self?.finished(summary, stop) }
@@ -186,6 +204,14 @@ final class TransferSession {
     var otherModel: FileBrowserModel { model(for: activePane.other) }
 
     func refreshLocations() { locations = Locations.available() }
+
+    /// Pins or unpins a folder for both panes. The list is still there the next time the app opens.
+    func toggleFavorite(_ url: URL) {
+        var updated = favorites
+        updated.toggle(url)
+        favorites = updated
+        defaults.set(updated.paths, forKey: FavoriteFolders.storageKey)
+    }
 
     /// A drive was mounted or unmounted: the places menu, the panes and their free space follow.
     func volumesChanged() {
@@ -314,28 +340,47 @@ final class TransferSession {
 
     /// Dropping one row of a multi-selection brings the whole selection along.
     @discardableResult
-    func drop(_ urls: [URL], onto pane: TransferPane) -> Bool {
+    func drop(_ urls: [URL], onto pane: TransferPane, into folder: URL? = nil) -> Bool {
         // A web address or text dragged in has no file to copy.
         let files = urls.filter(\.isFileURL)
         guard !files.isEmpty else { return false }
         var sources = files
+        let here = model(for: pane)
         let origin = model(for: pane.other)
-        if files.count == 1, origin.selection.contains(files[0]) {
+        // A drag that starts on a selected row brings the rest of that selection with it.
+        if files.count == 1, here.selection.contains(files[0]) {
+            sources = here.selectedEntries.map(\.url)
+        } else if files.count == 1, origin.selection.contains(files[0]) {
             sources = origin.selectedEntries.map(\.url)
         }
-        let destination = model(for: pane).folder
+        let destination = folder ?? here.folder
         // Items dropped on the folder they already sit in would only be copied next to themselves.
         let moving = Self.leavingOut(itemsIn: destination, from: sources)
         guard !moving.isEmpty else { return false }
-        copy(moving, into: destination)
+        if Self.draggedWithinPane(moving, paneFolder: here.folder) {
+            moveInstantly(moving, into: destination)
+        } else {
+            copy(moving, into: destination)
+        }
         return true
     }
 
-    /// `sources` without the ones whose enclosing folder is `folder`.
+    /// True when every dragged item is sitting in the pane's open folder, so the drag is a move, not a copy.
+    static func draggedWithinPane(_ sources: [URL], paneFolder: URL) -> Bool {
+        guard !sources.isEmpty else { return false }
+        let folder = paneFolder.resolvingSymlinksInPath().standardizedFileURL.path
+        return sources.allSatisfy {
+            $0.deletingLastPathComponent().resolvingSymlinksInPath().standardizedFileURL.path == folder
+        }
+    }
+
+    /// `sources` without anything that already lives in `folder`, is `folder`, or contains `folder`.
     static func leavingOut(itemsIn folder: URL, from sources: [URL]) -> [URL] {
         let target = folder.resolvingSymlinksInPath().standardizedFileURL.path
         var memo: [String: Bool] = [:]
         return sources.filter { source in
+            let sourcePath = source.resolvingSymlinksInPath().standardizedFileURL.path
+            if sourcePath == target || target.hasPrefix(sourcePath + "/") { return false }
             let parent = source.deletingLastPathComponent()
             let inside: Bool
             if let known = memo[parent.path] {
@@ -348,12 +393,60 @@ final class TransferSession {
         }
     }
 
-    func copy(_ sources: [URL], into destination: URL, duplicate: Bool = false) {
+    /// Originals whose every copied piece finished. A skip or a failure leaves that original where it is.
+    static func sourcesReadyToRemove(_ sources: [URL], items: [TransferItem]) -> [URL] {
+        sources.filter { source in
+            let path = source.resolvingSymlinksInPath().standardizedFileURL.path
+            let related = items.filter { item in
+                let itemPath = item.job.source.resolvingSymlinksInPath().standardizedFileURL.path
+                return itemPath == path || itemPath.hasPrefix(path + "/")
+            }
+            guard !related.isEmpty else { return false }
+            return related.allSatisfy { if case .done = $0.state { true } else { false } }
+        }
+    }
+
+    /// Moves items that already live in this pane. Same-volume drags land at once, the way Finder moves into a folder.
+    private func moveInstantly(_ sources: [URL], into destination: URL) {
+        let moving = sources.filter { !ProtectedFolders.isProtected($0, home: home) }
+        guard !moving.isEmpty else {
+            alertMessage = String(localized: "These items can't be moved.")
+            return
+        }
+        var moved: [(from: URL, to: URL)] = []
+        var blocked: [URL] = []
+        for source in moving {
+            let target = destination.appending(component: source.lastPathComponent)
+            if FileManager.default.fileExists(atPath: target.path) {
+                blocked.append(source)
+                continue
+            }
+            do {
+                try FileManager.default.moveItem(at: source, to: target)
+                moved.append((source, target))
+            } catch {
+                blocked.append(source)
+            }
+        }
+        if !moved.isEmpty {
+            registerRelocationUndo(moved.map { (from: $0.to, to: $0.from) }, name: String(localized: "Move"))
+        }
+        Task {
+            await left.reload()
+            await right.reload()
+        }
+        if !blocked.isEmpty { copy(blocked, into: destination, removeAfter: blocked) }
+    }
+
+    func copy(_ sources: [URL], into destination: URL, duplicate: Bool = false, removeAfter: [URL] = []) {
         guard !sources.isEmpty else { return }
         // SwiftUI can deliver one drop or paste twice; the second would copy everything again.
         let request = ([destination] + sources).map(\.standardizedFileURL.path)
         if request == lastCopyRequest.paths, Date.now.timeIntervalSince(lastCopyRequest.at) < 1 { return }
         lastCopyRequest = (request, .now)
+        let occupied = Set(sources.map { source in
+            destination.appending(component: source.lastPathComponent).standardizedFileURL.path
+        }.filter { FileManager.default.fileExists(atPath: $0) })
         Task {
             let access = PosixFileAccess()
             do {
@@ -370,9 +463,14 @@ final class TransferSession {
                 if let pending = Self.review(
                     jobs: planned.0, rules: rules, freeBytes: planned.1.freeBytes,
                     destinationReadOnly: planned.1.isReadOnly) {
-                    pendingTransfer = pending
+                    // A move that cannot take every file would leave the originals only partly gone.
+                    if !removeAfter.isEmpty {
+                        alertMessage = TransferText.problems(pending.problems)
+                    } else {
+                        pendingTransfer = pending
+                    }
                 } else {
-                    start(planned.0)
+                    start(planned.0, removeAfter: removeAfter, remember: sources, occupied: occupied)
                 }
             } catch {
                 alertMessage = Self.message(for: error)
@@ -425,8 +523,16 @@ final class TransferSession {
         return problems.isEmpty ? nil : PendingTransfer(jobs: jobs, problems: problems)
     }
 
-    func start(_ jobs: [TransferJob]) {
+    func start(
+        _ jobs: [TransferJob], removeAfter sources: [URL] = [], remember undoSources: [URL] = [],
+        occupied: Set<String> = []
+    ) {
         guard !jobs.isEmpty else { return }
+        if !sources.isEmpty { removals.append(sources) }
+        let tops = undoSources.isEmpty ? sources : undoSources
+        if !tops.isEmpty {
+            remembered.append(RememberedOperation(sources: tops, isMove: !sources.isEmpty, occupied: occupied))
+        }
         queue.options = TransferOptions(
             verify: defaults.bool(forKey: Self.verifyKey),
             askOnError: defaults.bool(forKey: Self.askOnErrorKey))
@@ -435,9 +541,28 @@ final class TransferSession {
     }
 
     func pasteFromPasteboard(into pane: TransferPane) {
-        let urls = NSPasteboard.general.readObjects(
+        pasteFromPasteboard(into: model(for: pane).folder)
+    }
+
+    /// Copies whatever is on the clipboard into `folder`, including a folder that was clicked.
+    func pasteFromPasteboard(into folder: URL) {
+        copy(pasteboardFileURLs(), into: folder, duplicate: true)
+    }
+
+    /// Copies the clipboard into `folder`, then removes the originals once every one of them has arrived.
+    func moveFromPasteboard(into folder: URL) {
+        let urls = pasteboardFileURLs()
+        let moving = Self.leavingOut(itemsIn: folder, from: urls).filter { !ProtectedFolders.isProtected($0, home: home) }
+        guard !moving.isEmpty else {
+            if !urls.isEmpty { alertMessage = String(localized: "These items can't be moved.") }
+            return
+        }
+        copy(moving, into: folder, removeAfter: moving)
+    }
+
+    private func pasteboardFileURLs() -> [URL] {
+        NSPasteboard.general.readObjects(
             forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
-        copy(urls, into: model(for: pane).folder, duplicate: true)
     }
 
     /// Puts the selected items on the clipboard, so they can be pasted in a pane or in Finder.
@@ -493,10 +618,125 @@ final class TransferSession {
             let notice = TransferText.notice(for: summary, stop: stop)
             notify(notice.title, notice.body)
         }
+        let ready = Self.originalsToRemove(after: stop, removals: removals, items: queue.progress.items)
+        let done = remembered
+        let items = queue.progress.items
+        if stop != .noSpace, stop != .driveRemoved {
+            removals.removeAll()
+            remembered.removeAll()
+        }
+        Task {
+            if !ready.isEmpty {
+                let result = await Task.detached(priority: .userInitiated) {
+                    FileOperations.trash(ready)
+                }.value
+                if let error = result.error { alertMessage = error.localizedDescription }
+                if !result.stuck.isEmpty { deleteRequest = DeleteRequest(urls: result.stuck, reason: .noTrash) }
+            }
+            if stop == .finished { rememberForUndo(done, items: items) }
+            await left.reload()
+            await right.reload()
+        }
+    }
+
+    /// Puts a finished copy or move on the undo stack. A move goes back where it came from; a copy is removed,
+    /// except where a file was already there and replacing it cannot be undone.
+    private func rememberForUndo(_ operations: [RememberedOperation], items: [TransferItem]) {
+        for operation in operations {
+            let placed = Self.placements(of: operation.sources, items: items)
+            if operation.isMove {
+                let gone = placed.filter { !FileManager.default.fileExists(atPath: $0.original.path) }
+                registerRelocationUndo(gone.map { (from: $0.placed, to: $0.original) }, name: String(localized: "Move"))
+            } else {
+                let created = placed.map(\.placed).filter {
+                    !operation.occupied.contains($0.standardizedFileURL.path)
+                }
+                registerCopyUndo(created)
+            }
+        }
+    }
+
+    /// ⌘Z. False when there is nothing to take back, so a text field can undo its own typing instead.
+    @discardableResult
+    func undo() -> Bool {
+        guard let manager = undoStack(), manager.canUndo else { return false }
+        manager.undo()
+        return true
+    }
+
+    /// ⌘⇧Z.
+    @discardableResult
+    func redo() -> Bool {
+        guard let manager = undoStack(), manager.canRedo else { return false }
+        manager.redo()
+        return true
+    }
+
+    private func undoStack() -> UndoManager? {
+        undoManager ?? NSApp?.keyWindow?.undoManager
+    }
+
+    /// Moves each item from `from` to `to`, and arms the opposite move for the next undo or redo.
+    func relocate(_ pairs: [(from: URL, to: URL)], actionName: String) {
+        var back: [(from: URL, to: URL)] = []
+        for pair in pairs {
+            do {
+                try FileManager.default.moveItem(at: pair.from, to: pair.to)
+                back.append((pair.to, pair.from))
+            } catch {
+                alertMessage = error.localizedDescription
+                break
+            }
+        }
+        registerRelocationUndo(back, name: actionName)
         Task {
             await left.reload()
             await right.reload()
         }
+    }
+
+    private func registerRelocationUndo(_ pairs: [(from: URL, to: URL)], name: String) {
+        guard let undo = undoStack(), !pairs.isEmpty else { return }
+        undo.registerUndo(withTarget: self) { session in
+            session.relocate(pairs, actionName: name)
+        }
+        undo.setActionName(name)
+    }
+
+    private func registerCopyUndo(_ urls: [URL]) {
+        guard let undo = undoStack(), !urls.isEmpty else { return }
+        let name = String(localized: "Copy")
+        undo.registerUndo(withTarget: self) { session in
+            session.undoCreatedCopies(urls)
+        }
+        undo.setActionName(name)
+    }
+
+    private func undoCreatedCopies(_ urls: [URL]) {
+        let result = FileOperations.trash(urls)
+        if let error = result.error { alertMessage = error.localizedDescription }
+        if !result.stuck.isEmpty { deleteRequest = DeleteRequest(urls: result.stuck, reason: .noTrash) }
+        Task {
+            await left.reload()
+            await right.reload()
+        }
+    }
+
+    /// Where each finished top-level item landed. Nested files stay inside their folder's own undo.
+    static func placements(of sources: [URL], items: [TransferItem]) -> [(original: URL, placed: URL)] {
+        sources.compactMap { source in
+            let path = source.resolvingSymlinksInPath().standardizedFileURL.path
+            guard let item = items.first(where: { item in
+                item.job.source.resolvingSymlinksInPath().standardizedFileURL.path == path
+            }), case .done = item.state else { return nil }
+            return (source, item.job.destination)
+        }
+    }
+
+    /// Originals of a move that may leave, now that this copy has stopped. A halt keeps them until the copy ends.
+    static func originalsToRemove(after stop: TransferStop, removals: [[URL]], items: [TransferItem]) -> [URL] {
+        guard stop == .finished else { return [] }
+        return sourcesReadyToRemove(removals.flatMap { $0 }, items: items)
     }
 
     /// Keeps the Mac awake exactly while the queue is busy (running or paused). A queue that is idle,

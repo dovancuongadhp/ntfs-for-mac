@@ -33,7 +33,7 @@ một lần là xong.
 - [Cài đặt](#cài-đặt)
 - [Sử dụng hằng ngày](#sử-dụng-hằng-ngày)
 - [Định dạng ổ](#định-dạng-ổ)
-- [File Transfer (beta)](#file-transfer-beta)
+- [File Transfer](#file-transfer)
 - [Khi ổ chỉ mở được ở chế độ chỉ đọc](#khi-ổ-chỉ-mở-được-ở-chế-độ-chỉ-đọc)
 - [Những gì chưa làm được](#những-gì-chưa-làm-được)
 - [Cập nhật và gỡ bỏ](#cập-nhật-và-gỡ-bỏ)
@@ -112,12 +112,12 @@ App cẩn thận để không xoá nhầm:
 - Ổ trong máy Mac và ổ đang chạy macOS không định dạng được.
 - Định dạng NTFS sẽ hỏi mật khẩu máy Mac bằng hộp thoại quen thuộc của macOS. App không bao giờ thấy mật khẩu đó.
 
-## File Transfer (beta)
+## File Transfer
 
-Mới trong bản 2.2.0, trang **File Transfer** trong cửa sổ chính có hai ngăn duyệt tệp cạnh nhau để chép qua lại
-giữa mọi ổ và thư mục: kéo từ bên này sang bên kia, hoặc copy rồi dán. Danh sách tiến trình hiện từng lần chép và
-từng tệp, có tạm dừng và tiếp tục, thử lại tệp lỗi, và hỏi bạn khi tệp hay thư mục đã có sẵn. Danh sách được giữ
-cho tới khi bạn bấm **Xoá**. Tính năng này đang ở dạng beta: hãy thử với những tệp bạn đã có bản sao lưu.
+Trang **File Transfer** trong cửa sổ chính có hai ngăn duyệt tệp cạnh nhau. Kéo từ bên này sang bên kia để chép,
+hoặc kéo vào một thư mục trong cùng bên để chuyển. Bạn cũng có thể copy rồi dán, ghim thư mục yêu thích, và nhấn
+⌘Z để hoàn tác lần chuyển hoặc lần chép vừa xong. Danh sách tiến trình hiện từng lần chép và từng tệp, có tạm dừng
+và tiếp tục, thử lại tệp lỗi, và hỏi bạn khi tệp hay thư mục đã có sẵn. Danh sách được giữ cho tới khi bạn bấm **Xoá**.
 
 ## Khi ổ chỉ mở được ở chế độ chỉ đọc
 

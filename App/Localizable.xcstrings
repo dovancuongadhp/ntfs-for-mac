@@ -51,6 +51,16 @@
         }
       }
     },
+    "Add to Favorites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thêm vào Yêu thích"
+          }
+        }
+      }
+    },
     "Advanced" : {
       "localizations" : {
         "vi" : {
@@ -2524,6 +2534,26 @@
         }
       }
     },
+    "Favorite" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yêu thích"
+          }
+        }
+      }
+    },
+    "Favorites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yêu thích"
+          }
+        }
+      }
+    },
     "File Transfer" : {
       "localizations" : {
         "vi" : {
@@ -2570,6 +2600,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Thư mục mới"
+          }
+        }
+      }
+    },
+    "Remove from Favorites" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Xóa khỏi Yêu thích"
           }
         }
       }
@@ -2654,12 +2694,42 @@
         }
       }
     },
+    "Move" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Di chuyển"
+          }
+        }
+      }
+    },
+    "Move Item Here" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuyển mục vào đây"
+          }
+        }
+      }
+    },
     "Move to Trash" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chuyển vào Thùng rác"
+          }
+        }
+      }
+    },
+    "These items can't be moved." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không chuyển được các mục này."
           }
         }
       }

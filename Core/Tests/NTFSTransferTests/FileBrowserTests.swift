@@ -123,6 +123,20 @@ import Testing
     }
 }
 
+@Suite struct FavoriteFoldersTests {
+    @Test func togglePinsThenUnpinsAndKeepsTheOthersInOrder() {
+        var favorites = FavoriteFolders()
+        let photos = URL(fileURLWithPath: "/Volumes/USB/Photos")
+        favorites.toggle(photos)
+        #expect(favorites.contains(URL(fileURLWithPath: "/Volumes/USB/Photos/")))
+        #expect(favorites.urls.map(\.path) == [photos.standardizedFileURL.path])
+
+        favorites.toggle(URL(fileURLWithPath: "/Volumes/USB/Docs"))
+        favorites.toggle(photos)
+        #expect(favorites.paths == ["/Volumes/USB/Docs"])
+    }
+}
+
 @Suite struct FileOperationsTests {
     @Test func makeFolderCreatesItAndRefusesDuplicatesAndBadNames() throws {
         let folder = try TempFolder()
